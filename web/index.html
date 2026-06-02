@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="nl" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Abundomy — gedecentraliseerde gemeenschapsmunt</title>
+    <meta name="description" content="Abundomy dApp — gedecentraliseerde gemeenschapsmunt op IPFS + OrbitDB" />
+    <meta name="author" content="Teun van Sambeek" />
+
+    <link rel="icon" href="/img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="/css/reset.css" />
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Abundomy dApp" />
+    <meta property="og:description" content="Gedecentraliseerde gemeenschapsmunt op IPFS + OrbitDB" />
+    <meta property="og:image" content="/img/Abundomy_Money_App_300x425.png" />
+
+    <style>
+      /* dApp-specifieke aanvullingen — design-tokens (--text, --background, --button,
+         --white) komen uit main.css zodat het uiterlijk gelijk loopt met abundomy.com. */
+      .dapp-card {
+        width: clamp(300px, 95.49vw, 550px);
+        margin: clamp(8px, 2.08vw, 14px) auto;
+        padding: clamp(10px, 2.78vw, 16px) clamp(12px, 3.13vw, 20px);
+        border: 1px solid rgba(145, 107, 1, 0.35);
+        border-radius: 1rem;
+        background-color: rgba(0, 0, 0, 0.18);
+        text-align: left;
+        color: var(--white);
+      }
+      .dapp-card h2 {
+        font-family: raleway_bold, sans-serif;
+        color: var(--text);
+        font-size: clamp(13px, 4.69vw, 27px);
+        margin: 0 0 clamp(4px, 1.04vw, 8px);
+      }
+      .dapp-card .muted {
+        color: rgba(255, 255, 255, 0.65);
+        font-size: clamp(11px, 3.65vw, 21px);
+      }
+      .dapp-card label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0.35rem 0.75rem 0.35rem 0;
+        font-family: raleway_bold, sans-serif;
+        color: var(--text);
+        font-size: clamp(12px, 4.17vw, 24px);
+      }
+      .dapp-card input,
+      .dapp-card select {
+        font-family: raleway_regular, sans-serif;
+        color: var(--white);
+        background-color: rgba(0, 0, 0, 0.45);
+        border: 1px solid rgba(145, 107, 1, 0.4);
+        border-radius: 0.6rem;
+        padding: 0.4rem 0.8rem;
+        font-size: clamp(12px, 4.17vw, 24px);
+      }
+      .dapp-card input::placeholder { color: rgba(255, 255, 255, 0.35); }
+      .dapp-card input[type="number"] { width: 6rem; }
+      .dapp-card .balance {
+        font-family: raleway_bold, sans-serif;
+        font-size: clamp(22px, 8.34vw, 48px);
+        color: var(--text);
+        margin: clamp(4px, 1.04vw, 8px) 0;
+      }
+      .dapp-card table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+      .dapp-card td, .dapp-card th {
+        text-align: left;
+        padding: 0.35rem 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--white);
+      }
+      .dapp-card .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+      .dapp-card .btn-secondary {
+        background-color: rgba(255, 255, 255, 0.12);
+        color: var(--white);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 1.5rem;
+        padding: 0.45rem 1.2rem;
+        font-family: raleway_bold, sans-serif;
+        cursor: pointer;
+        font-size: clamp(12px, 4.17vw, 22px);
+      }
+      .dapp-card .btn-secondary:hover { background-color: rgba(255, 255, 255, 0.2); }
+      .dapp-card .btn-secondary:disabled { opacity: 0.5; cursor: default; }
+      .dapp-card #log {
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+        font-size: clamp(10px, 3.13vw, 16px);
+        color: rgba(255, 255, 255, 0.78);
+        background-color: rgba(0, 0, 0, 0.35);
+        border-radius: 0.6rem;
+        padding: 0.5rem 0.7rem;
+        white-space: pre-wrap;
+        max-height: 11rem;
+        overflow: auto;
+      }
+      /* originele money-app look voor het ingelogde scherm */
+      #dashboard .index-title-row { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 0.5rem; }
+      #dashboard .index-title-row .feedback2 { margin: 0; text-align: left; }
+      .display-num { font-family: roboto_bold, raleway_bold, sans-serif; font-size: clamp(12px, 3.82vw, 22px); text-align: center; color: var(--button); margin: 0.4rem 0 0; }
+      .amount { font-family: roboto_bold, raleway_bold, sans-serif; font-weight: 600; font-size: clamp(24px, 8vw, 44px); color: var(--button); text-align: center; margin: 0.1rem 0 0.4rem; }
+      .hidden { display: none; }
+      .dapp-status { color: rgba(255, 255, 255, 0.7); text-align: center; }
+      .dapp-relay-info { color: var(--text); margin-top: 0.4rem; }
+      .dapp-headline {
+        font-family: raleway_bold, sans-serif;
+        color: var(--text);
+        font-size: clamp(16px, 5.56vw, 32px);
+        margin: clamp(8px, 2.08vw, 14px) auto clamp(4px, 1.04vw, 8px);
+        text-align: center;
+      }
+      .dapp-subline {
+        color: rgba(255, 255, 255, 0.78);
+        font-size: clamp(11px, 3.65vw, 21px);
+        text-align: center;
+        margin: 0 auto clamp(8px, 2.08vw, 14px);
+      }
+      /* Taalvlag — als laatste item ín de navbalk (uiterst rechts), niet zwevend,
+         even groot als de andere icoontjes; zoals het origineel van abundomy.com */
+      .app-lang-flag {
+        flex: 0 0 auto;
+        width: clamp(40px, 13.89vw, 70px);
+        height: clamp(40px, 13.89vw, 70px);
+        padding: 0;
+        border: 2px solid rgba(255, 255, 255, 0.7);
+        border-radius: 50%;
+        background: transparent;
+        cursor: pointer;
+        overflow: hidden;
+        transition: filter 0.2s ease, transform 0.2s ease;
+      }
+      .app-lang-flag:hover { filter: brightness(1.25); transform: scale(1.06); }
+      .app-lang-flag svg { width: 100%; height: 100%; display: block; }
+
+      /* Taalpagina-overlay (set-language.php-equivalent) */
+      .lang-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        overflow-y: auto;
+        background-color: var(--background, #1b1208);
+        background-image: inherit;
+      }
+      .lang-overlay .flag-container svg { width: clamp(34px, 11vw, 44px); height: clamp(34px, 11vw, 44px); display: block; }
+      .lang-overlay .lang-item { display: block; cursor: pointer; padding: clamp(6px, 1.8vw, 10px) clamp(8px, 2.4vw, 14px); border-bottom: 1px solid var(--line-color, rgba(255,255,255,0.1)); }
+      .lang-overlay .lang-item:hover .lang-content { filter: brightness(1.25); }
+      .lang-overlay .lang-radio { position: absolute; opacity: 0; pointer-events: none; }
+    </style>
+  </head>
+
+  <body>
+    <!-- Taalpagina: zoekveld + vlaggenlijst (zoals set-language.php op abundomy.com) -->
+    <div id="langOverlay" class="lang-overlay hidden">
+      <div class="Centercontainer">
+        <div class="field-wrapper" style="padding-bottom: 3rem;">
+          <div class="medium_line"></div>
+          <div class="button4-row">
+            <div class="button4-column1"></div>
+            <div class="button4-column2"><p class="title" data-i18n="SL_TITLE">Taal</p></div>
+            <div class="button4-column3">
+              <button type="button" class="login-button" id="langCancelBtn" data-i18n="SL_CANCEL">Annuleren</button>
+            </div>
+          </div>
+          <div class="medium_line"></div>
+          <label class="form__label" data-i18n="SL_SEARCH">Taal invoeren</label><br />
+          <input type="text" class="form__input" id="langSearch" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          <div class="medium_line"></div>
+          <div class="language-listbox" id="langListBox"></div>
+        </div>
+      </div>
+    </div>
+    <div class="full-width-header-wrapper" id="topNav">
+      <div class="header-content">
+        <header class="header-main">
+          <a href="/" class="nav-item" tabindex="-1">
+            <img src="/img/Home_70x70.png" alt="Home" />
+          </a>
+          <a href="/base.html" class="nav-item" tabindex="-1">
+            <img src="/img/Abundomy_Logo.gif" class="rotating-world" alt="World" />
+          </a>
+          <a href="/projects.html" class="nav-item" tabindex="-1">
+            <img src="/img/Projects_70x70.png" alt="Projects" />
+          </a>
+          <a href="/education.html" class="nav-item" tabindex="-1">
+            <img src="/img/Books_70x70.png" alt="Books" />
+          </a>
+          <a href="/community.html" class="nav-item" tabindex="-1">
+            <img src="/img/Community_70x70.png" alt="Community" />
+          </a>
+          <button id="langFlag" class="app-lang-flag" type="button" aria-label="Language"></button>
+        </header>
+      </div>
+    </div>
+
+    <!-- Money-app header (alleen ingelogd): logo · saldo · avatar -->
+    <div class="full-width-header-wrapper hidden" id="app-header">
+      <div class="header-content">
+        <header class="header-main">
+          <div class="menu-column1">
+            <a id="navHome" href="#/" tabindex="-1"><div class="header-main-index-logo"></div></a>
+          </div>
+          <div class="menu-column2">
+            <a class="amount-container2" id="balanceAnchor" href="#/transactions">
+              <span class="display-num" id="headerNum">0 000 000 000</span>
+              <span class="amount" id="header-balance">— ᕫ</span>
+            </a>
+          </div>
+          <div class="menu-column3">
+            <a id="avatarAnchor" href="#/profile" tabindex="-1"><img class="mainusericon" id="headerAvatar" alt="profiel" /></a>
+          </div>
+        </header>
+      </div>
+    </div>
+
+    <div class="Centercontainer">
+      <div class="field-wrapper" style="padding-bottom: 3rem;">
+        <section id="login">
+          <div class="full_line"></div>
+          <div class="button9-row">
+            <div class="button9-column1"><p class="title" data-i18n="LOGIN">Login</p><br /></div>
+          </div>
+          <div class="full_line"></div>
+
+          <label class="form__label" data-i18n="APP_USER_OR_EMAIL">Gebruiker / e-mail</label><br />
+          <input type="text" class="form__input" id="loginId" name="uid"
+                 autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          <div class="small_line"></div>
+          <label class="form__label" data-i18n="PWD">Wachtwoord</label><br />
+          <input type="password" class="form__input" id="loginPwd" name="pwd"
+                 autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" />
+          <br /><br />
+
+          <div class="button10-row">
+            <div class="button10-column1">
+              <button type="button" class="login-button-small" id="toSignupBtn" data-i18n="SIGNUP">Sign up</button>
+            </div>
+            <div class="button10-column2">
+              <button type="button" class="login-button-small" id="toResetBtn" data-i18n="RESET">Reset</button>
+            </div>
+            <div class="button10-column3">
+              <button type="button" class="login-button" id="loginBtn" data-i18n="LOGIN_BTN">Login</button>
+            </div>
+          </div>
+          <br />
+
+          <p class="dapp-relay-info" id="relayInfo" style="text-align:center;"></p>
+          <details class="muted" style="margin-top: 0.5rem;">
+            <summary data-i18n="APP_LEGACY_SUMMARY">Migratie/dev: inloggen met gebruikers-ID</summary>
+            <label class="form__label" data-i18n="APP_LEGACY_ID">Gebruikers-ID</label>
+            <input class="form__input" id="userId" type="number" value="13" />
+            <button id="connectBtn" type="button" class="login-button-small" data-i18n="APP_LEGACY_CONNECT">Verbinden (legacy)</button>
+          </details>
+        </section>
+
+        <section class="dapp-card hidden" id="resetCard">
+          <h2 data-i18n="APP_RESET_TITLE">Wachtwoord resetten</h2>
+          <p class="muted" data-i18n="APP_RESET_HINT">Vul je e-mailadres en de herstelcode uit je welkomstmail in,
+            en kies een nieuw wachtwoord.</p>
+          <label><span data-i18n="APP_EMAIL">E-mailadres</span> <input id="resetEmail" type="email" autocomplete="email" /></label>
+          <label><span data-i18n="APP_RECOVERY_CODE">Herstelcode</span> <input id="resetCode" type="text" autocapitalize="characters" spellcheck="false" placeholder="ABCD-EFGH-…" /></label>
+          <label><span data-i18n="APP_NEW_PWD">Nieuw wachtwoord</span> <input id="resetPwd" type="password" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></label>
+          <label><span data-i18n="APP_REPEAT_NEW">Herhaal nieuw</span> <input id="resetPwd2" type="password" autocomplete="new-password" /></label>
+          <div class="actions">
+            <button id="resetBtn" type="button" class="login-button" data-i18n="NP_BTN_RESET">Wachtwoord resetten</button>
+            <button id="resetBackBtn" type="button" class="btn-secondary" data-i18n="PR_BACK">&larr; Terug</button>
+          </div>
+          <p class="dapp-relay-info" id="resetInfo"></p>
+        </section>
+
+        <section class="dapp-card hidden" id="signup">
+          <h2 data-i18n="APP_SIGNUP_TITLE">Nieuw account</h2>
+          <p class="muted" data-i18n="APP_SIGNUP_HINT">Eén mens = één account. Je e-mail wordt geverifieerd en is uniek.
+            Je kiest een gebruikersnaam en wachtwoord; daarmee log je voortaan in.</p>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-bottom:0.6rem;">
+            <img id="suImgPreview" class="humanicon2" alt="foto" />
+            <label class="login-button-small" style="cursor:pointer;"><span data-i18n="APP_CHOOSE_PHOTO">Foto kiezen</span>
+              <input id="suImgFile" type="file" accept="image/*" style="display:none;" />
+            </label>
+            <button type="button" class="btn-secondary" id="suImgClear" style="display:none;" data-i18n="APP_REMOVE_PHOTO">Foto verwijderen</button>
+          </div>
+          <label><span data-i18n="SU_FN">Naam</span> <input id="suName" type="text" autocomplete="name" placeholder=">3" /></label>
+          <label><span data-i18n="APP_EMAIL">E-mailadres</span> <input id="suEmail" type="email" autocomplete="email" placeholder="jij@voorbeeld.nl" /></label>
+          <label><span data-i18n="SU_UN">Gebruikersnaam</span> <input id="suUid" type="text" autocomplete="username" placeholder=">3 az/AZ/09/_" /></label>
+          <label><span data-i18n="SU_PW">Wachtwoord</span> <input id="suPwd" type="password" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></label>
+          <label><span data-i18n="SU_PW2">Herhaal wachtwoord</span> <input id="suPwd2" type="password" autocomplete="new-password" /></label>
+          <label><span data-i18n="SU_BD">Geboortedatum</span> <input id="suBirthday" type="date" min="1900-01-01" max="2050-01-01" /></label>
+          <label><span data-i18n="SU_HT">Lengte</span> <input id="suHeight" type="text" placeholder="1.78m" /></label>
+          <label><span data-i18n="SU_GN">Geslacht</span> <select id="suGender">
+            <option value="0" data-i18n="SU_ML">Man</option><option value="1" data-i18n="SU_FM">Vrouw</option><option value="2" data-i18n="SU_OT">Anders</option>
+          </select></label>
+          <label><span data-i18n="SU_HR">Haarkleur</span> <select id="suHair"></select></label>
+          <label><span data-i18n="SU_LE">Linkeroog</span> <select id="suLeftEye"></select></label>
+          <label><span data-i18n="SU_RE">Rechteroog</span> <select id="suRightEye"></select></label>
+          <label style="flex:1;min-width:14rem"><input id="suSpecial" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken" style="flex:1;min-width:12rem" /></label>
+          <div class="actions">
+            <button id="signupBtn" type="button" class="login-button" data-i18n="APP_SIGNUP_VERIFY">Registreer &amp; verifieer e-mail</button>
+          </div>
+          <p class="dapp-relay-info" id="signupInfo"></p>
+          <div class="actions">
+            <button id="goDashboard" type="button" class="login-button hidden" data-i18n="APP_GO_ACCOUNT">Ga naar mijn account &rarr;</button>
+          </div>
+          <p class="muted"><a href="#" id="toLogin" data-i18n="APP_HAVE_ACCOUNT">&larr; Heb je al een account? Inloggen</a></p>
+        </section>
+
+        <section class="view hidden" id="view-home">
+          <div class="medium_line"></div>
+          <div class="index-title-row">
+            <div class="index-title-column">
+              <a href="https://abundomy.com" target="_blank" class="title-link"><p class="feedback2" data-i18n="TITLE">ABUNDOMY MONEY</p></a>
+            </div>
+            <div class="index-title-column" style="justify-content: flex-end;">
+              <button id="logoutBtn" type="button" class="login-button" data-i18n="LOGOUT">Uitloggen</button>
+            </div>
+          </div>
+          <div class="full_line"></div>
+
+          <!-- MIJN VERZOEKEN (ik ben de ontvanger; wacht op betaling) -->
+          <div class="button6-row">
+            <div class="button6-column1"><p class="title" data-i18n="IDX_MY_REQS">MIJN VERZOEKEN</p></div>
+            <div class="button6-column2"></div>
+            <div class="button6-column3"><button type="button" class="login-button" id="newRequestBtn" data-i18n="IDX_NEW_BTN">Nieuw</button></div>
+          </div>
+          <div class="full_line"></div>
+          <div id="myRequests"></div>
+          <div class="button9-row hidden" id="noRequestsRow">
+            <div class="button9-column1">
+              <button type="button" class="login-button" id="newRequestBtn2" data-i18n="IDX_DO_NEW">Doe een nieuw verzoek</button>
+            </div>
+          </div>
+
+          <!-- Betaling-aanvraagformulier (verschijnt via 'Nieuw') -->
+          <section class="dapp-card hidden" id="requestCard">
+            <h2 data-i18n="APP_REQUEST_PAYMENT">Betaling aanvragen</h2>
+            <p class="muted" data-i18n="APP_REQUEST_HINT">Jij bent de ontvanger; de gekozen gebruiker moet bevestigen.</p>
+            <label><span data-i18n="APP_FROM">Van</span> <select id="fromUser"></select></label>
+            <label><span data-i18n="RCV_AMT">Bedrag</span> <input id="amount" type="number" value="10" /></label>
+            <label style="flex:1; min-width: 14rem;">
+              <input id="desc" data-i18n-ph="APP_DESC_PH" placeholder="omschrijving" style="flex:1; min-width: 12rem;" />
+            </label>
+            <div class="actions">
+              <button id="requestBtn" type="button" class="login-button" data-i18n="APP_SEND_REQUEST">Verzoek versturen</button>
+              <button id="requestCancelBtn" type="button" class="btn-secondary" data-i18n="RCV_CANCEL">Annuleren</button>
+            </div>
+          </section>
+
+          <!-- TE BETALEN (iemand vraagt; ik moet bevestigen/betalen) -->
+          <div id="toPaySection" class="hidden">
+            <div class="full_line"></div>
+            <div class="button9-row"><div class="button9-column1"><p class="title" data-i18n="IDX_TO_PAY">TE BETALEN</p></div></div>
+            <div class="full_line"></div>
+            <div id="toPay"></div>
+          </div>
+
+          <br />
+          <!-- Hulpmiddelen, status & log -->
+          <details class="dapp-card">
+            <summary class="muted" data-i18n="APP_TOOLS">Hulpmiddelen, status &amp; log</summary>
+            <p class="dapp-status" id="status" style="margin-top:0.6rem;">verbindingsstatus…</p>
+            <div class="actions" style="justify-content: center;">
+              <button id="exportBtn" type="button" class="btn-secondary" data-i18n="APP_EXPORT_CSV">Exporteer mijn keten (CSV)</button>
+              <button id="refreshBtn" type="button" class="btn-secondary" data-i18n="APP_REFRESH">Ververs</button>
+            </div>
+            <div id="log" style="margin-top:0.6rem;"></div>
+          </details>
+
+          <!-- Wachtwoord wijzigen -->
+          <details class="dapp-card" id="changePwdCard">
+            <summary class="muted" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</summary>
+            <p class="muted" data-i18n="APP_CHANGE_PWD_HINT">Alleen jij kunt dit — het vereist je huidige wachtwoord.
+              Je identiteit en saldo blijven ongewijzigd.</p>
+            <label><span data-i18n="APP_CUR_PWD">Huidig wachtwoord</span> <input id="cpCurrent" type="password" autocomplete="current-password" /></label>
+            <label><span data-i18n="APP_NEW_PWD">Nieuw wachtwoord</span> <input id="cpNew" type="password" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></label>
+            <label><span data-i18n="APP_REPEAT_NEW">Herhaal nieuw</span> <input id="cpNew2" type="password" autocomplete="new-password" /></label>
+            <div class="actions">
+              <button id="changePwdBtn" type="button" class="login-button" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</button>
+            </div>
+            <p class="dapp-relay-info" id="changePwdInfo"></p>
+          </details>
+        </section><!-- /#view-home -->
+
+        <!-- ===================== TRANSACTIES ===================== -->
+        <section class="view hidden" id="view-transactions">
+          <div class="medium_line"></div>
+          <div class="button4-row">
+            <div class="button4-column1"></div>
+            <div class="button4-column2" style="display:flex; flex-direction:column; align-items:center;">
+              <p class="title" data-i18n="TR_TITLE">TRANSACTIES</p>
+              <p class="display-num" style="margin-top:-5px; color:var(--text);" id="txViewName"></p>
+            </div>
+            <div class="button4-column3">
+              <a href="#/"><button type="button" class="login-button" data-i18n="PR_BACK">Terug</button></a>
+            </div>
+          </div>
+          <div class="small_line"></div>
+
+          <div class="nav-filter-wrapper">
+            <div class="button_t-row">
+              <div class="t-col-year">
+                <select id="navYear" class="year-month-pill" name="year"></select>
+              </div>
+              <div class="t-col-prev">
+                <button type="button" class="time-nav-button" id="navPrev">&nbsp;&nbsp;&lt;&nbsp;&nbsp;</button>
+              </div>
+              <div class="t-col-month">
+                <select id="navMonth" class="year-month-pill" name="month"></select>
+              </div>
+              <div class="t-col-next">
+                <button type="button" class="time-nav-button" id="navNext">&nbsp;&nbsp;&gt;&nbsp;&nbsp;</button>
+              </div>
+              <div class="t-col-spacer"></div>
+            </div>
+          </div>
+
+          <p class="feedback2" id="txNone" style="text-align:center; display:none;" data-i18n="APP_NONE_THIS_MONTH">Geen transacties in deze maand.</p>
+          <div class="listbox-container" id="txList"></div>
+          <div class="calc-table" id="txCalc"></div>
+
+          <div class="hd-footer-row" style="justify-content:center;">
+            <div class="hd-download-group">
+              <button type="button" class="login-button" id="txPdfBtn" style="margin-right:clamp(30px,9vw,60px);">PDF</button>
+              <button type="button" class="login-button" id="txCsvBtn">CSV</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== TRANSACTIE-DETAIL ===================== -->
+        <section class="view hidden" id="view-txdetail">
+          <div class="medium_line"></div>
+          <div class="button4-row">
+            <div class="button4-column1"></div>
+            <div class="button4-column2"><p class="title" data-i18n="HD_TITLE">DETAIL</p></div>
+            <div class="button4-column3">
+              <a href="#/transactions" id="txdBack"><button type="button" class="login-button" data-i18n="PR_BACK">Terug</button></a>
+            </div>
+          </div>
+          <div class="full_line"></div>
+
+          <div class="signupdiv" style="text-align:left;">
+            <label class="form__label" data-i18n="TD_DATE">Datum</label>
+            <textarea class="amounttextarea" id="txdDate" readonly></textarea>
+            <div class="small_line"></div>
+            <label class="form__label" data-i18n="TD_DESC">Omschrijving</label>
+            <textarea class="descriptiontextarea" id="txdDesc" readonly style="resize:none;"></textarea>
+            <div class="small_line"></div>
+            <label class="form__label" data-i18n="TD_AMT">Bedrag</label>
+            <textarea class="amounttextarea" id="txdAmount" readonly></textarea>
+            <div class="small_line"></div>
+
+            <div class="button9-row"><div class="button9-column1"><p class="form__label"><span data-i18n="TD_FROM">Van</span>&nbsp;&nbsp;</p></div></div>
+            <div class="small_line"></div>
+            <div class="button9-row"><div class="button9-column1">
+              <p class="title"><a id="txdGiverLink"><img id="txdGiverImg" class="humanicon2" alt="van" /></a></p>
+              <div class="small_line"></div>
+            </div></div>
+            <div class="button9-row"><div class="button9-column1"><p class="title" id="txdGiverName"></p></div></div>
+
+            <div class="button9-row"><div class="button9-column1"><p class="form__label"><span data-i18n="TD_TO">Naar</span>&nbsp;&nbsp;</p></div></div>
+            <div class="small_line"></div>
+            <div class="button9-row"><div class="button9-column1">
+              <p class="title"><a id="txdReceiverLink"><img id="txdReceiverImg" class="humanicon2" alt="naar" /></a></p>
+              <div class="small_line"></div>
+            </div></div>
+            <div class="button9-row"><div class="button9-column1"><p class="title" id="txdReceiverName"></p></div></div>
+          </div>
+          <div class="full_line"></div>
+        </section>
+
+        <!-- ===================== PROFIEL ===================== -->
+        <section class="view hidden" id="view-profile">
+          <div class="medium_line"></div>
+          <div class="button4-row">
+            <div class="button4-column1"></div>
+            <div class="button4-column2"><p class="title" data-i18n="APP_PROFILE">PROFIEL</p></div>
+            <div class="button4-column3">
+              <a href="#/"><button type="button" class="login-button" data-i18n="PR_BACK">Terug</button></a>
+            </div>
+          </div>
+          <div class="full_line"></div>
+
+          <!-- BEKIJKEN -->
+          <div id="profView">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:0.6rem;">
+              <img id="profImg" class="humanicon2" alt="profiel" />
+              <p class="title" id="profName" style="margin:0;"></p>
+              <a id="profBalanceLink" class="balance-link" title="Bekijk transacties">
+                <p class="display-num" style="color:var(--text); margin:0;" id="profBalance"></p>
+              </a>
+            </div>
+            <div class="small_line"></div>
+            <div class="calc-table" id="profFields"></div>
+            <div class="actions" id="profEditActions" style="justify-content:center; display:none;">
+              <button type="button" class="login-button" id="profEditBtn" data-i18n="APP_EDIT">Gegevens aanpassen</button>
+            </div>
+            <!-- Peer: blokkeren/toestaan -->
+            <div class="actions" id="profPeerActions" style="justify-content:center; display:none;">
+              <button type="button" class="login-button" id="profBlockBtn"></button>
+            </div>
+            <!-- Eigen: privacy-modus + beheerlijst -->
+            <details class="dapp-card" id="privacyBox" style="display:none;">
+              <summary class="muted" data-i18n="APP_PRIV_TITLE">Privacy &amp; lijsten</summary>
+              <p class="muted" id="privacyModeText" style="margin-top:0.6rem;"></p>
+              <div class="actions">
+                <button type="button" class="btn-secondary" id="privacyToggleBtn"></button>
+              </div>
+              <label id="listAddLabel"><span data-i18n="APP_ADD">Toevoegen</span> <select id="listAddSelect"></select></label>
+              <div class="actions">
+                <button type="button" class="btn-secondary" id="listAddBtn">Aan lijst toevoegen</button>
+              </div>
+              <div id="listManage" style="margin-top:0.6rem;"></div>
+              <div class="full_line"></div>
+              <p class="muted" data-i18n="APP_EMAIL_PREFS">E-mailvoorkeuren</p>
+              <label><input type="checkbox" id="prefPaymentEmails" /> <span data-i18n="PR_LBL_PAY_EM">Betalingsmails ontvangen</span></label>
+              <label><input type="checkbox" id="prefNewsletter" /> <span data-i18n="PR_LBL_NEWS">Nieuwsbrief ontvangen</span></label>
+            </details>
+          </div>
+
+          <!-- BEWERKEN (alleen eigen profiel) -->
+          <div class="dapp-card hidden" id="profEdit" style="border:none; background:none; padding:0;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-bottom:0.6rem;">
+              <img id="peImgPreview" class="humanicon2" alt="foto" />
+              <label class="login-button-small" style="cursor:pointer;"><span data-i18n="APP_CHOOSE_PHOTO">Foto kiezen</span>
+                <input id="peImgFile" type="file" accept="image/*" style="display:none;" />
+              </label>
+              <button type="button" class="btn-secondary" id="peImgClear" style="display:none;" data-i18n="APP_REMOVE_PHOTO">Foto verwijderen</button>
+            </div>
+            <label><span data-i18n="SU_FN">Naam</span> <input id="peName" type="text" autocomplete="name" /></label>
+            <label><span data-i18n="SU_UN">Gebruikersnaam</span> <input id="peUid" type="text" autocomplete="username" /></label>
+            <label><span data-i18n="SU_EM">E-mail</span> <input id="peEmail" type="email" readonly title="Huidig e-mailadres — wijzigen kan hieronder met verificatie" /></label>
+            <details id="emailChangeBox">
+              <summary class="muted" data-i18n="APP_EMAIL_CHANGE">E-mailadres wijzigen (met verificatie)</summary>
+              <label><span data-i18n="APP_NEW_EMAIL">Nieuw e-mailadres</span> <input id="peNewEmail" type="email" autocomplete="email" placeholder="nieuw@voorbeeld.nl" /></label>
+              <div class="actions">
+                <button type="button" class="login-button-small" id="peEmailVerifyBtn" data-i18n="APP_SEND_VERIFY">Verstuur verificatie</button>
+              </div>
+              <p class="dapp-relay-info" id="peEmailInfo"></p>
+            </details>
+            <label><span data-i18n="SU_BD">Geboortedatum</span> <input id="peBirthday" type="date" min="1900-01-01" max="2050-01-01" /></label>
+            <label><span data-i18n="SU_HT">Lengte</span> <input id="peHeight" type="text" placeholder="1.78m" /></label>
+            <label><span data-i18n="SU_GN">Geslacht</span> <select id="peGender">
+              <option value="0">Man</option><option value="1">Vrouw</option><option value="2">Anders</option>
+            </select></label>
+            <label><span data-i18n="SU_HR">Haarkleur</span> <select id="peHair"></select></label>
+            <label><span data-i18n="SU_LE">Linkeroog</span> <select id="peLeftEye"></select></label>
+            <label><span data-i18n="SU_RE">Rechteroog</span> <select id="peRightEye"></select></label>
+            <label style="flex:1;min-width:14rem"><input id="peSpecial" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken" style="flex:1;min-width:12rem" /></label>
+            <div class="actions">
+              <button type="button" class="login-button" id="profSaveBtn" data-i18n="PR_SAVE">Opslaan</button>
+              <button type="button" class="btn-secondary" id="profCancelBtn" data-i18n="RCV_CANCEL">Annuleren</button>
+            </div>
+            <p class="dapp-relay-info" id="profEditInfo"></p>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <script type="module" src="/src/app.mjs"></script>
+  </body>
+</html>
