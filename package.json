@@ -20,7 +20,7 @@
     "deploy": "bash deploy.sh",
     "mailer": "node web/mailer.mjs"
   },
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-or-later",
   "dependencies": {
     "@chainsafe/libp2p-noise": "^17.0.0",
     "@chainsafe/libp2p-yamux": "^8.0.1",
