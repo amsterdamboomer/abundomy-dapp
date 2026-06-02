@@ -1,0 +1,16 @@
+node_modules
+.git
+.abundomy-poc
+.abundomy-data
+.abundomy-ipfs
+.abundomy-relay
+dist-web
+web/public/relay.json
+*.log
+.DS_Store
+test/*.test.mjs
+poc/
+README.md
+TESTING.md
+fly.toml
+.fly/

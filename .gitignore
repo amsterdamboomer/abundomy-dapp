@@ -1,0 +1,31 @@
+node_modules/
+
+# Runtime data (Helia blocks + OrbitDB stores per node — niet broncode)
+.abundomy-data/
+.abundomy-ipfs/
+.abundomy-poc/
+.abundomy-relay/
+.abundomy-mailer/
+.abundomy-wipe/
+
+# Build-output (gegenereerd uit src/ + web/)
+dist/
+dist-web/
+dist-bundle/
+web/site-dist/
+
+# Lokale runtime/secrets — nooit committen
+web/public/relay.json
+*.env
+.env
+*.log
+
+# Oude web2-databasedump (niet migreren/committen — IPFS-versie start vers)
+1CoinH_*.sql
+
+# macOS / exFAT junk
+.DS_Store
+._*
+
+# Per ongeluk aangemaakte map met een glyph-naam (bevat bron-repos) — nooit committen
+/

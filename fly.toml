@@ -1,0 +1,51 @@
+# Fly.io app voor de Abundomy dApp + WSS-relay.
+#
+# Eén Node-proces (web/server.mjs) doet drie dingen:
+#   1) Start de libp2p+Helia+OrbitDB-relay op 127.0.0.1:9091/ws (seedt de dataset)
+#   2) Serveert de gebouwde SPA uit dist-web/ op poort 8080
+#   3) Proxiet WS-upgrades naar de interne libp2p-listener
+#
+# Fly's edge sluit TLS af (Let's Encrypt) en routeert HTTPS → 8080.
+# Eén subdomein (abundomy.reikiwereld.eu) volstaat voor zowel UI als WSS.
+#
+# Setup (eenmalig):
+#   flyctl launch --copy-config --no-deploy
+#   flyctl volumes create abundomy_data --region ams --size 1
+#   flyctl certs create abundomy.reikiwereld.eu
+#   flyctl deploy
+
+app = "abundomy-reikiwereld" # globaal-unieke Fly-naam; publieke URL wordt abundomy.reikiwereld.eu via DNS
+primary_region = "ams"       # Amsterdam — laagste latency vanuit NL
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  ABUNDOMY_RELAY_ROOT = "/data/relay"
+  ABUNDOMY_SQL = "/app/1CoinH_24_05_2026.sql"
+  ABUNDOMY_RELAY_BIND = "127.0.0.1"
+  # Publieke multiaddr zonder /p2p/<id> — libp2p voegt de peerId zelf toe.
+  ABUNDOMY_ANNOUNCE = "/dns4/abundomy.reikiwereld.eu/tcp/443/wss"
+
+[[mounts]]
+  source = "abundomy_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true           # 80 → 443 redirect
+  auto_stop_machines = false   # relay moet 24/7 online blijven voor replicatie
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 250
+    soft_limit = 200
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpus = 1

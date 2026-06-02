@@ -1,0 +1,47 @@
+{
+  "name": "abundomy-dapp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Abundomy — gedecentraliseerde gemeenschapsmunt op IPFS (Helia) + OrbitDB. Vervangt de MySQL/PHP-versie van 1CoinH.",
+  "scripts": {
+    "smoke": "node test/smoke.mjs",
+    "migrate": "node migration/migrate.mjs",
+    "poc": "node poc/two-peer-payment.mjs",
+    "relay": "node web/relay.mjs",
+    "dev": "vite",
+    "build:web": "vite build",
+    "test": "node --test test/*.test.mjs",
+    "test:e2e": "node test/e2e-smoke.mjs",
+    "test:content": "node test/content-smoke.mjs",
+    "build:site": "node web/build-site.mjs",
+    "publish:site": "node web/publish-site.mjs",
+    "scan:forks": "node web/scan-forks.mjs",
+    "deploy": "bash deploy.sh",
+    "mailer": "node web/mailer.mjs"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@chainsafe/libp2p-noise": "^17.0.0",
+    "@chainsafe/libp2p-yamux": "^8.0.1",
+    "@helia/ipns": "^9.2.1",
+    "@helia/unixfs": "^7.2.1",
+    "@libp2p/crypto": "^5.1.0",
+    "@libp2p/floodsub": "^11.0.21",
+    "@libp2p/identify": "^4.1.6",
+    "@libp2p/tcp": "^11.0.20",
+    "@multiformats/multiaddr": "^13.0.3",
+    "@orbitdb/core": "^4.0.0",
+    "blockstore-fs": "^4.0.1",
+    "blockstore-idb": "^4.0.1",
+    "datastore-fs": "^12.0.1",
+    "datastore-idb": "^5.0.1",
+    "helia": "^6.1.4",
+    "libp2p": "^3.3.1",
+    "multiformats": "^13.4.2",
+    "nodemailer": "^8.0.10"
+  },
+  "devDependencies": {
+    "vite": "^8.0.14"
+  }
+}

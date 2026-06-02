@@ -1,0 +1,1986 @@
+@font-face {
+    font-family: 'raleway_bold';
+    src: url('../font/raleway-bold-webfont.woff2') format('woff2'),
+         url('../font/raleway-bold-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'raleway_light';
+    src: url('../font/raleway-light-webfont.woff2') format('woff2'),
+         url('../font/raleway-light-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'raleway_regular';
+    src: url('../font/raleway-regular-webfont.woff2') format('woff2'),
+         url('../font/raleway-regular-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'roboto_regular';
+    src: url('../font/Roboto-Regular.ttf') format('truetype');
+    font-weight: 800; /* Kept at 800 per your UI preference */
+    font-style: normal;
+}
+@font-face {
+    font-family: 'roboto_bold';font-size
+    src: url('../font/Roboto-ExtraBold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+}
+
+/* --- 2. GLOBAL VARIABLES --- */
+:root {
+  --background: #162042;   /* darkblue */
+  --button: #058C2E;       /* green */
+  --text: #916B01;         /* gold */
+  --white: #ffffff;        /* white */
+  --black: #000000;        /* black */
+  --disabled: #555555;     /* gray */
+  --listhighlight: #222222;/* darkgray */
+  --error: #ff0000;        /* red */
+  --selectbutton: #34395E; /* bluegray */
+  --headerback: #090A1D;   /*DarkerBlue*/
+}
+
+/* --- 3. ELEMENT DEFAULTS --- */
+/* Hide the image if the src is empty or missing */
+#b64img[src=""], 
+#b64img:not([src]) {
+    display: none !important;
+}
+
+/* Default state for the image */
+#b64img {
+    display: block;
+}
+
+body.submitting {
+    cursor: wait !important;
+}
+
+body.submitting a, 
+body.submitting button, 
+body.submitting .list-row {
+    cursor: wait !important;
+}
+
+a[href^="tel"] {
+    color: inherit !important;
+    text-decoration: none !important;
+    pointer-events: none !important;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html, body { 
+    /* Global user-select: none - no need to repeat this in every class now */
+    -webkit-user-select: none; 
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    user-select: none;
+    
+    text-align: center; 
+    background-color: var(--background);
+    margin: 0;
+    height: 100%;
+    font-family: raleway_regular, sans-serif;
+    /* Fluid Font: starts shrinking below 576px */
+    font-size: clamp(12.5px, 4.34vw, 25px);
+    color: var(--text);
+}
+
+body:after {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    z-index: -1;
+}
+
+a {
+    cursor: pointer;
+    text-decoration: none;
+}
+
+
+
+
+
+/* --- HEADER INTERACTION RESET --- */
+/* 1. Kill caret and selection globally in the header area */
+.full-width-header-wrapper, 
+.header-main, 
+.header-main * {
+    caret-color: transparent !important;       /* Hides blinking line in all browsers */
+    caret-shape: none !important;              /* Modern browser support */
+    outline: none !important;                  /* Removes focus rings */
+    user-select: none !important;              /* Disables text highlighting */
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -webkit-tap-highlight-color: transparent;  /* Removes mobile touch flash */
+}
+
+/* 2. Standardize Header Link Behavior */
+.header-main a {
+    cursor: pointer !important;
+    display: inline-block;
+    pointer-events: auto !important;           /* Ensures icons remain clickable */
+    -webkit-user-modify: read-only !important; /* Prevents "edit mode" cursor */
+    overflow: hidden !important;               /* Clips ghost carets */
+    -webkit-user-drag: none;                   /* Prevents ghost image dragging */
+}
+
+/* 3. Handle Focus States (The "When I focus the window" fix) */
+/* Force all header elements to remain caret-free even when focused */
+.header-main *:focus {
+    outline: none !important;
+    caret-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Global focus safety: hides caret everywhere except inputs */
+:focus {
+    caret-color: transparent !important;
+}
+
+/* 4. Restore Caret for Inputs ONLY */
+/* This ensures you can still see the cursor when actually typing in your search/forms */
+#searchlan:focus, 
+.form__input:focus,
+#capture-section input:focus,
+#capture-section textarea:focus {
+    caret-color: var(--text) !important; 
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+
+
+
+
+
+#centerContainer { 
+    width: 100%; 
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.centerContainer2 { 
+        width: clamp(288px, 100vw, 576px); 
+        text-align: left; 
+        margin: 0vw auto;
+        background-color: var(--background-color);
+        color: var(--text-color);
+    }
+
+
+#centerContainer form {
+    width: 100%;
+    /* Fluid Width: 100% on mobile, max 576px on desktop */
+    max-width: clamp(0px, 100vw, 576px); 
+}
+
+.centered-button-wrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+#searchlan:focus, 
+.form__input:focus {
+    outline: none !important;      /* Removes the default focus ring */
+    box-shadow: none !important;   /* Removes any glow effects */
+}
+
+/* This stops the gray/red flash on mobile devices when you tap the input */
+#searchlan, 
+.form__input {
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-appearance: none; /* Removes iOS internal shadows */
+}
+
+/*======================  HEADER MAIN  =============================*/
+
+/* --- HEADER STYLES --- */
+.full-width-header-wrapper {
+    width: 100%;
+    background-color: var(--headerback);
+    border-bottom: 1px solid rgba(145, 107, 1, 0.2);
+}
+
+.header-content {
+    width: 100%;
+    /* Constraints header to match your site content width */
+    max-width: clamp(0px, 100vw, 576px); 
+    margin: 0 auto;
+}
+
+.header-main {
+    display: flex;
+    align-items: center;
+    /* Distributes the 6 items with equal space between them */
+    justify-content: space-between; 
+    width: 100%;
+    padding: clamp(5px, 1.74vw, 10px) clamp(5px, 1.74vw, 15px);
+}
+
+/* First 5 Icons: Targets 70x70px using your ratio */
+.nav-item img, 
+.rotating-world {
+    width: clamp(40px, 13.89vw, 70px);
+    height: clamp(40px, 13.89vw, 70px);
+    display: block;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.nav-item img:hover, 
+.rotating-world:hover {
+    transform: scale(1.06);
+}
+
+/* --- HEADER SPECIFIC --- */
+
+.header-main a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 1. Allows the flag to grow outside its base boundaries without clipping */
+.header-lang .lang-icon {
+    display: inline-block !important; 
+    width: 50px;
+    height: 50px;
+    overflow: visible !important; /* Let the scaled flag expand outside */
+    position: relative;
+    
+    /* Fixes the rendering engine bug on hover without needing to clip */
+    transform: translate3d(0, 0, 0); 
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+/* 2. The Wrapper Container handles the size, round crop, and the scale animation */
+.flag-crop-container {
+    width: 50px;
+    height: 50px;
+    border-radius: 50% !important;
+    overflow: hidden !important; /* Guarantees the circle mask stays locked inside the moving element */
+    display: block;
+    
+    /* Hardware acceleration layer fixes to prevent squaring bugs */
+    clip-path: circle(50%); 
+    -webkit-mask-image: -webkit-radial-gradient(white, black); 
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    
+    /* Smooth scaling transition applied directly to the container */
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), filter 0.3s ease;
+}
+
+/* 3. Scale the container wrapper on hover, NOT the image directly */
+.header-lang .lang-icon:hover .flag-crop-container,
+.header-flag-icon:hover .flag-crop-container {
+    transform: scale(1.1) translate3d(0, 0, 0);
+    filter: brightness(1.3) !important;
+}
+
+/* 4. The raw image inside stays completely static and matches container size */
+.flag-crop-container .flag-img-round {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    display: block;
+    border-radius: 50%; /* Double layer protection */
+}
+
+/* 5. Sizing rule for your language selection page list icons (40x40) */
+.flag-container .page-list-flag {
+    width: 40px;
+    height: 40px;
+}
+
+/*========================== LANGUAGE PAGE ===============================*/
+
+/* 1. Header Flag Icon Wrapper */
+.header-flag-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Capped at 70px to match your other nav icons' container size */
+    width: clamp(35px, 12.15vw, 70px);
+    height: clamp(35px, 12.15vw, 70px);
+    text-decoration: none;
+    transition: filter 0.2s ease;
+}
+
+.header-flag-icon:hover {
+    filter: brightness(1.5) !important;
+}
+
+/* 2. Language Selection Listbox (set-language.php) */
+.language-listbox {
+    max-height: clamp(300px, 104.16vw, 600px);
+    overflow-y: auto;
+    margin-top: clamp(10px, 3.47vw, 20px);
+    border: clamp(0.5px, 0.17vw, 1px) solid var(--line-color);
+    background-color: var(--headerback); /* Ensuring background consistency */
+}
+
+.lang-content {
+    display: flex;
+    align-items: center;
+    gap: clamp(7.5px, 2.6vw, 15px);
+    transition: filter 0.2s;
+}
+
+
+/* 4. Language Text Styling */
+.lang-text {
+    font-family: raleway_regular, sans-serif;
+    color: var(--text);
+    font-size: clamp(12.5px, 4.34vw, 25px);
+    line-height: 1.2;
+    text-align: left; /* Ensures text aligns left even if global text-align is center */
+}
+
+/* 5. Active Selection State */
+/* Using your --selectbutton or a semi-transparent blue for the active item */
+.lang-item input:checked + .lang-content {
+    background: rgba(0, 191, 255, 0.15);
+    font-weight: bold;
+}
+
+/* 1. RENAME .listbox-container to .language-listbox */
+.language-listbox {
+    width: 100%;
+    /* Use the height clamp you preferred for the language list */
+    max-height: clamp(300px, 104.16vw, 600px); 
+    background-color: var(--headerback);
+    
+    /* THE FIX: These must be on the same class as the overflow */
+    border-radius: clamp(10px, 2.78vw, 16px);
+    overflow: hidden; 
+    
+    display: flex;
+    flex-direction: column;
+    margin-top: clamp(10px, 3.47vw, 20px);
+    border: clamp(0.5px, 0.17vw, 1px) solid var(--line-color);
+    box-sizing: border-box;
+    overflow-y: auto;
+    
+    scrollbar-gutter: stable; 
+    scrollbar-color: var(--button) rgba(255, 255, 255, 0.05);
+    scrollbar-width: thin;
+}
+
+/* 2. UPDATE WEBKIT TARGET */
+.language-listbox::-webkit-scrollbar {
+    width: clamp(6px, 1.5vw, 10px);
+}
+
+.language-listbox::-webkit-scrollbar-thumb {
+    background-color: var(--button);
+    border-radius: clamp(8px, 2.6vw, 15px);
+    border: 2px solid var(--headerback);
+    background-clip: padding-box;
+}
+
+.lang-item {
+    /* Changed from block to flex-column fallback for smoother filtering */
+    display: block; 
+    cursor: pointer;
+    border-bottom: clamp(0.5px, 0.17vw, 1px) solid var(--line-color);
+    padding: clamp(6px, 2.08vw, 12px);
+    transition: background 0.2s;
+}
+
+/*.lang-item:hover {
+    background: var(--listhighlight);
+}
+*/
+
+.lang-item:hover .lang-content {
+    filter: brightness(1.5) !important;
+}
+
+.lang-item input[type="radio"] {
+    display: none;
+}
+
+/* 3. ENSURE RADIUS ISN'T CLIPPED BY THE ITEMS */
+.lang-item:first-child {
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+}
+
+.lang-item:last-child {
+    border-bottom-left-radius: inherit;
+    border-bottom-right-radius: inherit;
+    border-bottom: none;
+}
+
+/*======================== SHARED ROW STYLES ============================*/
+.button1-row, .button2-row, .button3-row, .button4-row {
+    background-color: var(--background);
+    font-family: raleway_bold, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(15px, 5.21vw, 30px);
+    color: var(--text);    
+    /* 550px -> 95.49vw */
+    width: clamp(300px, 95.49vw, 550px); 
+    display: flex;
+    align-items: center;
+    margin: 0 auto;
+}
+
+/*======================== BUTTON1 ROW (3 Columns) ============================*/
+.button1-row { justify-content: center; }
+
+.button1-column1 { width: clamp(70px, 24.31vw, 140px); }
+.button1-column2 { width: clamp(80px, 27.78vw, 160px); }
+.button1-column3 { width: clamp(130px, 43.4vw, 250px); }
+
+/*======================== BUTTON2 ROW (2 Columns) ============================*/
+.button2-row { justify-content: center; }
+
+.button2-column1, .button2-column2 {
+    /* 270px -> 46.88vw */
+    width: clamp(140px, 46.88vw, 270px);
+}
+
+/*======================== BUTTON3 ROW (Edge Alignment) ============================*/
+.button3-row {
+    justify-content: space-between;
+    max-width: 95%;
+}
+
+.button3-column1 {
+    display: flex;
+    justify-content: flex-start;
+    flex: 1;
+}
+
+.button3-column2 {
+    display: flex;
+    justify-content: flex-end;
+    flex: 1;
+}
+
+.button3-row button {
+    margin: 0;
+    white-space: nowrap;
+}
+
+/*======================== BUTTON4 ROW (Profile/Title Layout) ============================*/
+.button4-row {
+    justify-content: space-between;
+}
+
+.button4-column1, .button4-column3 {
+    /* 155px -> 26.91vw */
+    width: clamp(80px, 26.91vw, 155px);
+    display: flex;
+}
+
+.button4-column1 { justify-content: flex-start; }
+.button4-column3 { justify-content: flex-end; }
+
+.button4-column2 {
+    /* 240px -> 41.67vw */
+    width: clamp(120px, 41.67vw, 240px);
+    display: flex;
+    justify-content: center;
+}
+
+.button4-column2 .title {
+    margin: 0;
+    white-space: nowrap;
+}
+
+/*======================== SHARED ROW STYLES (5-8) ============================*/
+.button5-row, .button6-row, .button7-row, .button8-row {
+    background-color: var(--background);
+    font-family: raleway_bold, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(15px, 5.21vw, 30px);
+    color: var(--text);    
+    /* 550px -> 95.49vw */
+    width: clamp(300px, 95.49vw, 550px); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+/*======================== BUTTON5 ROW (Split) ============================*/
+.button5-column1, .button5-column3 { 
+    /* 274px -> 47.57vw */
+    width: clamp(140px, 47.57vw, 274px); 
+}
+.button5-column2 { width: 2px; }
+
+/*======================== BUTTON6 ROW (Request Header) ============================*/
+.button6-column1 { width: clamp(150px, 52.08vw, 300px); }
+.button6-column2 { width: clamp(90px, 30.38vw, 175px); }
+.button6-column3 { width: clamp(50px, 17.36vw, 100px); }
+
+/*======================== BUTTON7 ROW (To Pay Header) ============================*/
+.button7-column1 {
+    width: auto;
+    /* 15px -> 2.6vw | 10px -> 1.74vw */
+    padding-left: clamp(8px, 2.6vw, 15px);
+    padding-right: clamp(5px, 1.74vw, 10px);
+    text-align: left !important;
+}
+.button7-column1 p {
+    margin: 0;
+    white-space: nowrap;
+}
+
+/*======================== BUTTON8 ROW (List Item) ============================*/
+.button8-column1 { 
+    /* 70px -> 12.15vw */
+    width: clamp(35px, 12.15vw, 70px); 
+}
+.button8-column2 { width: 4px; }
+.button8-column3 { 
+    /* 500px -> 86.81vw */
+    width: clamp(250px, 86.81vw, 500px); 
+}
+
+/*======================== BUTTON9 ROW (Centering Row) ============================*/
+.button9-row {
+    background-color: var(--background);
+    font-family: raleway_bold, sans-serif;
+    font-size: clamp(15px, 5.21vw, 30px);
+    color: var(--text);    
+    /* 570px -> 98.96vw */
+    width: clamp(300px, 98.96vw, 570px);
+    max-width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.button9-column1 {
+    width: auto;
+    display: flex;
+    justify-content: center;
+}
+
+.button9-column1 button {
+    width: auto;
+    max-width: clamp(300px, 98.96vw, 570px);
+    white-space: nowrap;
+}
+
+/*======================== BUTTON10 ROW ============================*/
+
+.button10-row {
+    background-color: var(--background);
+    font-family: raleway_bold, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(15px, 5.21vw, 30px); 
+    color: var(--text);    
+    /* 550px -> 95.49vw */
+    width: clamp(300px, 95.49vw, 550px); 
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;            
+    margin: 0 auto;
+}
+
+.button10-column1, .button10-column3 {
+    /* 150px -> 26.04vw */
+    width: clamp(80px, 26.04vw, 150px);
+    display: flex;
+}
+
+.button10-column1 { justify-content: flex-start; }
+.button10-column3 { justify-content: flex-end; }
+
+.button10-column2 {
+    /* 250px -> 43.4vw */
+    width: clamp(130px, 43.4vw, 250px);       
+    display: flex;      
+    justify-content: center; 
+}
+
+.button10-column2 .title {
+    margin: 0;
+    white-space: nowrap;
+}
+
+/*======================== GLOBAL TITLES (Combined) ============================*/
+
+.title, .title2 {
+    font-family: 'raleway_bold', sans-serif;
+    font-size: clamp(15px, 5.21vw, 30px);
+    color: var(--text);
+    
+    /* THE FIX: Allow wrapping and ensure it stays inside 576px */
+    white-space: normal;
+    overflow-wrap: break-word;
+    display: block; 
+    width: 100%;
+    box-sizing: border-box; /* IMPORTANT: Keeps padding inside the 100% width */
+    
+    /* THE PADDING FIX: 50px clamp on the "end" side */
+    /* This creates the buffer you requested for LTR (right) and RTL (left) */
+    padding-inline-end: clamp(25px, 8.68vw, 50px);
+    
+    
+    text-align: center; 
+    line-height: 1.1;
+    margin: 0 auto;                
+    transition: filter 0.3s ease;
+}
+
+
+.title2:hover {
+    cursor: pointer;
+    filter: brightness(1.5);
+}
+
+.title-link {
+    display: block; /* Ensures the whole area is clickable and follows wrapping */
+    text-decoration: none;
+    transition: filter 0.3s ease;
+    cursor: pointer;
+}
+
+.title-link:hover {
+    filter: brightness(1.5);
+}
+
+/*======================== FEEDBACK & ERROR (Shared) ============================*/
+
+.feedback, .feedback2, .error {
+    font-family: raleway_regular, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(15px, 5.21vw, 30px);
+    text-align: center;
+    display: block;
+}
+
+.feedback, .feedback2 {
+    color: var(--text);
+}
+
+.error {
+    color: var(--error);
+}
+
+/* Specific display override for Feedback 2 */
+.feedback2 {
+    white-space: nowrap; 
+    overflow: visible;    
+}
+
+/*======================== FEEDBACK 3 & 4 (Specialty) ============================*/
+
+.feedback3 {
+    font-family: raleway_bold, sans-serif;
+    font-size: clamp(15px, 5.21vw, 30px);
+    text-align: center;
+    color: var(--button);
+    white-space: nowrap;
+    overflow: visible;
+    display: block;
+}
+
+.feedback3:hover {
+    filter: brightness(1.5);
+    cursor: pointer;
+}
+
+.feedback4 {
+    font-family: raleway_bold, sans-serif;
+    /* Reduced the max-size slightly and the VW to ensure it fits 576px */
+    font-size: clamp(15px, 5.21vw, 30px); 
+    text-align: center;
+    color: var(--text);
+    
+    /* THE FIX: Allow wrapping but keep it tight */
+    white-space: normal; 
+    overflow-wrap: break-word;
+    
+    display: block;
+    width: 100%;
+    max-width: 100%; /* Ensures it never exceeds the parent field-wrapper */
+    margin: 0 auto;
+    line-height: 1.2;
+}
+
+
+.feedback5 {
+    font-family: raleway_bold, sans-serif;
+    /* Reduced the max-size slightly and the VW to ensure it fits 576px */
+    font-size: clamp(15px, 5.21vw, 30px); 
+    text-align: center;
+    color: var(--text);
+    
+    /* THE FIX: Allow wrapping but keep it tight */
+    white-space: normal; 
+    overflow-wrap: break-word;
+    
+    display: block;
+    width: 100%;
+    max-width: 100%; /* Ensures it never exceeds the parent field-wrapper */
+    margin: 0 auto;
+    line-height: 1.2;
+}
+
+
+/* 1. Base Button Styles */
+.login-button, 
+.login-button-small, 
+.action-button, 
+.error-button {
+    cursor: pointer;
+    background: none;
+    border: none;
+    transition: filter 0.3s ease, transform 0.1s ease, color 0.3s ease, text-shadow 0.3s ease;
+    /* THE FIX: Changed to flex and added width constraints */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    max-width: 100%;
+    white-space: normal; /* Allows text to wrap instead of overflowing */
+    overflow-wrap: break-word;
+    outline: none;
+    /* Vertical padding ensures the button looks good if text wraps */
+    padding: clamp(5px, 1.74vw, 10px) 0;
+}
+
+/* 2. Sizes and Fonts */
+.login-button, 
+.action-button, 
+.error-button {
+    font-family: raleway_bold, sans-serif;
+    /* Reduced max font-size slightly to fit the 576px threshold better */
+    font-size: clamp(15px, 5.21vw, 30px);
+}
+
+.login-button-small {
+    font-family: raleway_regular, sans-serif;
+    font-size: clamp(12.5px, 4.34vw, 25px);
+}
+
+/* 3. Colors */
+.login-button, 
+.login-button-small, 
+.action-button {
+    color: var(--button); /* Green */
+}
+
+.error-button {
+    color: var(--error); /* Red */
+}
+
+/* 4. Unified Hover Effect */
+.login-button:hover, 
+.login-button-small:hover, 
+.action-button:hover {
+    filter: brightness(1.5);
+}
+
+/* 5. Optional: Active state for better feedback */
+.login-button:active, 
+.error-button:active {
+    transform: scale(0.98);
+}
+
+.button-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+/* ===========================  DISABLED-BUTTON  ===============================*/
+
+.disabled-button {
+    color: var(--disabled);
+    cursor: default;
+}
+
+/* ===========================  FORM__INPUT  ===============================*/
+
+.field-wrapper {
+    display: flex;
+    flex-direction: column;
+    /* 550px -> 95.49vw */
+    width: clamp(300px, 95.49vw, 550px);
+    text-align: left;
+    margin: 0 auto;
+}
+
+.form__input {
+    font-family: raleway_regular, sans-serif;
+    color: var(--white);
+    font-size: clamp(15px, 5.21vw, 30px);
+    padding-left: clamp(15px, 5.21vw, 30px);
+    border-radius: 2rem;
+    background-color: var(--black);
+    border: none;
+    width: 100%; /* Respects field-wrapper width */
+    height: clamp(40px, 10.42vw, 60px);
+}
+
+.form__label, .form__label2, .form__label_amount {
+    font-family: raleway_bold, sans-serif;
+    /* 22px -> 3.82vw */
+    font-size: clamp(12.5px, 4.34vw, 25px);
+    /* 30px -> 5.21vw */
+    margin-left: clamp(15px, 5.21vw, 30px);
+    margin-top: clamp(2px, 0.87vw, 5px);
+    color: var(--text);
+}
+
+/*======================== SPACERS (FLUID) ============================*/
+
+.small_line {
+    /* 3px -> 0.52vw */
+    height: clamp(2px, 0.52vw, 3px);
+}
+
+.medium_line {
+    /* 12px -> 2.08vw */
+    height: clamp(6px, 2.08vw, 12px);
+}
+
+.full_line {
+    /* 24px -> 4.17vw */
+    height: clamp(12px, 4.17vw, 24px);
+}
+
+.large_line {
+    /* 50px -> 8.68vw */
+    height: clamp(25px, 8.68vw, 50px);
+}
+
+/*======================== BOOK-IMAGE ============================*/
+
+.book-image {
+    /* Base: 300px -> 52.08vw at 576px. Height follows the 1.41 aspect ratio */
+    width: clamp(150px, 52.08vw, 300px);
+    height: clamp(212px, 73.61vw, 424px);
+    
+    /* Centering logic */
+    display: block;
+    margin: clamp(5px, 1.74vw, 10px) auto;
+    
+    /* Professional finish */
+    object-fit: contain;
+    border-radius: clamp(4px, 1vw, 8px);
+    box-shadow: 0 0 8px 3px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease;
+}
+
+.book-image:hover {
+    transform: scale(1.02);
+}
+
+/* Ensure the wrapper also centers the image */
+.image-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/*======================== SOCIAL HEADER ============================*/
+
+.social-header {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;    
+    justify-content: center;
+    width: 100%;
+    margin-top: clamp(15px, 5.21vw, 30px);
+    gap: clamp(5px, 1.74vw, 10px); 
+}
+
+/* Specific sizing for the 70x70 Whatsapp/Telegram icons */
+.social-header .WT-image {
+    width: clamp(40px, 12.15vw, 70px);
+    height: clamp(40px, 12.15vw, 70px);
+    display: block;
+    object-fit: contain;
+    margin: 0 auto; /* Removed the 250px margin/shadow logic from here */
+    box-shadow: none; 
+}
+
+.social-header p.downloads {
+    margin: 0;
+    text-align: center;
+    font-family: 'raleway_regular', sans-serif;
+    color: var(--text);
+    font-size: clamp(15px, 5.21vw, 30px); 
+}
+
+/*======================== LARGE MEDIA IMAGES ============================*/
+
+/* Use this for the Weltschmerz 450x250 image */
+.Weltschmerz-image {
+    width: clamp(225px, 78.13vw, 450px);
+    height: clamp(125px, 43.4vw, 250px);
+    display: block;
+    margin: clamp(15px, 5.21vw, 30px) auto;
+    object-fit: contain;
+    border-radius: clamp(4px, 1vw, 8px);
+    box-shadow: 0 0 8px 3px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease;
+}
+
+.Weltschmerz-image:hover {
+    transform: scale(1.02);
+}
+
+/*======================== SOCIAL BUTTONS ============================*/
+
+.social-buttons-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(10px, 3.47vw, 15px);
+    margin-bottom: clamp(8px, 3.47vw, 16px);
+}
+
+
+/*======================== COFFEE BUTTON ============================*/
+
+.coffee-image {
+    /* 250px at 576px screen = 43.4vw */
+    /* This makes it start shrinking IMMEDIATELY below 576px */
+    width: clamp(125px, 43.4vw, 250px);
+    
+    /* Let the browser handle the height to keep the 499x140 ratio */
+    height: auto; 
+    max-width: 90%; /* Safety margin for very small screens */
+
+    display: block;
+    object-fit: contain;
+    border-radius: clamp(4px, 1vw, 8px);
+    
+    /* Fluid Shadow */
+    box-shadow: 0 0 clamp(4px, 1.39vw, 8px) clamp(1px, 0.52vw, 3px) rgba(0, 0, 0, 0.5);
+    
+    transition: transform 0.3s ease;
+}
+
+.coffee-image:hover {
+    transform: scale(1.02);
+}
+
+
+/*======================== FOOTER ICONS ============================*/
+
+.footer-icons {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: clamp(20px, 6.94vw, 40px);
+    margin-bottom: clamp(20px, 6.94vw, 40px);
+}
+
+.footer-icons p.tight {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    /* 100px -> 17.36vw at 576px */
+    gap: clamp(25px, 8.68vw, 50px);
+}
+
+.footer-icons .WT-image {
+    width: clamp(40px, 12.15vw, 70px);
+    height: clamp(40px, 12.15vw, 70px);
+    display: block;
+    object-fit: contain;
+    
+    /* 0.3s Transition for the hover effect */
+    transition: filter 0.3s ease, transform 0.3s ease;
+    
+    /* Ensure they start as "pure" white (optional if already white) */
+    filter: brightness(1);
+}
+
+.footer-icons a:hover .WT-image {
+    /* This filter approximates your gold color --text (#916B01) from white */
+    /*filter: sepia(1) saturate(5) hue-rotate(10deg) brightness(0.7);*/
+    transform: scale(1.1);
+}
+
+
+/*======================== OTHER WEBSITE ============================*/
+
+
+.reli {
+    padding-top: clamp(10px, 2.04vw, 20px);
+}
+
+
+/* Ensure no horizontal scroll appears */
+body {
+    overflow-x: hidden;
+}
+
+
+/* --- LTR VERSION (English, etc.) --- */
+.norm-image {
+    width: 100vw !important;
+    max-width: none !important;
+    height: 62.5vw;
+    max-height: 600px;
+    display: block;
+    object-fit: cover;
+    
+    position: relative;
+    /* Pulls to the left glass edge in LTR */
+    left: 50%;
+    right: auto;
+    margin-left: -50vw;
+    margin-right: 0;
+}
+
+/* --- RTL VERSION (Arabic, Hebrew, etc.) --- */
+.rtl-mode .norm-image {
+    /* Pulls to the right glass edge in RTL */
+    right: 50% !important;
+    left: auto !important;
+    margin-right: -50vw !important;
+    margin-left: 0 !important;
+}
+
+
+/* --- LTR VERSION (English, etc.) --- */
+.wide-image {
+    width: 100vw !important;
+    max-width: none !important;
+    height: 62.5vw;
+    max-height: 1000px;
+    display: block;
+    object-fit: cover;
+    
+    position: relative;
+    /* Pulls to the left glass edge in LTR */
+    left: 50%;
+    right: auto;
+    margin-left: -50vw;
+    margin-right: 0;
+}
+
+/* --- RTL VERSION (Arabic, Hebrew, etc.) --- */
+.rtl-mode .wide-image {
+    /* Pulls to the right glass edge in RTL */
+    right: 50% !important;
+    left: auto !important;
+    margin-right: -50vw !important;
+    margin-left: 0 !important;
+}
+
+.small-image {
+   /*Doing Nothing works best*/
+}
+
+.number-box {
+    width: clamp(12.5px, 4.34vw, 25px);
+    border: 0px solid;
+    padding-left: clamp(5px, 1.74vw, 10px);
+    font-family: raleway_light, sans-serif;
+    font-size: clamp(50px, 17.36vw, 100px);
+    color: var(--text);
+}
+
+.paragraph {
+    font-family: raleway_light, sans-serif;
+    font-size: clamp(12.5px, 4.34vw, 25px);
+    color: var(--white);
+    padding-left: clamp(40px, 13.89vw, 80px);
+    padding-right: clamp(10px, 3.47vw, 20px);
+}
+
+.list-title {
+    font-family: 'raleway_bold', sans-serif;
+    font-size: clamp(10px, 3.47vw, 20px);
+    color: var(--text-color);
+    margin-top: clamp(10px, 3.47vw, 20px);
+    
+    /* THE RTL FIX: Use logical padding */
+    /* This automatically puts the 'start' padding on the left in LTR and right in RTL */
+    padding-inline-start: clamp(10px, 3.47vw, 20px);
+    padding-inline-end: clamp(25px, 8.68vw, 50px); /* Match your .par gutter */
+
+    /* Ensure it respects the parent container */
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+
+    /* Text direction handling */
+    text-align: left; 
+    text-transform: capitalize;
+}
+
+/* RTL OVERRIDE */
+.rtl-mode .list-title {
+    text-align: right !important;
+    /* Remove capitalization for non-Latin scripts to avoid rendering bugs */
+    text-transform: none !important;
+}
+
+
+.unordered-list {
+    font-family: 'raleway_regular', sans-serif;
+    font-style: italic;
+    font-size: clamp(10px, 3.47vw, 20px);
+    color: var(--white);
+    list-style-position: outside;
+    list-style-type: disc;
+    box-sizing: border-box;
+    width: 100%;
+    display: block;
+
+    /* LTR DEFAULT SETTINGS */
+    padding-right: clamp(25px, 8.68vw, 50px); /* 50px Gutter on Right */
+    padding-left: clamp(20px, 6.94vw, 40px);  /* Bullet Indent on Left */
+}
+
+/* RTL OVERRIDE: Flip the paddings exactly */
+.rtl-mode .unordered-list {
+    /* 1. Bullet indent moves to the RIGHT */
+    padding-right: clamp(20px, 6.94vw, 40px) !important;
+    
+    /* 2. The 50px gutter moves to the LEFT */
+    padding-left: clamp(25px, 8.68vw, 50px) !important;
+    
+    /* 3. Ensure the bullet renders on the correct side of the text */
+    text-align: right;
+}
+
+.list-item {
+    font-size: inherit;
+    padding-bottom: clamp(5px, 1.74vw, 10px);
+}
+
+
+
+.mail-button {
+    border: none;
+    outline: none;
+    border-radius: clamp(40px, 13.89vw, 80px);
+    background-color: var(--accent-color);
+    font-family: ralewayextrabold, sans-serif;
+    color: var(--text-color);
+    width: clamp(200px, 69.4vw, 400px);
+    height: clamp(50px, 17.36vw, 100px);
+    font-size: clamp(12.5px, 4.34vw, 25px);
+    align-items: center;
+    margin-left: clamp(40px, 13.89vw, 80px);
+    display: flex;
+    padding: clamp(2.5px, 0.87vw, 15px);
+    justify-content: center;
+    cursor: pointer;
+}
+
+
+.mail-button:hover:enabled {
+  background-color: var(--accent-highlight) !important;
+}
+
+.iconclass {
+    width: clamp(40px, 13.89vw, 70px);
+    height: clamp(40px, 13.89vw, 70px);
+}
+
+/*==============================  ARTICLES  ===================================*/
+
+
+/* --- 1. TABLE RESET --- */
+/* Use your site variables instead of hardcoded black */
+table, th, td { 
+    border: none; 
+    border-collapse: collapse; 
+    color: var(--white); 
+}
+
+/* --- 2. THE MAIN CONTAINER --- */
+/* This replaces your #capture-section with your site's logic */
+#capture-section { 
+    /* Use the same background as your body */
+    background-color: var(--background); 
+    
+    /* Use your clamp ratio for padding */
+    /*padding: clamp(15px, 5.21vw, 30px);*/
+
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    
+    /* Center it like your form and centerContainer */
+    margin: 0 auto;
+    
+    /* Use your 576px threshold exactly */
+    width: clamp(288px, 100vw, 576px); 
+    
+    /* Keep left alignment for reading but allow Abundomy fonts */
+    text-align: left; 
+    line-height: 1;
+    
+    /* Remove the Substack shadow to match your clean UI */
+    box-shadow: none; 
+}
+
+
+/* --- 1. ARTICLE CONTAINER --- */
+#capture-section { 
+    background-color: var(--background); /* Dark blue from your root */
+    padding: clamp(15px, 5.21vw, 30px);
+    margin: 0 auto; 
+    /* Matches your 576px threshold exactly */
+    width: clamp(288px, 100vw, 576px); 
+    text-align: left; 
+    line-height: 1.5;
+    color: var(--white); /* White text for readability on dark blue */
+}
+
+/* --- 2. TITLES (Using your site's Title logic) --- */
+.title1 { 
+    font-family: 'raleway_bold', sans-serif;
+    font-size: clamp(20px, 8.68vw, 40px); /* Scaled title */
+    color: var(--text); /* Gold */
+    line-height: 1;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    display: block;
+    text-transform: uppercase;
+}
+
+/* Update title3 to remove bottom margin when a paragraph follows */
+.title3 { 
+    font-family: 'raleway_bold', sans-serif;
+    font-size: clamp(13px, 4.51vw, 26px);
+    color: var(--text);
+    margin-top: 1.5em;
+    margin-bottom: 0px; /* Removed bottom margin */
+    text-transform: capitalize;
+    display: block;
+}
+
+.title4 { 
+    font-family: 'raleway_regular', sans-serif;
+    font-size: clamp(11px, 3.82vw, 22px);
+    color: var(--disabled); /* Gray */
+    /* THE FIX: Force the element to span the full width of the container */
+    display: block;
+    width: 100%;
+    text-align: right; 
+    margin-bottom: 1.5em;
+}
+
+.top-title-container {
+    max-width: 576px;
+    width: clamp(288px, 100vw, 576px); 
+    margin: 0 auto !important;
+    display: block;
+    box-sizing: border-box;
+}
+
+.top-title { 
+    font-family: 'raleway_regular', sans-serif;
+    font-size: clamp(11px, 3.82vw, 22px);
+    color: var(--disabled);
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+
+    /* LTR: Text on the RIGHT, gap on the RIGHT */
+    text-align: right;
+    padding-right: clamp(5px, 1.74vw, 10px);
+    padding-left: 0;
+}
+
+/* RTL: Text on the LEFT, gap on the LEFT */
+/* We target the container having the class, or the title inside it */
+.top-title-container.rtl-mode .top-title,
+.rtl-mode .top-title {
+    text-align: left !important;
+    padding-left: clamp(5px, 1.74vw, 10px) !important;
+    padding-right: 0 !important;
+}
+
+
+/* --- TIGHTEN GAP AFTER TITLES --- */
+/* This removes any remaining space when a paragraph follows a title */
+.title3 + .par, 
+.title3 + .par_bold, 
+.title3 + .par_italic {
+    margin-top: -5px; /* Pulls text closer to the title */
+}
+
+/* --- TIGHTEN GAP AFTER TITLES --- */
+/* This removes any remaining space when a paragraph follows a title */
+.title4 + .par, 
+.title4 + .par_bold, 
+.title4 + .par_italic {
+    margin-top: -5px; /* Pulls text closer to the title */
+}
+
+
+/* --- 3. BODY TEXT --- */
+.par, .par_bold, .par_italic { 
+    font-size: clamp(10px, 3.47vw, 20px);
+    margin-top: 0;         /* Kill the top gap */
+    margin-bottom: 1.2em;  /* Keep space for the next paragraph */
+/* THE FIX: Logical Padding */
+    /* This creates 40-50px gap on the RIGHT for LTR and LEFT for RTL */
+    padding-inline-end: clamp(25px, 8.68vw, 50px);
+    padding-inline-start: 0; /* Ensures no gap on the starting side */
+    text-align: left;
+    display: block;
+    line-height: 1.5;
+}
+
+/* --- Specific Variants --- */
+.par { 
+    font-family: 'raleway_regular', sans-serif;
+    color: var(--white);
+}
+
+.par_bold {
+    font-family: 'raleway_bold', sans-serif;
+    color: var(--white);
+}
+
+
+.par_italic { 
+    font-family: 'raleway_regular', sans-serif; /* Standard font, styled via CSS */
+    color: var(--text); /* Your Gold variable */
+    font-size: clamp(10px, 3.47vw, 20px);
+    font-weight: bold; 
+    font-style: italic; /* Forces the slant */
+    
+    /* THE INDENT FIX */
+    /* Matches your paragraph padding logic for a consistent "block" feel */
+    margin-inline-start: clamp(20px, 6.94vw, 40px); 
+    
+    /* Ensure it behaves like a block to respect margins */
+    display: block;
+    margin-top: -5px; /* Keeps it tight to the element above */
+    margin-bottom: 1.2em;
+    
+    /* Maintain your gutter on the end side */
+    padding-inline-end: clamp(25px, 8.68vw, 50px);
+}
+
+
+
+
+/* If a .par follows a .par_bold, keep them tightly related */
+.par_bold + .par {
+    margin-top: 0; 
+}
+
+/* Halfway adjustment for the perfect visual gap */
+.par_bold {
+    margin-bottom: 0.2em !important; 
+}
+
+
+/* --- 4. BLOCKunordered-listS (Abundomy Style) --- */
+/* --- BLOCKQUOTES (Abundomy Style - 70% Font / 40% Padding) --- */
+.blockquote { 
+    width: 95%; 
+    margin: 20px auto; 
+    
+    /* Internal Padding: Top/Bottom set to 40% of original ratio */
+    /* Recalculated: clamp(5.2px, 1.74vw, 10px) */
+    padding: clamp(5.2px, 1.74vw, 10px) clamp(13px, 4.34vw, 25px); 
+    
+    background: var(--headerback); 
+    border-left: clamp(5px, 1.73vw, 10px) solid var(--text); 
+    box-sizing: border-box; 
+}
+
+.rtl-mode .blockquote {
+    border-left: none;
+    border-right: clamp(5px, 1.73vw, 10px) solid var(--text);
+}
+
+.blockquote__text { 
+    font-family: 'raleway_regular', sans-serif;
+    font-style: italic;
+    
+    /* Font Size: kept at 70% of body */
+    font-size: clamp(7.7px, 2.67vw, 15.4px); 
+    
+    line-height: 1.4;
+    color: var(--white);
+    margin: 0;
+}
+
+
+/* --- 5. IMAGES & CAPTIONS --- */
+.article-img { 
+    width: 100%; 
+    height: auto; 
+    border-radius: 4px;
+    margin: 20px 0;
+}
+
+.photo { 
+    font-family: 'raleway_light', sans-serif;
+    font-style: italic;
+    font-size: clamp(7px, 2.43vw, 14px);
+    color: var(--disabled);
+}
+
+/* --- 6. LINKS & TABLES --- */
+.link { 
+    font-family: 'raleway_regular', sans-serif;
+    font-size: clamp(13px, 4.34vw, 25px);
+    color: var(--button); /* Green links */
+    transition: filter 0.3s ease;
+}
+
+.link:hover {
+    filter: brightness(1.5);
+}
+
+.name-table {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.name-table td {
+    padding-left: 15px;
+    vertical-align: middle;
+}
+
+.imgtext {
+     font-family:roboto_regular;
+     font-size: clamp(7px, 2.43vw, 14px);
+     text-transform: uppercase;
+     color: var(--text);
+}
+
+/* Container for the table and button */
+.article-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: clamp(10px, 3.47vw, 20px);
+    gap: 15px; /* Ensures space between text and button */
+}
+
+/* Fix for the table and name cropping */
+.author-table {
+    width: auto; /* Let it be as wide as the content needs */
+    border-collapse: collapse;
+}
+
+.author-table td {
+    padding-left: clamp(10px, 2.6vw, 15px); /* Give the name breathing room */
+    text-align: left;
+    white-space: nowrap; /* Prevents the name from wrapping/cropping */
+}
+
+.author-photo {
+    width: clamp(25px, 8.68vw, 50px);
+    height: clamp(25px, 8.68vw, 50px);
+    border-radius: 50%;
+    display: block;
+}
+
+/* Specific override for the PDF button in this row */
+.pdf-button {
+    width: auto !important; /* Override the 100% width from login-button */
+    padding-left: clamp(10px, 3.47vw, 20px) !important;
+    padding-right: clamp(10px, 3.47vw, 20px) !important;
+    flex-shrink: 0; /* Prevents the button from squishing */
+}
+/*===================== SCREEN LOADER (FOR WAITING) ============================*/
+
+
+/* Show content when ready */
+.content-ready {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Force the overlay to be Dark Blue and cover the entire screen */
+.loader-wrapper {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: #162042 !important; /* Dark Blue Background */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999 !important; 
+}
+
+/* Spinner visible against dark blue */
+.loader {
+    width: 60px;
+    height: 60px;
+    border: 6px solid rgba(255, 255, 255, 0.1); /* Subtle ring */
+    border-top: 6px solid #ffffff; /* Bright white spinning part */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loader-text {
+    margin-top: 15px;
+    color: #ffffff; /* White text for contrast */
+    font-family: 'raleway_regular', sans-serif;
+    letter-spacing: 1px;
+}
+
+/* Hide the messy HTML by default */
+#capture-section {
+    display: none;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Class to hide the loader */
+.loader-hidden {
+    display: none !important;
+}
+
+/*=========================  Hide Blinking Cursor  =============================*/
+
+/* 1. Global caret reset - ensures no caret can be seen unless it's a real input */
+:root {
+    caret-color: transparent !important;
+}
+
+/* 2. Target the specific header elements to kill the 'Golden' caret */
+.header-main, 
+.header-main *, 
+.top-title, 
+.top-title-container {
+    caret-color: transparent !important;
+    /* Force the caret width to zero for modern browsers */
+    -webkit-caret-color: transparent !important;
+}
+
+/* 3. Re-enable the caret ONLY for your search and inputs */
+input:focus, 
+textarea:focus, 
+[contenteditable="true"]:focus {
+    caret-color: var(--text) !important;
+}
+
+
+/*=========================  Youtube Shorts Container  ============================*/
+
+
+/* 5. Responsive Fluid YouTube Shorts Container */
+.short-video-wrapper {
+    width: clamp(280px, 70vw, 400px);
+    aspect-ratio: 9 / 16;
+    margin: clamp(15px, 4vw, 25px) auto;
+    display: block;
+}
+
+.short-video-wrapper iframe {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+}
+
+/* 6. Centered Download Section Container */
+.download-section-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin: 20px auto;
+    gap: 10px;
+}
+
+/*================================================================================*/
+
+/* ============================================================================
+   MONEY-APP PARITEIT — geport uit abundomy-money-git/css/main.css (read-only).
+   Header (logo/saldo/avatar), transactielijst + berekening, transactie-detail,
+   profiel/peer. Tokens (--text --button --white --black --error --disabled
+   --listhighlight --selectbutton --headerback) bestaan al in :root hierboven.
+   ============================================================================ */
+
+/* --- Header kolommen + logo --- */
+.menu-column1 {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-left: clamp(4px, 1.5vw, 10px);
+}
+.menu-column3 {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-right: clamp(4px, 1.5vw, 10px);
+  margin-left: auto;
+}
+.menu-column1, .menu-column3 { width: auto; height: auto; }
+.menu-column2 {
+  width: clamp(0px, 73.96vw, 426px);
+  height: clamp(35px, 12.15vw, 70px);
+  text-align: center;
+}
+.header-main-index-logo {
+  width: clamp(35px, 12.15vw, 70px) !important;
+  height: clamp(35px, 12.15vw, 70px) !important;
+  background-image: url(../img/1CoinH_140x140.png);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-color: var(--headerback);
+  transition: filter 0.3s ease;
+  margin-left: clamp(4px, 1.5vw, 8px);
+}
+.header-main-index-logo:hover { cursor: pointer; filter: brightness(1.5); }
+
+/* --- Saldo + display-num (header) --- */
+.amount-container2 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-decoration: none;
+  height: 100%;
+  line-height: 1.1;
+  transition: filter 0.3s ease;
+}
+.amount-container2:hover { cursor: pointer; filter: brightness(1.5); }
+.amount {
+  border: none;
+  outline: none;
+  font-family: roboto_bold, sans-serif;
+  font-weight: 600;
+  font-size: clamp(20px, 6.94vw, 40px);
+  color: var(--button);
+}
+.display-num, .display-num2 {
+  font-family: roboto_bold, sans-serif;
+  font-weight: 400;
+  font-size: clamp(12px, 3.82vw, 22px);
+  text-align: center;
+}
+.display-num { color: var(--button); }
+.display-num2 { color: var(--text); }
+
+/* --- Avatars --- */
+.mainusericon {
+  height: clamp(35px, 12.15vw, 70px);
+  width: clamp(35px, 12.15vw, 70px);
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  transition: filter 0.3s ease;
+}
+.mainusericon:hover { cursor: pointer; filter: brightness(1.5); }
+.humanicon, .humanicon2 {
+  height: clamp(70px, 24.31vw, 140px);
+  width: clamp(70px, 24.31vw, 140px);
+  border-radius: clamp(17px, 6.08vw, 35px);
+  object-fit: cover;
+  overflow: hidden;
+  transition: filter 0.3s ease;
+}
+.humanicon2:hover { cursor: pointer; filter: brightness(1.5); }
+.transactionicon {
+  height: clamp(30px, 10.42vw, 60px);
+  width: clamp(30px, 10.42vw, 60px);
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  transition: filter 0.3s ease;
+}
+.transactionicon:hover { cursor: pointer; filter: brightness(1.5); }
+
+/* --- Transactielijst (maand) --- */
+.listbox-container {
+  width: 100%;
+  max-height: clamp(150px, 48.61vw, 350px);
+  overflow-y: scroll !important;
+  background-color: var(--black);
+  border-radius: clamp(10px, 2.78vw, 16px);
+  padding: clamp(5px, 1.74vw, 10px);
+  box-sizing: border-box;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-color: var(--button) rgba(255, 255, 255, 0.05);
+  scrollbar-width: auto;
+}
+.list-row, .list-row-selected {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(6px, 2vw, 12px) clamp(10px, 3.47vw, 20px);
+  cursor: pointer;
+  font-family: roboto_regular, sans-serif;
+  font-size: clamp(11px, 3.1vw, 18px);
+  border-bottom: 1px solid #222;
+  transition: background-color 0.2s ease, border-radius 0.2s ease, filter 0.3s ease-in-out !important;
+  user-select: none;
+}
+.list-row:hover { background-color: rgba(255, 255, 255, 0.05); filter: brightness(1.3) !important; }
+.list-row-selected:hover { filter: brightness(1.2) !important; }
+.list-row-selected {
+  background-color: var(--listhighlight) !important;
+  color: var(--white) !important;
+  border-radius: clamp(6px, 1.39vw, 10px);
+  border-bottom: none;
+}
+.list-date { width: 35%; text-align: left; white-space: nowrap; }
+.list-amt { width: 32%; text-align: right; font-family: roboto_bold, sans-serif; font-size: clamp(11px, 3.1vw, 18px); white-space: nowrap; }
+.list-bal { width: 33%; text-align: right; font-family: roboto_regular, sans-serif; white-space: nowrap; }
+.listbox-container::-webkit-scrollbar { width: clamp(6px, 1.5vw, 12px); }
+.listbox-container::-webkit-scrollbar-thumb {
+  background-color: var(--button) !important;
+  border-radius: clamp(8px, 2.6vw, 15px);
+  border: clamp(1px, 0.3vw, 3px) solid var(--black);
+  background-clip: padding-box;
+  min-height: clamp(30px, 10vw, 60px);
+}
+@media (max-width: 576px) {
+  .listbox-container { -webkit-overflow-scrolling: touch; padding-right: clamp(5px, 2.5vw, 15px); }
+}
+
+/* --- Maand/jaar navigatie --- */
+.nav-filter-wrapper {
+  width: 100%;
+  padding: clamp(5px, 1.74vw, 10px);
+  box-sizing: border-box;
+}
+.button_t-row { display: flex; align-items: center; width: 100%; gap: 0; }
+.t-col-year, .t-col-prev, .t-col-month { flex: none; margin-right: clamp(4px, 1.25vw, 8px); }
+.year-month-pill, .time-nav-button {
+  background-color: var(--black) !important;
+  color: var(--button) !important;
+  font-family: 'roboto_bold', sans-serif;
+  font-weight: bold !important;
+  font-size: clamp(14px, 4vw, 23px);
+  height: clamp(35px, 9vw, 55px);
+  border-radius: 50px;
+  padding: 0 clamp(12px, 3vw, 20px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+}
+.year-month-pill:hover { filter: brightness(1.5); cursor: pointer; }
+select.year-month-pill[name="year"]  { width: clamp(75px, 20vw, 110px); }
+select.year-month-pill[name="month"] { width: clamp(100px, 28vw, 150px); }
+.t-col-image { margin-left: auto; flex: none; transform: translateY(clamp(-3px, -0.8vw, -1px)); }
+.t-col-spacer { margin-left: auto; flex: none; height: clamp(30px, 10.42vw, 60px); width: 1px; }
+.time-nav-button.nav-disabled {
+  background-color: var(--black) !important;
+  color: var(--disabled) !important;
+  border-radius: 50px;
+  cursor: default;
+  opacity: 0.5;
+  pointer-events: none;
+  border: 1px solid #222;
+}
+.time-nav-button.nav-disabled:hover { filter: none !important; cursor: default; }
+
+/* --- Berekening-paneel --- */
+.calc-table { width: 100%; padding: 0 clamp(5px, 2vw, 15px); }
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: clamp(4px, 1.5vw, 10px);
+  font-family: raleway_regular, sans-serif;
+  font-size: clamp(14px, 4vw, 22px);
+  color: var(--text);
+}
+.calc-val { font-family: roboto_regular, sans-serif; text-align: right; }
+.calc-row strong { font-family: roboto_bold, sans-serif; font-size: clamp(16px, 4.5vw, 26px); font-weight: 800; }
+.full-screen-line {
+  height: 1px;
+  background-color: var(--white);
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  margin-top: clamp(8px, 2vw, 15px);
+  margin-bottom: clamp(8px, 2vw, 15px);
+  opacity: 0.8;
+}
+.transaction-detail-link { text-decoration: none; display: block; width: 100%; }
+.transaction-detail-link:hover { filter: none !important; }
+.transaction-hover-row {
+  transition: background-color 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(5px, 1.74vw, 10px);
+  border-radius: clamp(4px, 1.39vw, 8px);
+  margin-left: clamp(-10px, -1.74vw, -5px);
+  margin-right: clamp(-10px, -1.74vw, -5px);
+}
+.transaction-hover-row:hover { background-color: rgba(255, 255, 255, 0.05); cursor: pointer; }
+.transactionicon2, .transactionicon2-placeholder {
+  width: clamp(35px, 10vw, 55px);
+  height: clamp(35px, 10vw, 55px);
+  border-radius: 50%;
+  margin-right: clamp(10px, 2.5vw, 15px);
+  object-fit: cover;
+  flex-shrink: 0;
+  transition: filter 0.3s ease-in-out !important;
+}
+.transactionicon2-placeholder { background-color: var(--listhighlight); }
+.transaction-hover-row:hover .transactionicon2,
+.transaction-hover-row:hover .transactionicon2-placeholder { filter: brightness(1.3) !important; }
+.expanded-desc, .transaction-hover-row .calc-val {
+  font-size: clamp(16px, 4.5vw, 26px);
+  font-family: raleway_bold, sans-serif;
+  transition: filter 0.3s ease-in-out !important;
+}
+.transaction-hover-row:hover .expanded-desc { filter: brightness(1.3) !important; }
+.expanded-desc { color: var(--button); display: inline-block; margin-right: 10px; }
+.transaction-hover-row .calc-val { background: transparent !important; white-space: nowrap; }
+
+/* --- Transactie-detail textareas --- */
+.descriptiontextarea, .amounttextarea {
+  width: clamp(280px, 94.79vw, 546px);
+  appearance: none;
+  padding-left: clamp(15px, 5.21vw, 30px);
+  padding-right: clamp(15px, 5.21vw, 30px);
+  padding-top: clamp(5px, 1.74vw, 10px);
+  background-color: var(--black);
+  color: var(--white);
+  border: none;
+  border-radius: clamp(15px, 5.21vw, 30px);
+  line-height: 1.2;
+  display: block;
+  margin: 0 auto;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  resize: none;
+  outline: none;
+}
+.descriptiontextarea { height: clamp(44px, 15.28vw, 88px); font-family: raleway_regular, sans-serif; font-size: clamp(16px, 5.21vw, 30px); }
+.amounttextarea {
+  height: clamp(30px, 10.42vw, 60px);
+  font-family: roboto_regular, sans-serif;
+  font-size: clamp(15px, 5.21vw, 30px);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* --- Profiel / peer (kenmerken read-only weergave) --- */
+.special-features {
+  width: clamp(280px, 94.79vw, 546px);
+  min-height: clamp(60px, 18vw, 110px);
+  appearance: none;
+  padding-left: clamp(15px, 5.21vw, 30px);
+  padding-top: clamp(5px, 1.74vw, 10px);
+  background-color: var(--black);
+  color: var(--white);
+  border: none;
+  border-radius: clamp(15px, 5.21vw, 30px);
+  font-family: raleway_regular, sans-serif;
+  font-size: clamp(15px, 4.5vw, 24px);
+  line-height: 1.4;
+  display: block;
+  margin: 0 auto;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+}
+
+/* --- humandetails footer --- */
+.hd-footer-row { display: flex; align-items: center; width: 100%; padding-bottom: 40px; }
+.hd-download-group { display: flex; align-items: center; }
+
+/* --- Home: openstaande verzoeken (index.php getProposalsHTML) --- */
+.button5-row, .button6-row, .button7-row, .button8-row {
+  background-color: var(--background);
+  font-family: raleway_bold, sans-serif;
+  font-size: clamp(18px, 5.21vw, 30px);
+  color: var(--text);
+  width: clamp(300px, 95.49vw, 550px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+}
+.button6-column1 { width: clamp(150px, 52.08vw, 300px); }
+.button6-column2 { width: clamp(90px, 30.38vw, 175px); }
+.button6-column3 { width: clamp(50px, 17.36vw, 100px); }
+
+.request-row, .my-request-row {
+  width: clamp(280px, 97.22vw, 560px);
+  display: flex;
+  align-items: center;
+  margin: 0 auto;
+}
+.request-column1 { width: clamp(35px, 12.15vw, 70px); flex-shrink: 0; }
+.request-column2 { width: clamp(160px, 57.64vw, 332px); margin: 0 clamp(5px, 1.74vw, 10px); }
+.request-column3 { width: clamp(74px, 25.69vw, 148px); display: flex; justify-content: flex-end; align-items: center; flex-shrink: 0; }
+.my-request-column2 { width: clamp(200px, 71.18vw, 410px); margin: 0 clamp(5px, 1.74vw, 10px); }
+.my-request-column3 { width: clamp(35px, 12.15vw, 70px); margin-left: clamp(4px, 1.39vw, 8px); flex-shrink: 0; }
+
+.select-button-static {
+  border-radius: clamp(17px, 6.08vw, 35px);
+  background-color: var(--selectbutton);
+  width: 100%;
+  height: clamp(35px, 12.15vw, 70px);
+  display: grid !important;
+  grid-template-rows: 1fr 1fr;
+  align-items: center;
+  justify-content: center;
+  color: var(--button);
+  text-align: center;
+  padding: clamp(2px, 0.69vw, 4px) 0;
+  box-sizing: border-box;
+  transition: filter 0.3s ease;
+}
+.select-button-static:hover { cursor: pointer; filter: brightness(1.5) !important; }
+.amount-line { font-family: roboto_bold, sans-serif; font-size: clamp(12px, 3.82vw, 22px); line-height: 1; }
+.desc-line { font-family: raleway_bold, sans-serif; font-size: clamp(12px, 3.82vw, 22px); opacity: 1; line-height: 1; white-space: nowrap; }
+.action-form-dual { display: flex; gap: clamp(4px, 1.39vw, 8px); justify-content: flex-end; }
+.action-icon { width: clamp(35px, 12.15vw, 70px); height: clamp(35px, 12.15vw, 70px); display: block; transition: filter 0.3s ease; cursor: pointer; }
+.action-icon:hover { cursor: pointer; filter: brightness(1.5) !important; }
+
+/* --- Klikbaar saldo (humandetails balance-link) --- */
+.balance-link { text-decoration: none; display: inline-block; transition: filter 0.3s ease; cursor: pointer; }
+.balance-link:hover { filter: brightness(1.5); }
+
+
