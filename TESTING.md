@@ -15,16 +15,19 @@ Draai op volgorde; alles moet groen zijn.
 | Stap | Commando | Verwacht |
 |---|---|---|
 | 1. Rookproef | `npm run smoke` | `✅ ROOKPROEF GESLAAGD` (Helia + OrbitDB starten) |
-| 2. Unit/integratie | `npm test` | `tests 29 / pass 29 / fail 0` |
-| 3. Datamigratie | `npm run migrate` | `✅ … 6 transactions, 17 users, 1 proposal, 12 lists, 50 usersOld` (idempotent) |
+| 2. Unit/integratie | `npm test` | `tests 46 / pass 46 / fail 0` |
+| 3. Datamigratie *(optioneel/legacy)* | `npm run migrate` | `✅ … 6 transactions, 17 users, …` (idempotent) — niet gebruikt door de live instantie (die startte vers) |
 | 4. Serverless betaling | `npm run poc` | alle go/no-go-checks ✅, `✅ PoC GESLAAGD` |
 | 5. Fork-scan | `npm run scan:forks` | `✅ Geen forks — ledger gezond` |
-| 6. Site bouwen | `npm run build:site` | `✅ 5 pagina's … (resterende PHP: 0)` |
-| 7. Site hosten | `npm run publish:site` | `✅ CONTENTSITE GEHOST` + stabiel `/ipns/<key>` |
+| 6. Site bouwen | `npm run build:site` | `✅ 5 pagina's + 54 artikelen … (resterende PHP: 0)` |
+| 7. App-smoke (browser) | `npm run build:web && npm run test:e2e` | `13/13 checks geslaagd` (CDP + systeem-`chromium`) |
+| 8. Content-smoke (browser) | `npm run test:content` | `15/15 checks geslaagd` (taalwissel + download-teller) |
+| 9. Site hosten | `npm run publish:site` | `✅ CONTENTSITE GEHOST` + stabiel `/ipns/<key>` |
 
 Wat dit dekt: hash-keten == legacy (byte-identiek), decay/UBI-saldo-invarianten,
 proposal→betaling→saldo, profielversleuteling, ondertekende identiteit, lijsten,
-draagbare zelf-verifieerbare export, fork/double-spend-detectie, en
+draagbare zelf-verifieerbare export, fork/double-spend-detectie, het booten van de
+app- en content-bundel in een echte browser (vlag-taalwissel + tellers), en
 content-addressed hosting met pin + IPNS.
 
 **Stabiele-naam-check (productie-eis):** draai stap 7 twee keer; de `IPNS-naam`
@@ -91,13 +94,14 @@ Werkt lokaal/PoC, maar dit moet nog vóór publiek productie. **Niets hiervan is
       echte sleuteldistributie + rotatie nodig.
 - [ ] **Double-spend-resolutie.** Fork-detectie *detecteert* (bewijsbaar) maar lost
       niet op. Globale ordening via het optionele Qortal-anker is uitgesteld.
-- [ ] **E-mailnotificaties** (Fase 4-restant) — nog niet gebouwd.
-- [ ] **Statische site i18n.** Statisch staat op Engels; de server-side taalwisselaar
-      verviel (client-i18n werkt wel per taal als de cookie/taal is gezet).
+- [x] **E-mailnotificaties + verificatie** — gebouwd (`web/mailer.mjs`, `/api/email/*`).
+- [x] **Site i18n + taalkiezer** — vlag-taalkiezer (68 talen) op site én app, client-side
+      tx_NN-fill; keuze gedeeld via `localStorage`. (Server-side `set-language.php` verviel.)
+- [x] **Gedeelde download-tellers** — `/api/downloads` + OrbitDB-store (boek per taal + demo).
 
 ---
 
 ## Scripts (overzicht)
 
-`smoke` · `migrate` · `test` · `poc` · `relay` · `dev` · `build:web` ·
-`build:site` · `publish:site` · `scan:forks`
+`smoke` · `migrate` · `test` · `test:e2e` · `test:content` · `poc` · `relay` ·
+`mailer` · `dev` · `build:web` · `build:site` · `publish:site` · `deploy` · `scan:forks`
