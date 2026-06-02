@@ -97,3 +97,8 @@ Secrets (SMTP) komen uit een lokale, niet-gecommitte env (zie `web/mailer.env.ex
 Zie [`TESTING.md`](TESTING.md) voor het volledige runbook (geautomatiseerd + handmatig +
 generale repetitie). Kort: `npm test` (Node-suite) · `npm run test:e2e` (app-smoke,
 vereist `build:web`) · `npm run test:content` (content-smoke, vereist `build:site`).
+
+## Licentie
+GNU General Public License v3.0 of later — zie [`LICENSE`](LICENSE).
+Je mag dit gebruiken, aanpassen en verspreiden onder dezelfde voorwaarden; afgeleide
+werken moeten ook onder de GPL beschikbaar blijven.
