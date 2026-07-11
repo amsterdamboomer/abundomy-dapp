@@ -15,7 +15,8 @@
  *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM, SMTP_TLS_INSECURE
  *   MAIL_REDIRECT_TO        (test: stuur alle notificaties naar dit adres)
  *   MAILER_HTTP_PORT        (default 9100, alleen 127.0.0.1 — nginx proxiet /api/ hierheen)
- *   ABUNDOMY_PUBLIC_BASE    (default https://app.reikiwereld.eu — voor de bevestig-link)
+ *   ABUNDOMY_PUBLIC_BASE    (default https://167-233-171-25.sslip.io — publiek adres van het anker)
+ *   ABUNDOMY_APP_URL        (default <PUBLIC_BASE>/app/ — klikbare link naar de app in mails)
  *   ABUNDOMY_RELAY_ADDR     (default uit relay.json; op SER5 liever de lokale ws-addr)
  * Zonder SMTP_* draait hij in DRY-RUN (logt wat hij zou sturen).
  *
@@ -65,14 +66,18 @@ const ROOT = process.env.ABUNDOMY_MAILER_ROOT
   ? process.env.ABUNDOMY_MAILER_ROOT.replace(/\/?$/, '/')
   : fileURLToPath(new URL('../.abundomy-mailer/', import.meta.url))
 const RELAY_JSON = fileURLToPath(new URL('./public/relay.json', import.meta.url))
-// LET OP: notificatie-/verificatiemails bevatten BEWUST GEEN klikbare link/URL. Bewezen
-// (2026-06-06, live A/B-test naar Gmail): de uitgaande antispam van reikiwereld.eu
-// (premiumantispam/topplatform) accepteert de mail bij submission (250 queued) maar dropt
-// 'm daarna stil zodra er een URL in de body staat — ongeacht het domein (dweb.link én de
-// nette sslip-link werden beide opgegeten; een linkloze mail kwam wél aan). Gebruikers
-// openen de app via hun eigen bookmark (het stabiele adres). Daarom is ABUNDOMY_APP_URL
-// hier verwijderd; zet 'm niet terug in de mailtemplates zonder eerst de aflevering te testen.
-const PUBLIC_BASE = (process.env.ABUNDOMY_PUBLIC_BASE || 'https://app.reikiwereld.eu').replace(/\/$/, '')
+// HISTORIE — links in mails: tussen 2026-06-06 en 2026-07-11 bevatten mails BEWUST geen URL.
+// Toen liep uitgaande mail nog via de antispam-relay van reikiwereld.eu (premiumantispam):
+// die accepteerde bij submission (250 queued) en dropte de mail daarna STIL zodra er een URL
+// in de body stond — ongeacht het domein. Een linkloze mail kwam wél aan.
+// Sinds de migratie naar PBFS2 verstuurt Postfix RECHTSTREEKS (geen relayhost), met SPF -all,
+// DKIM (d=brainfusion.nl) en DMARC. Hertest op 2026-07-11 met een A/B-test (mail mét link vs
+// controle zonder link) naar Gmail én Hotmail: alle vier geaccepteerd door de ontvangende
+// servers (gmail 250 OK, Exchange 250 queued) en bevestigd in de INBOX — de link werkt.
+// Daarom staat ABUNDOMY_APP_URL hier weer in de templates.
+// Wijzigt de mailroute ooit weer (smarthost/relay), TEST DE AFLEVERING OPNIEUW — het faalt stil.
+const PUBLIC_BASE = (process.env.ABUNDOMY_PUBLIC_BASE || 'https://167-233-171-25.sslip.io').replace(/\/$/, '')
+const APP_URL = (process.env.ABUNDOMY_APP_URL || `${PUBLIC_BASE}/app/`).replace(/\/?$/, '/')
 const HTTP_PORT = Number(process.env.MAILER_HTTP_PORT) || 9100
 
 const SMTP_HOST = process.env.SMTP_HOST
@@ -118,7 +123,7 @@ function paymentMail (tx, giver, receiver) {
       <p><b>Van:</b> ${esc(giver?.name)}<br>
          <b>Naar:</b> ${esc(receiver?.name)}</p>
       <p><b>Omschrijving:</b> ${esc(tx.description || '—')}</p>
-      <p>Open de Abundomy-app om je saldo te bekijken.</p>
+      <p><a href="${APP_URL}">Open de Abundomy-app</a> om je saldo te bekijken.</p>
       <hr><p style="color:#888;font-size:12px">Je ontvangt deze mail omdat betaalnotificaties
       aanstaan in je profiel. Pas dit aan in de app.</p>
       </body></html>`,
@@ -133,7 +138,7 @@ function proposalMail (p, giver, receiver) {
     html: `<html><body style="font-family:sans-serif">
       <p><b>${esc(receiver?.name)}</b> vraagt <b>${amount} ᕫ</b> van je in Abundomy.</p>
       <p><b>Omschrijving:</b> ${esc(p.description || '—')}</p>
-      <p>Open de Abundomy-app om dit verzoek te <b>bevestigen</b> of te weigeren.</p>
+      <p><a href="${APP_URL}">Open de Abundomy-app</a> om dit verzoek te <b>bevestigen</b> of te weigeren.</p>
       <hr><p style="color:#888;font-size:12px">Je ontvangt deze mail omdat betaalnotificaties
       aanstaan in je profiel. Pas dit aan in de app.</p>
       </body></html>`,
@@ -153,7 +158,7 @@ if (testIdx !== -1) {
     from: MAIL_FROM,
     to,
     subject: 'Abundomy — testmail (mailer)',
-    html: '<p>Dit is een testmail van de Abundomy IPFS-mailer. Als je dit ziet, werkt SMTP-submission via mail.reikiwereld.eu. ✅</p>',
+    html: '<p>Dit is een testmail van de Abundomy IPFS-mailer. Als je dit ziet, werkt SMTP-submission via mail.brainfusion.nl. ✅</p>',
   })
   console.log(`✉ testmail verstuurd naar ${to}`)
   process.exit(0)
@@ -375,8 +380,9 @@ async function accountExistsForPubkey (pubkey) {
 }
 
 async function sendVerificationMail (email, code, recoveryCode) {
-  // CODE i.p.v. klikbare link: een mail met een URL naar het kale-IP-domein (sslip.io) werd
-  // door spamfilters (Hotmail/Outlook, e.a.) gedropt; een korte code levert betrouwbaar af.
+  // De CODE blijft het mechanisme (geen magic link): kort, kopieerbaar, en werkt ook als de
+  // gebruiker de mail op een ander apparaat opent dan waar hij zich aanmeldt. De link naar de
+  // app staat er sinds 2026-07-11 wél weer bij (aflevering hertest naar Gmail + Hotmail: OK).
   const recoveryBlock = recoveryCode ? `
     <hr><p><b>Je herstelcode</b> — bewaar deze mail goed. Hiermee kun je (samen met dit
     e-mailadres) je wachtwoord resetten als je het kwijtraakt:</p>
@@ -386,6 +392,7 @@ async function sendVerificationMail (email, code, recoveryCode) {
     <p>Welkom bij Abundomy! Vul deze verificatiecode in het aanmeldscherm in om je e-mailadres te bevestigen:</p>
     <p style="font-family:monospace;font-size:28px;letter-spacing:6px;background:#f4f4f4;padding:12px 18px;border-radius:8px;display:inline-block">${esc(code)}</p>
     <p style="color:#888;font-size:12px">Deze code is 30 minuten geldig. Niet aangevraagd? Negeer deze mail.</p>
+    <p><a href="${APP_URL}">Open de Abundomy-app</a></p>
     ${recoveryBlock}
     </body></html>`
   if (DRY) { console.log(`[DRY] verificatie → ${email}: code ${code}${recoveryCode ? ` | herstelcode: ${recoveryCode}` : ''}`); return }
