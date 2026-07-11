@@ -9,7 +9,7 @@ PHP/MySQL web2). Alles draait **serverloos**: identiteit via een sleutelpaar, da
 **OrbitDB**, gehost op **IPFS** met een stabiele **IPNS**-naam. Geen centrale database,
 geen accountserver.
 
-**🌐 Live:** <https://app.reikiwereld.eu> — content-site op `/`, de money-app op `/app/`.
+**🌐 Live:** <https://167-233-171-25.sslip.io/app/ content-site op `/`, de money-app op `/app/`.
 
 ---
 
