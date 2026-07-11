@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Abundomy — gedecentraliseerde gemeenschapsmunt op IPFS (Helia) + OrbitDB. Vervangt de MySQL/PHP-versie van 1CoinH.",
   "scripts": {
+    "postinstall": "patch-package",
     "smoke": "node test/smoke.mjs",
     "migrate": "node migration/migrate.mjs",
     "poc": "node poc/two-peer-payment.mjs",
@@ -27,6 +28,7 @@
     "@chainsafe/libp2p-yamux": "^8.0.1",
     "@helia/ipns": "^9.2.1",
     "@helia/unixfs": "^7.2.1",
+    "@ipld/dag-cbor": "^10.0.1",
     "@libp2p/auto-tls": "^1.0.6",
     "@libp2p/autonat": "^3.0.21",
     "@libp2p/crypto": "^5.1.0",
@@ -40,6 +42,7 @@
     "@orbitdb/core": "^4.0.0",
     "blockstore-fs": "^4.0.1",
     "blockstore-idb": "^4.0.1",
+    "cborg": "^5.1.7",
     "datastore-fs": "^12.0.1",
     "datastore-idb": "^5.0.1",
     "helia": "^6.1.4",
@@ -48,6 +51,7 @@
     "nodemailer": "^8.0.10"
   },
   "devDependencies": {
+    "patch-package": "^8.0.1",
     "vite": "^8.0.14"
   }
 }
