@@ -1542,7 +1542,15 @@ fetch('relay.json').then((r) => r.ok ? $('relayInfo').textContent = 'Relay gevon
   : $('relayInfo').textContent = '⚠ Geen relay.json — draai eerst `npm run relay`.')
   .catch(() => $('relayInfo').textContent = '⚠ Geen relay.json — draai eerst `npm run relay`.')
 
-$('loginBtn').onclick = () => loginWithPassword().catch((e) => log('FOUT: ' + e.message))
+const doLogin = () => loginWithPassword().catch((e) => log('FOUT: ' + e.message))
+$('loginBtn').onclick = doLogin
+for (const id of ['loginId', 'loginPwd']) {
+  $(id).onkeydown = (e) => {
+    if (e.key !== 'Enter' || e.isComposing) return // isComposing: IME-invoer nog niet af
+    e.preventDefault()
+    if (!$('loginBtn').disabled) doLogin()
+  }
+}
 $('signupBtn').onclick = () => doSignup().catch((e) => log('FOUT: ' + e.message))
 const showCard = (id) => { for (const c of ['login', 'signup', 'resetCard']) $(c).classList.toggle('hidden', c !== id) }
 $('toSignupBtn').onclick = () => showCard('signup')
