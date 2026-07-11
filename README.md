@@ -9,7 +9,7 @@ PHP/MySQL web2). Alles draait **serverloos**: identiteit via een sleutelpaar, da
 **OrbitDB**, gehost op **IPFS** met een stabiele **IPNS**-naam. Geen centrale database,
 geen accountserver.
 
-**🌐 Live:** <https://167-233-171-25.sslip.io/app/ content-site op `/`, de money-app op `/app/`.
+**🌐 Live:** <https://167-233-171-25.sslip.io/> — content-site op `/`, de money-app op `/app/`.
 
 ---
 
@@ -32,8 +32,10 @@ geen accountserver.
   reist mee tussen site en app via één `localStorage`-sleutel.
 - Boek-download per taal + gedeelde **download-tellers**.
 
-**Altijd-aan node (`web/relay.mjs` + `web/mailer.mjs`)**:
-- `relay` — libp2p/WebSocket-relay + OrbitDB-seed waarmee browsers repliceren.
+**Altijd-aan anker (`web/anchor-replicator.mjs` + `web/mailer.mjs`)**:
+- `anchor-replicator` — relay-loze OrbitDB-replicator: libp2p-node met een publieke
+  `wss`-endpoint waarmee browsers rechtstreeks repliceren. Vervangt de oude
+  `web/relay.mjs` (die blijft in de repo voor de lokale dev-opzet).
 - `mailer` — verstuurt notificaties en draait de `/api/*`-laag (e-mailverificatie en de
   gedeelde download-teller `abundomy-downloads`) achter nginx.
 
