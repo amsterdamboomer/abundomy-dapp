@@ -15,7 +15,7 @@ import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js'
 import { ZERO_HASH } from './config.mjs'
 import { encryptUserProfile, decryptUserProfile } from './crypto.mjs'
-import { openKeystore, rekeyKeystore, validatePassword } from './auth.mjs'
+import { openKeystore, rekeyKeystore, validatePassword, createKeystore, generateRecoveryCode, formatRecoveryCode } from './auth.mjs'
 import { formatSqlDate } from './payments.mjs'
 
 /** Deterministische account-identiteit uit de seed (Ed25519). Zelfde seed → zelfde pubkey. */
@@ -65,6 +65,24 @@ function profileHash(usersId, pubkey, start) {
 }
 
 /**
+ * Botsingsvrije `usersId`, **deterministisch uit de pubkey**, in een KORT bereik [10, 99999].
+ * Vervangt het oude `max(bestaande)+1`: dat las de lokale `users`-store, dus bij een nog niet
+ * (volledig) gesyncte store koos het een lage id (vaak 1) en OVERSCHREEF een bestaand account
+ * (Documents `indexBy:'usersId'` = last-write-wins). Een pubkey-afgeleide id vergt geen
+ * coördinatie → geen collision, ongeacht de sync-stand.
+ *
+ * Het getal wordt op een klein, leesbaar bereik gemapt (≥10, dus geen botsing met de bestaande
+ * lage ids 1-4 en geen onhandelbaar lange nummers). `existingIds` vangt de — bij dit kleinere
+ * bereik wat grotere, maar nog steeds kleine — kans op een botsing af door te herhashen, en
+ * slaat zo ook al-gebruikte ids over. Blijft numeriek.
+ */
+function deriveUserId(pubkey, existingIds, salt = 0) {
+  const hex = bytesToHex(sha256(utf8ToBytes(`abundomy-uid:${pubkey}:${salt}`))).slice(0, 12) // 48 bits ruwe entropie
+  const id = 10 + (parseInt(hex, 16) % 99990) // map naar kort bereik [10, 99999]
+  return existingIds.has(id) ? deriveUserId(pubkey, existingIds, salt + 1) : id
+}
+
+/**
  * Bind de account-identiteit (uit de seed) aan een bestaande (gemigreerde) usersId.
  * @returns het bijgewerkte user-doc met `pubkey` + `claimSig`.
  */
@@ -79,7 +97,7 @@ export async function claimUser({ stores, seed, usersId }) {
 
 /**
  * Nieuwe gebruiker registreren: profiel client-side versleuteld + ondertekende
- * pubkey-claim. `usersId` = hoogste bestaande + 1.
+ * pubkey-claim. `usersId` = botsingsvrij uit de pubkey afgeleid (zie deriveUserId).
  *
  * `auth` (optioneel) = een met het wachtwoord versleutelde keystore (zie auth.mjs);
  * die wordt apart ondertekend (`authSig`) zodat alleen de eigenaar 'm kan wijzigen.
@@ -95,9 +113,11 @@ export async function signup({ stores, seed, profile, communityKey, auth, recove
   if (uid && all.some((e) => (e.value.usersUid ?? '').toLowerCase() === uid.toLowerCase())) {
     throw new Error('usernametaken')
   }
-  const usersId = all.reduce((m, e) => Math.max(m, e.value.usersId), 0) + 1
   const account = await deriveAccountKey(seed)
   const pubkey = account.pubkey
+  // Botsingsvrije usersId uit de pubkey (zie deriveUserId) i.p.v. lokale `max+1`, dat bij een
+  // nog niet-gesyncte store een lage, botsende id koos en bestaande accounts overschreef.
+  const usersId = deriveUserId(pubkey, new Set(all.map((e) => e.value.usersId)))
   const start = formatSqlDate(asOf)
   const base = {
     usersId,
@@ -128,6 +148,49 @@ export async function signup({ stores, seed, profile, communityKey, auth, recove
 }
 
 /**
+ * Repareer een "Frankenstein"-user-doc dat door historische usersId-collisions inconsistent
+ * raakte: `pubkey`/`claimSig` van identiteit X, maar `auth`/`recovery` van identiteit Y.
+ * Bij login levert het wachtwoord (via `openKeystore(auth, pwd)`) de seed die de gebruiker
+ * ECHT bezit; als die niet bij `doc.pubkey` past, is reset kapot ("dit is niet jouw account").
+ *
+ * We herschrijven het doc consistent met díe seed: nieuwe `pubkey`, verse `claimSig`, en —
+ * omdat de oude `auth`-kluis al door dit wachtwoord ontsleuteld is en dus bij deze seed hoort —
+ * alleen een nieuwe `authSig`. De `recovery`-kluis hoorde bij de andere identiteit en wordt
+ * VERVANGEN door een verse kluis (nieuwe herstelcode wordt teruggegeven zodat de gebruiker 'm
+ * kan bewaren — anders blijft reset onmogelijk). `hash` (profileHash) is vestigiaal (niet in de
+ * grootboekketen) maar wordt voor consistentie herberekend. Idempotent: niets als al consistent.
+ *
+ * @returns {Promise<{repaired:boolean, recoveryCode?:string, pubkey?:string}>}
+ */
+export async function repairIdentity({ stores, seed, usersId }) {
+  const stored = (await stores.users.get(usersId))?.value
+  if (!stored) throw new Error(`user ${usersId} niet gevonden`)
+  const account = await deriveAccountKey(seed)
+  const pubkey = account.pubkey
+  const authOk = stored.auth ? await verifyAuthSig({ userDoc: stored }) : true
+  const recOk = stored.recovery ? await verifyRecoverySig({ userDoc: stored }) : true
+  if (stored.pubkey === pubkey && authOk && recOk) return { repaired: false }
+
+  const recoveryRaw = generateRecoveryCode()
+  const recovery = await createKeystore(seed, recoveryRaw)
+  const doc = {
+    ...stored,
+    pubkey,
+    hash: profileHash(usersId, pubkey, stored.start),
+    claimSig: await account.sign(claimString(usersId, pubkey)),
+    recovery,
+    recoverySig: await account.sign(recoveryString(usersId, pubkey, recovery)),
+  }
+  if (doc.auth) doc.authSig = await account.sign(authString(usersId, pubkey, doc.auth))
+  await stores.users.put(doc)
+  return { repaired: true, recoveryCode: formatRecoveryCode(recoveryRaw), pubkey }
+}
+
+/** Zichtbare profielvelden waarvan een wijziging een historie-snapshot waard is (precies
+ *  de velden die het PDF-overzicht toont). Login-handle, e-mail en privacy-vlaggen NIET. */
+const HISTORY_FIELDS = ['usersName', 'image', 'birthday', 'gender', 'height', 'hair', 'leftEye', 'rightEye', 'specialFeatures']
+
+/**
  * Profielvelden bijwerken (alleen de eigenaar, in een ingelogde sessie). De gevoelige
  * velden worden opnieuw versleuteld; identiteit (`pubkey`/`claimSig`), keystore
  * (`auth`/`authSig`) en herstelkluis (`recovery`/`recoverySig`) blijven behouden en
@@ -151,6 +214,31 @@ export async function updateProfile({ stores, usersId, updates, communityKey }) 
   }
 
   const current = await decryptUserProfile(stored, communityKey)
+
+  // Profielhistorie: archiveer de OUDE versie in `users_old` vóór de overschrijving,
+  // maar alleen als een zichtbaar profielveld écht wijzigt (geen snapshot bij een
+  // e-mail-/whitelist-toggle of een save zonder wijziging). De oude `enc`-blob gaat
+  // 1-op-1 mee → blijft AES-GCM-versleuteld; auth/recovery/pubkey worden BEWUST niet
+  // gearchiveerd (onnodige aanvalsoppervlakte in een publieke store).
+  const norm = (v) => (v == null ? '' : v)
+  const profileChanged = HISTORY_FIELDS.some((f) => f in updates && norm(updates[f]) !== norm(current[f]))
+  if (profileChanged && stores.usersOld) {
+    const now = new Date()
+    const mine = (await stores.usersOld.all()).map((e) => e.value).filter((o) => o.uid_old === usersId)
+    // Validiteit van de gearchiveerde versie: van het einde van de vorige versie (of de
+    // inschrijfdatum bij de 1e snapshot — zo blijft joinedDate = MIN(start_old) ongemoeid)
+    // tot nu. `usersOldId` uniek per gebruiker per moment (ms) → geen overschrijving.
+    const lastEnd = mine.reduce((m, o) => (o.end_old && o.end_old > m ? o.end_old : m), null)
+    await stores.usersOld.put({
+      usersOldId: `${usersId}-${now.getTime()}`,
+      uid_old: usersId,
+      start_old: lastEnd ?? stored.start ?? current.start,
+      end_old: formatSqlDate(now),
+      usersName: stored.usersName,
+      enc: stored.enc,
+    })
+  }
+
   const merged = { ...current, ...updates, usersId } // usersId niet overschrijfbaar
   const encDoc = await encryptUserProfile(merged, communityKey)
   await stores.users.put(encDoc)

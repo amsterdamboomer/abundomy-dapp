@@ -26,7 +26,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, randomBytes, randomInt } from 'node:crypto'
 import { createServer } from 'node:http'
 import { createLibp2p } from 'libp2p'
 import { tcp } from '@libp2p/tcp'
@@ -65,7 +65,13 @@ const ROOT = process.env.ABUNDOMY_MAILER_ROOT
   ? process.env.ABUNDOMY_MAILER_ROOT.replace(/\/?$/, '/')
   : fileURLToPath(new URL('../.abundomy-mailer/', import.meta.url))
 const RELAY_JSON = fileURLToPath(new URL('./public/relay.json', import.meta.url))
-const APP_URL = process.env.ABUNDOMY_APP_URL || 'https://app.reikiwereld.eu/app/'
+// LET OP: notificatie-/verificatiemails bevatten BEWUST GEEN klikbare link/URL. Bewezen
+// (2026-06-06, live A/B-test naar Gmail): de uitgaande antispam van reikiwereld.eu
+// (premiumantispam/topplatform) accepteert de mail bij submission (250 queued) maar dropt
+// 'm daarna stil zodra er een URL in de body staat — ongeacht het domein (dweb.link én de
+// nette sslip-link werden beide opgegeten; een linkloze mail kwam wél aan). Gebruikers
+// openen de app via hun eigen bookmark (het stabiele adres). Daarom is ABUNDOMY_APP_URL
+// hier verwijderd; zet 'm niet terug in de mailtemplates zonder eerst de aflevering te testen.
 const PUBLIC_BASE = (process.env.ABUNDOMY_PUBLIC_BASE || 'https://app.reikiwereld.eu').replace(/\/$/, '')
 const HTTP_PORT = Number(process.env.MAILER_HTTP_PORT) || 9100
 
@@ -112,7 +118,7 @@ function paymentMail (tx, giver, receiver) {
       <p><b>Van:</b> ${esc(giver?.name)}<br>
          <b>Naar:</b> ${esc(receiver?.name)}</p>
       <p><b>Omschrijving:</b> ${esc(tx.description || '—')}</p>
-      <p><a href="${APP_URL}">Open de Abundomy-app</a></p>
+      <p>Open de Abundomy-app om je saldo te bekijken.</p>
       <hr><p style="color:#888;font-size:12px">Je ontvangt deze mail omdat betaalnotificaties
       aanstaan in je profiel. Pas dit aan in de app.</p>
       </body></html>`,
@@ -127,8 +133,7 @@ function proposalMail (p, giver, receiver) {
     html: `<html><body style="font-family:sans-serif">
       <p><b>${esc(receiver?.name)}</b> vraagt <b>${amount} ᕫ</b> van je in Abundomy.</p>
       <p><b>Omschrijving:</b> ${esc(p.description || '—')}</p>
-      <p>Open de app om dit verzoek te <b>bevestigen</b> of te weigeren:</p>
-      <p><a href="${APP_URL}">Open de Abundomy-app</a></p>
+      <p>Open de Abundomy-app om dit verzoek te <b>bevestigen</b> of te weigeren.</p>
       <hr><p style="color:#888;font-size:12px">Je ontvangt deze mail omdat betaalnotificaties
       aanstaan in je profiel. Pas dit aan in de app.</p>
       </body></html>`,
@@ -242,16 +247,15 @@ async function notify (tx) {
   }
 }
 
-stores.transactions.events.on('update', async () => {
-  try {
-    for (const tx of await allTxs()) {
-      if (seen.has(tx.tid)) continue
-      seen.add(tx.tid)
-      console.log(`• nieuwe transactie tid=${tx.tid} (${tx.giver}→${tx.receiver}, ${tx.amount})`)
-      await notify(tx)
-    }
-  } catch (e) { console.error('mail-handler fout:', e.message) }
-})
+async function scanTxs () {
+  for (const tx of await allTxs()) {
+    if (seen.has(tx.tid)) continue
+    seen.add(tx.tid)
+    console.log(`• nieuwe transactie tid=${tx.tid} (${tx.giver}→${tx.receiver}, ${tx.amount})`)
+    await notify(tx)
+  }
+}
+stores.transactions.events.on('update', () => scanTxs().catch((e) => console.error('mail-handler fout:', e.message)))
 
 // --- openstaande verzoeken (proposals): mail de GEVER zodra er een nieuw verzoek staat ---
 // Composiet-sleutel i.p.v. pid alleen: pid's worden hergebruikt nadat een verzoek is
@@ -275,17 +279,45 @@ async function notifyProposal (p) {
   } catch (e) { console.error(`✗ mail mislukt → ${to}: ${e.message}`) }
 }
 
-stores.proposals.events.on('update', async () => {
+async function scanProposals () {
+  for (const p of await allProposals()) {
+    const k = pkey(p)
+    if (seenProposals.has(k)) continue
+    seenProposals.add(k)
+    console.log(`• nieuw verzoek pid=${p.pid} (${p.receiver} vraagt ${p.amount} van ${p.giver})`)
+    await notifyProposal(p)
+  }
+}
+stores.proposals.events.on('update', () => scanProposals().catch((e) => console.error('proposal-handler fout:', e.message)))
+
+// =========================================================================
+// VANGNET — periodieke head-uitwisseling met de replicator (zoals de browser).
+// =========================================================================
+// Bewezen (2026-06-06, live reproductie): een browser-verzoek bereikt de anchor-
+// replicator wél (`⇄ update in 'proposals'`), maar NIET deze mailer — OrbitDB v4 z'n
+// catch-up (sync.js) levert nieuwe heads alleen op een VERSE verbinding, en de replicator
+// herbroadcast head-exchange-entries niet op pubsub. De mailer deed de head-uitwisseling
+// dus alleen bij startup en werd daarna doof → notificaties bleven uit. De browser lost dit
+// op met een 15s hangUp+redial (app.mjs resyncStores); de mailer kreeg dat vangnet nooit.
+// Hier dezelfde aanpak: herverbind periodiek met de replicator (forceert een uitgaande
+// head-uitwisseling) en scan daarna de stores expliciet (vangnet mocht 'update' gemist zijn).
+const RELAY_PEER = RELAY_ADDR.split('/p2p/').pop()
+let resyncing = false
+async function resync () {
+  if (resyncing) return
+  resyncing = true
   try {
-    for (const p of await allProposals()) {
-      const k = pkey(p)
-      if (seenProposals.has(k)) continue
-      seenProposals.add(k)
-      console.log(`• nieuw verzoek pid=${p.pid} (${p.receiver} vraagt ${p.amount} van ${p.giver})`)
-      await notifyProposal(p)
+    for (const c of libp2p.getConnections()) {
+      if (c.remotePeer.toString() === RELAY_PEER) { try { await libp2p.hangUp(c.remotePeer) } catch {} }
     }
-  } catch (e) { console.error('proposal-handler fout:', e.message) }
-})
+    try { await libp2p.dial(multiaddr(RELAY_ADDR)) } catch {}
+    await sleep(1500) // head-uitwisseling tijd geven
+    await scanProposals()
+    await scanTxs()
+  } catch (e) { console.error('resync-fout:', e.message) }
+  finally { resyncing = false }
+}
+setInterval(() => resync().catch(() => {}), 15000)
 
 // =========================================================================
 // Fase 2 — e-mailverificatie + uniciteit (HTTP, achter nginx /api/)
@@ -333,21 +365,31 @@ function bumpDownload (lang) {
 
 async function bindingFor (emailHash) { return (await verifications.get(emailHash))?.value ?? null }
 
-async function sendVerificationMail (email, token, recoveryCode) {
-  const link = `${PUBLIC_BASE}/api/email/confirm?token=${token}`
+// Bestaat er werkelijk een account met deze pubkey? Een binding kan een WEES zijn: de e-mail
+// is bevestigd, maar signup() strandde daarna (bv. usernametaken) zodat er nooit een account
+// kwam. Zo'n wees mag een nieuwe aanmelding NIET met 409 blokkeren.
+async function accountExistsForPubkey (pubkey) {
+  if (!pubkey) return false
+  for (const e of await stores.users.all()) if (e.value?.pubkey === pubkey) return true
+  return false
+}
+
+async function sendVerificationMail (email, code, recoveryCode) {
+  // CODE i.p.v. klikbare link: een mail met een URL naar het kale-IP-domein (sslip.io) werd
+  // door spamfilters (Hotmail/Outlook, e.a.) gedropt; een korte code levert betrouwbaar af.
   const recoveryBlock = recoveryCode ? `
     <hr><p><b>Je herstelcode</b> — bewaar deze mail goed. Hiermee kun je (samen met dit
     e-mailadres) je wachtwoord resetten als je het kwijtraakt:</p>
     <p style="font-family:monospace;font-size:18px;letter-spacing:2px;background:#f4f4f4;padding:10px 14px;border-radius:8px;display:inline-block">${esc(recoveryCode)}</p>
     <p style="color:#888;font-size:12px">Zonder deze code én dit e-mailadres is je account niet te herstellen.</p>` : ''
   const html = `<html><body style="font-family:sans-serif">
-    <p>Welkom bij Abundomy! Bevestig je e-mailadres om je account te activeren:</p>
-    <p><a href="${esc(link)}">Bevestig mijn e-mailadres</a></p>
-    <p style="color:#888;font-size:12px">Deze link is 30 minuten geldig. Niet aangevraagd? Negeer deze mail.</p>
+    <p>Welkom bij Abundomy! Vul deze verificatiecode in het aanmeldscherm in om je e-mailadres te bevestigen:</p>
+    <p style="font-family:monospace;font-size:28px;letter-spacing:6px;background:#f4f4f4;padding:12px 18px;border-radius:8px;display:inline-block">${esc(code)}</p>
+    <p style="color:#888;font-size:12px">Deze code is 30 minuten geldig. Niet aangevraagd? Negeer deze mail.</p>
     ${recoveryBlock}
     </body></html>`
-  if (DRY) { console.log(`[DRY] verificatie → ${email}: ${link}${recoveryCode ? ` | herstelcode: ${recoveryCode}` : ''}`); return }
-  await sendWithRetry({ from: MAIL_FROM, to: email, subject: 'Bevestig je e-mailadres voor Abundomy', html })
+  if (DRY) { console.log(`[DRY] verificatie → ${email}: code ${code}${recoveryCode ? ` | herstelcode: ${recoveryCode}` : ''}`); return }
+  await sendWithRetry({ from: MAIL_FROM, to: email, subject: 'Je Abundomy verificatiecode', html })
 }
 
 const sendJson = (res, code, obj) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(obj)) }
@@ -357,6 +399,15 @@ const httpServer = createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost')
 
+    // CORS: de SPA draait op IPFS (dweb.link/IPNS), dus roept deze mailer cross-origin aan.
+    // Geen cookies/credentials in het spel (email+pubkey in de body) → '*' is veilig.
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Vary', 'Origin')
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, { 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'content-type', 'Access-Control-Max-Age': '86400' })
+      return res.end()
+    }
+
     // Start verificatie: { email, pubkey, usersId? } → token mailen (uniciteit afgedwongen).
     if (req.method === 'POST' && url.pathname === '/api/email/start') {
       let raw = ''
@@ -365,29 +416,36 @@ const httpServer = createServer(async (req, res) => {
       if (!email || !pubkey) return sendJson(res, 400, { error: 'email en pubkey vereist' })
       const emailHash = emailHashOf(email)
       const existing = await bindingFor(emailHash)
-      if (existing && existing.pubkey !== pubkey) return sendJson(res, 409, { error: 'e-mailadres is al in gebruik' })
-      const token = randomBytes(24).toString('hex')
-      pending.set(token, { emailHash, email, pubkey, usersId: usersId ?? null, exp: Date.now() + TOKEN_TTL })
-      await sendVerificationMail(email, token, recoveryCode)
+      // Alleen blokkeren als de bestaande binding bij een ÉCHT account hoort. Hoort 'ie bij
+      // een andere pubkey waar geen account achter zit (wees van een afgebroken signup), dan
+      // is de e-mail in werkelijkheid vrij → laat de nieuwe aanmelding gewoon door.
+      if (existing && existing.pubkey !== pubkey && await accountExistsForPubkey(existing.pubkey)) {
+        return sendJson(res, 409, { error: 'e-mailadres is al in gebruik' })
+      }
+      const code = String(randomInt(100000, 1000000)) // 6-cijferige verificatiecode
+      pending.set(emailHash, { emailHash, email, pubkey, usersId: usersId ?? null, code, exp: Date.now() + TOKEN_TTL })
+      await sendVerificationMail(email, code, recoveryCode)
       console.log(`• verificatie aangevraagd: ${email} (pubkey ${String(pubkey).slice(0, 12)}…)`)
       return sendJson(res, 200, { ok: true })
     }
 
-    // Bevestig verificatie via de gemailde link → binding vastleggen.
-    if (req.method === 'GET' && url.pathname === '/api/email/confirm') {
-      const token = url.searchParams.get('token')
-      const p = token && pending.get(token)
-      if (!p || p.exp < Date.now()) { if (p) pending.delete(token); return sendHtml(res, 400, '<h1>Link ongeldig of verlopen</h1>') }
-      pending.delete(token)
-      await verifications.put({ emailHash: p.emailHash, pubkey: p.pubkey, usersId: p.usersId, verifiedAt: new Date().toISOString() })
-      console.log(`✓ e-mail geverifieerd: ${p.email} ↔ ${String(p.pubkey).slice(0, 12)}…`)
-      return sendHtml(res, 200, `<html><body style="font-family:sans-serif;text-align:center;margin-top:60px;line-height:1.6">
-        <h1>E-mail bevestigd ✅</h1>
-        <p><b>Ga nu terug naar het tabblad waar je je aanmelding startte.</b><br>
-        Dat scherm rondt automatisch af en maakt je account aan met je gekozen wachtwoord.</p>
-        <p style="color:#888;font-size:13px">Bewaar de <b>herstelcode</b> uit je welkomstmail — daarmee reset je je
-        wachtwoord als je het kwijtraakt. Tabblad gesloten? Start de aanmelding gewoon opnieuw.</p>
-        </body></html>`)
+    // Bevestig verificatie met de gemailde CODE (POST {email, code, pubkey?}) → binding vastleggen.
+    // (Code i.p.v. klikbare link → veel betere mail-aflevering; zie sendVerificationMail.)
+    if (req.method === 'POST' && url.pathname === '/api/email/confirm') {
+      let raw = ''
+      for await (const c of req) raw += c
+      const { email, code, pubkey } = JSON.parse(raw || '{}')
+      const emailHash = emailHashOf(email || '')
+      const p = pending.get(emailHash)
+      if (!p || p.exp < Date.now() || String(p.code) !== String(code || '').trim()) {
+        if (p && p.exp < Date.now()) pending.delete(emailHash)
+        return sendJson(res, 400, { error: 'code ongeldig of verlopen' })
+      }
+      if (pubkey && p.pubkey !== pubkey) return sendJson(res, 400, { error: 'pubkey mismatch' })
+      pending.delete(emailHash)
+      await verifications.put({ emailHash, pubkey: p.pubkey, usersId: p.usersId, verifiedAt: new Date().toISOString() })
+      console.log(`✓ e-mail geverifieerd (code): ${p.email} ↔ ${String(p.pubkey).slice(0, 12)}…`)
+      return sendJson(res, 200, { ok: true, verified: true })
     }
 
     // Status opvragen (de SPA kan checken of een e-mail/pubkey geverifieerd is).

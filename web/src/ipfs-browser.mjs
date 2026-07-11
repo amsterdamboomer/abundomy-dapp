@@ -1,16 +1,20 @@
 /**
- * Browser-variant van de Helia/libp2p-node voor de SPA.
+ * Browser-variant van de Helia/libp2p-node voor de SPA — RELAY-LOOS qua INFRA,
+ * maar wél circuit-relay-CAPABEL (Optie A).
  *
- * - Transport: WebSockets (dial naar de relay) + WebRTC + circuit-relay (browser↔
- *   browser via de relay). Browsers kunnen niet beluisteren, dus alleen dialen.
- * - Opslag: IndexedDB (blockstore-idb / datastore-idb) i.p.v. het bestandssysteem.
+ * - Transport: Secure WebSockets (wss — via de AutoTLS-cert van het anker op
+ *   `*.libp2p.direct`) + WebTransport (QUIC, direct met certhash) om het Hetzner-anker
+ *   te dialen. Daarnaast `circuitRelayTransport()` zodat de browser via het anker
+ *   (dat circuit-relay-v2 hop draait) de anchor-replicator kan bereiken voor OrbitDB's
+ *   head-exchange (`/p2p/<anker>/p2p-circuit/p2p/<replicator>`). De browser dialt zelf
+ *   nog steeds maar één infra-adres (het anker) — géén eigen relay-service, géén webRTC.
+ * - Opslag: IndexedDB (blockstore-idb / datastore-idb).
  * - Identiteit: deterministische Ed25519-sleutel uit de seed (zelfde seed = zelfde
  *   peerId + OrbitDB-identiteit).
  */
 import { createLibp2p } from 'libp2p'
 import { webSockets } from '@libp2p/websockets'
-import { webRTC } from '@libp2p/webrtc'
-import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
+import { webTransport } from '@libp2p/webtransport'
 import { identify } from '@libp2p/identify'
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
@@ -28,8 +32,11 @@ export async function startBrowserNode({ seed }) {
   const privateKey = await generateKeyPairFromSeed('Ed25519', sha256(utf8ToBytes(seed)))
   const libp2p = await createLibp2p({
     privateKey,
-    addresses: { listen: ['/webrtc'] },
-    transports: [webSockets(), webRTC(), circuitRelayTransport()],
+    // Browser dialt alleen (luistert niet). Secure WebSockets dialt het anker
+    // (libp2p.direct, blocks) én de replicator (sslip.io-wss, OrbitDB-heads);
+    // WebTransport is een extra directe route naar het anker voor blocks.
+    addresses: { listen: [] },
+    transports: [webSockets(), webTransport()],
     connectionEncrypters: [noise()],
     streamMuxers: [yamux()],
     connectionGater: { denyDialMultiaddr: () => false }, // localhost in dev toestaan
@@ -41,8 +48,8 @@ export async function startBrowserNode({ seed }) {
   await blockstore.open()
   await datastore.open()
 
-  // Volledig IPFS-onafhankelijk: alleen p2p-bitswap (blocks komen via de relay),
-  // géén externe trustless-gateways en géén delegated routing (delegated-ipfs.dev).
+  // Relay-loos: blocks komen rechtstreeks van het anker via bitswap. Géén externe
+  // trustless-gateways en géén delegated routing (delegated-ipfs.dev).
   const ipfs = await createHelia({ libp2p, blockstore, datastore, blockBrokers: [bitswap()], routers: [] })
   const orbitdb = await createOrbitDB({ ipfs, id: seed, directory: `abundomy-orbitdb-${seed}` })
   return { ipfs, orbitdb }

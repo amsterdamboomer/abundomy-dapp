@@ -34,6 +34,16 @@ test('toevoegen + ophalen, duplicaat genegeerd, verwijderen', { timeout: 60_000 
   assert.deepEqual(await getList({ stores, ownerId: 13, listType: BLACKLIST }), [19])
 })
 
+test('toevoegen blijft werken ondanks een kapotte niet-numerieke listId in de store', async () => {
+  // Bootst de live-situatie na: een oude PoC-rest met een string-listId (owner/target/type
+  // undefined). Zonder de Number.isFinite-guard zou Math.max → NaN → nieuwe listId NaN.
+  await stores.lists.put({ listId: 'C1-1780598518731' })
+  await stores.lists.put({ listId: 'C2-1780598523763' })
+  const entry = await addToList({ stores, ownerId: 90, targetId: 91, listType: WHITELIST })
+  assert.ok(Number.isFinite(entry.listId), 'nieuwe listId is een eindig getal, geen NaN')
+  assert.deepEqual(await getList({ stores, ownerId: 90, listType: WHITELIST }), [91])
+})
+
 test('isPaymentAllowed: blacklist blokkeert, whitelist staat alleen toe', async () => {
   // Ontvanger 50 blokkeert gever 60 (blacklist-modus).
   await addToList({ stores, ownerId: 50, targetId: 60, listType: BLACKLIST })
