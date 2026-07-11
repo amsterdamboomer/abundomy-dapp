@@ -30,7 +30,7 @@ BUNDLE="dist-bundle"
 
 # Hetzner-anker (IPFS-Cluster + IPNS-publisher). Leeg laten schakelt stap 5b uit.
 ANCHOR_SSH="${ABUNDOMY_ANCHOR_SSH:-root@167.233.171.25}"
-ANCHOR_IPFS_PATH="${ABUNDOMY_ANCHOR_IPFS_PATH:-/mnt/HC_Volume_105912454/.ipfs}"
+ANCHOR_IPFS_PATH="${ABUNDOMY_ANCHOR_IPFS_PATH:-/var/lib/abundomy-ipfs/.ipfs}"
 
 cd "$(dirname "$0")"   # → abundomy-dapp/
 
