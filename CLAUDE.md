@@ -7,6 +7,9 @@ LAMP→IPFS migratieproject, Fase 5 bijna af.
 - Opslag: .abundomy-data/ (OrbitDB), .abundomy-ipfs/ (Helia blocks)
 - Alle economische logica in src/ledger.mjs (pure functies, niet aanraken zonder tests)
 - npm test moet altijd groen blijven
+- i18n-VEREISTE: Engels is de verplichte fallback voor de hele site én dapp (PDF incl.) —
+  mislukt de taalselectie of ontbreekt een string, dan ALTIJD Engels. Behoud overal de
+  `t()=cur ?? en ?? key` / content `data[lang] || data['en']`-tak (zie docs/i18n-taalpaginas.md)
 
 ## Auth (naam+wachtwoord)
 - LET OP: de **accountidentiteit (`pubkey`) wordt deterministisch uit de seed afgeleid**
@@ -32,9 +35,10 @@ LAMP→IPFS migratieproject, Fase 5 bijna af.
   web/src/app.mjs (signup/login), web/index.html
 
 ## Deploy
-- `npm run deploy` (= deploy.sh) bouwt de SPA + bundelt content op `/` en app op `/app/`,
-  voegt toe aan Kubo, pint en publiceert onder IPNS. LET OP: deploy.sh draait GEEN
-  `build:site` → na een content-/artikel-/vlag-wijziging eerst `npm run build:site`.
+- `npm run deploy` (= deploy.sh) bouwt **content-site (`build:site`) + SPA (`build:web`)**,
+  bundelt content op `/` en app op `/app/`, voegt toe aan Kubo, pint en publiceert onder
+  IPNS. Een content-/artikel-/vlag-/page-JSON-wijziging komt automatisch mee — niets
+  handmatig vooraf bouwen. (`--no-build` slaat beide builds over.)
 
 ## Content-site build (web/build-site.mjs → web/site-dist/)
 - Rendert de PHP-content (5 hoofdpagina's + 54 `articles/*.php`) statisch voor `en`;

@@ -1,0 +1,32 @@
+# systemd-unit voor de Abundomy anchor-replicator op de Hetzner-box.
+# Plaats als /etc/systemd/system/abundomy-anchor-replicator.service en pas paden aan.
+#   systemctl daemon-reload && systemctl enable --now abundomy-anchor-replicator
+#
+# Draait NAAST (later: i.p.v.) abundomy-relay.service. Repliceert de OrbitDB-stores
+# en spiegelt OrbitDB-blocks naar het lokale Kubo-anker (ABUNDOMY_KUBO_RPC=127.0.0.1:5001).
+
+[Unit]
+Description=Abundomy OrbitDB anchor-replicator (IPFS-only)
+After=network-online.target ipfs.service
+Wants=network-online.target
+Requires=ipfs.service
+
+[Service]
+Type=simple
+# Eigen user met lees/schrijf op de data-root; mag NIET root zijn.
+User=abundomy
+Group=abundomy
+WorkingDirectory=/opt/abundomy-dapp
+EnvironmentFile=/etc/abundomy-anchor-replicator.env
+ExecStart=/usr/bin/node web/anchor-replicator.mjs
+Restart=on-failure
+RestartSec=5
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/abundomy-anchor-repl
+
+[Install]
+WantedBy=multi-user.target

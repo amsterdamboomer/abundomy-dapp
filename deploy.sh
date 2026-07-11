@@ -8,11 +8,13 @@
 #   /app/relay.json → publiek wss-adres van de relay (de SPA haalt 'm relatief op)
 #
 # Stappen:
-#   1. vite-build (tenzij --no-build)
+#   1. build content-site (build:site) + SPA (vite-build) — tenzij --no-build
 #   2. publieke relay.json in dist-web (komt in /app/relay.json terecht)
 #   3. bundel samenstellen: content op /, SPA op /app/
 #   4. ipfs add + pin → nieuwe CID
 #   5. ipfs name publish onder de IPNS-sleutel (DNSLink/DNS blijven ongemoeid)
+#   5b. repliceer naar het Hetzner-anker (IPFS-Cluster) + laat het anker mee-publishen
+#       (afgeschermd: ontbreekt het cluster/anker, dan gaat de deploy gewoon door)
 #   6. de vorige CID ontpinnen
 #
 # Vereist: draaiende Kubo-daemon (ipfs.service) en de IPNS-sleutel (ABUNDOMY_IPNS_KEY).
@@ -22,9 +24,13 @@
 # Gebruik:  npm run deploy        of   bash deploy.sh [--no-build]
 set -euo pipefail
 
-DOMAIN="${ABUNDOMY_DOMAIN:-app.reikiwereld.eu}"
+DOMAIN="${ABUNDOMY_DOMAIN:-167-233-171-25.sslip.io}"
 KEY="${ABUNDOMY_IPNS_KEY:-abundomy-app}"
 BUNDLE="dist-bundle"
+
+# Hetzner-anker (IPFS-Cluster + IPNS-publisher). Leeg laten schakelt stap 5b uit.
+ANCHOR_SSH="${ABUNDOMY_ANCHOR_SSH:-root@167.233.171.25}"
+ANCHOR_IPFS_PATH="${ABUNDOMY_ANCHOR_IPFS_PATH:-/mnt/HC_Volume_105912454/.ipfs}"
 
 cd "$(dirname "$0")"   # → abundomy-dapp/
 
@@ -32,26 +38,23 @@ cd "$(dirname "$0")"   # → abundomy-dapp/
 if [ "${1:-}" = "--no-build" ]; then
   echo "▶ 1/6  Build overgeslagen (--no-build)"
 else
-  echo "▶ 1/6  Build SPA (vite, base './')…"
+  echo "▶ 1/6  Build content-site (build:site) + SPA (vite, base './')…"
+  npm run build:site
   npm run build:web
 fi
 
-# 2) publieke relay.json in de SPA-build (de SPA haalt 'm relatief op vanuit /app/)
-echo "▶ 2/6  Publieke relay.json in de SPA-build…"
-[ -f web/public/relay.json ] || { echo "✗ web/public/relay.json ontbreekt (start de relay één keer)"; exit 1; }
-python3 - "$DOMAIN" <<'PY'
-import json, sys
-domain = sys.argv[1]
-src = json.load(open('web/public/relay.json'))
-peer = src['addr'].split('/p2p/')[-1]          # relay-peerId (deterministisch)
-addr = f'/dns4/{domain}/tcp/443/wss/p2p/{peer}'
-json.dump({'addr': addr, 'stores': src['stores']}, open('dist-web/relay.json', 'w'), indent=2)
-open('dist-web/relay.json', 'a').write('\n')
-print('  relay.json →', addr)
-PY
+# 2) relay.json (= het te dialen Hetzner-anker) in de SPA-build.
+#    RELAY-LOOS: addr wijst naar de stabiele AutoTLS-wss van het anker (*.libp2p.direct,
+#    afgeleid van peer-ID + vaste IPv4 → blijft geldig over restarts). vite kopieert
+#    web/public/relay.json al naar dist-web/; we nemen 'm 1-op-1 over (geen domein-rewrite).
+echo "▶ 2/6  Anker-relay.json in de SPA-build…"
+[ -f web/public/relay.json ] || { echo "✗ web/public/relay.json ontbreekt"; exit 1; }
+cp web/public/relay.json dist-web/relay.json
+python3 -c "import json;print('  relay.json → ' + json.load(open('dist-web/relay.json'))['addr'])"
 
 # 3) bundel samenstellen: content op /, SPA op /app/
 echo "▶ 3/6  Bundel samenstellen (content op /, app op /app/)…"
+[ -d web/site-dist ] || { echo "✗ web/site-dist/ ontbreekt — draai zonder --no-build (build:site draait dan automatisch) of eerst 'npm run build:site'"; exit 1; }
 rm -rf "$BUNDLE"
 mkdir -p "$BUNDLE/app"
 cp -r web/site-dist/. "$BUNDLE/"     # content-site → bundel-root
@@ -73,6 +76,27 @@ echo "  vorige CID : ${OLD:-<geen>}"
 echo "▶ 5/6  Publiceren onder IPNS-sleutel '$KEY'…"
 ipfs name publish --key="$KEY" --ttl=30s --quieter "/ipfs/$CID" >/dev/null
 echo "  /ipns/$KEYID → /ipfs/$CID"
+
+# 5b) repliceren naar het Hetzner-anker via IPFS-Cluster + anker mee laten publishen
+echo "▶ 5b   Repliceren naar het Hetzner-anker (cluster + IPNS)…"
+if command -v ipfs-cluster-ctl >/dev/null 2>&1; then
+  if ipfs-cluster-ctl pin add --name "abundomy-site" "$CID" >/dev/null 2>&1; then
+    echo "  cluster-pin gezet: $CID (repliceert naar anker)"
+  else
+    echo "  ⚠ cluster-pin faalde (cluster onbereikbaar?) — anker krijgt deze CID later"
+  fi
+  if [ -n "$ANCHOR_SSH" ] && ssh -o BatchMode=yes -o ConnectTimeout=8 "$ANCHOR_SSH" \
+        "sudo -u ipfs env IPFS_PATH='$ANCHOR_IPFS_PATH' /usr/local/bin/ipfs name publish --key='$KEY' --ttl=30s --lifetime=48h --quieter '/ipfs/$CID'" >/dev/null 2>&1; then
+    echo "  anker publiceerde IPNS → /ipfs/$CID"
+  else
+    echo "  ⚠ anker-IPNS-publish overgeslagen (anker onbereikbaar?) — anker republisht z'n laatste record"
+  fi
+  if [ -n "${OLD:-}" ] && [ "$OLD" != "$CID" ]; then
+    ipfs-cluster-ctl pin rm "$OLD" >/dev/null 2>&1 && echo "  cluster-ontpin: $OLD" || true
+  fi
+else
+  echo "  (geen ipfs-cluster-ctl op deze host — stap 5b overgeslagen)"
+fi
 
 # 6) opruimen
 echo "▶ 6/6  Oude CID opruimen…"

@@ -424,6 +424,26 @@
               <button type="button" class="login-button" id="txCsvBtn">CSV</button>
             </div>
           </div>
+
+          <!-- PDF-opties: alle transacties (standaard) of een datumbereik -->
+          <div id="pdfOpts" class="hidden" style="max-width:340px; margin:8px auto 0; padding:12px 16px; border:1px solid var(--border,#ccc); border-radius:8px; text-align:left;">
+            <label style="display:block; margin-bottom:6px;">
+              <input type="radio" name="pdfScope" value="all" checked />
+              <span data-i18n="PDF_LBL_ALL">Alle transacties printen</span>
+            </label>
+            <label style="display:block; margin-bottom:6px;">
+              <input type="radio" name="pdfScope" value="range" />
+              <span data-i18n="PDF_FROM">Van</span>
+              <input id="pdfFrom" type="date" min="2020-01-01" max="2050-01-01" style="margin:0 4px;" />
+              <span data-i18n="PDF_TO">Tot</span>
+              <input id="pdfTo" type="date" min="2020-01-01" max="2050-01-01" style="margin-left:4px;" />
+            </label>
+            <label style="display:block; margin:10px 0 8px; padding-top:8px; border-top:1px solid var(--border,#ccc);">
+              <input id="pdfHistory" type="checkbox" />
+              <span data-i18n="PDF_LBL_HISTORY">Volledige geschiedenis printen</span>
+            </label>
+            <button type="button" class="login-button" id="pdfGenBtn" data-i18n="PDF_BTN_DL">Print PDF</button>
+          </div>
         </section>
 
         <!-- ===================== TRANSACTIE-DETAIL ===================== -->
@@ -490,7 +510,19 @@
               </a>
             </div>
             <div class="small_line"></div>
+            <!-- Profielhistorie-navigatie (gat C): blader door eerdere profielversies (users_old) -->
+            <div id="profRevNav" style="display:none; align-items:center; justify-content:center; gap:0.6rem; margin:0 0 0.5rem;">
+              <button type="button" class="btn-secondary" id="profRevPrev" data-i18n="REQ_PREV">Vorige</button>
+              <span class="muted" id="profRevLabel" style="font-size:0.85rem; min-width:10rem; text-align:center;"></span>
+              <button type="button" class="btn-secondary" id="profRevNext" data-i18n="REQ_NEXT">Volgende</button>
+            </div>
             <div class="calc-table" id="profFields"></div>
+            <!-- Statistieken (alleen op andermans profiel) — uit 1coinh humandetails.php -->
+            <div id="profStatsBox" style="display:none;">
+              <div class="small_line"></div>
+              <p class="muted" id="profStatsTitle" data-i18n="HD_STATS" style="margin-bottom:0.4rem;">Statistieken</p>
+              <div class="calc-table" id="profStats"></div>
+            </div>
             <div class="actions" id="profEditActions" style="justify-content:center; display:none;">
               <button type="button" class="login-button" id="profEditBtn" data-i18n="APP_EDIT">Gegevens aanpassen</button>
             </div>

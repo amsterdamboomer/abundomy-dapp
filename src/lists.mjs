@@ -12,7 +12,10 @@ const entries = async (stores) => (await stores.lists.all()).map((e) => e.value)
 export async function addToList({ stores, ownerId, targetId, listType }) {
   const all = await entries(stores)
   if (all.some((v) => v.ownerId === ownerId && v.targetId === targetId && v.listType === listType)) return null
-  const listId = all.reduce((m, v) => Math.max(m, v.listId), 0) + 1
+  // Alleen numerieke listId's meetellen: een kapotte/niet-numerieke entry (bv. een oude
+  // PoC-rest met een string-listId) zou anders `Math.max` → NaN maken, waardoor élke nieuwe
+  // listId NaN wordt en toevoegen aan een lijst stilletjes breekt.
+  const listId = all.reduce((m, v) => (Number.isFinite(v.listId) ? Math.max(m, v.listId) : m), 0) + 1
   const entry = { listId, ownerId, targetId, listType }
   await stores.lists.put(entry)
   return entry

@@ -39,12 +39,20 @@ const STORE_OPTS = {
  */
 export async function openStores(orbitdb, { write, addresses } = {}) {
   const acOpt = write ? { AccessController: IPFSAccessController({ write }) } : {}
-  const open = (key) => {
+  const open = async (key) => {
     const target = addresses?.[key] ?? DB_NAMES[key]
     // sync:true is vereist — OrbitDB's `syncAutomatically` default is feitelijk
     // false (geen default in de destructuring), dus zonder dit start de Sync niet
     // en repliceert niets. Op naam → maak/gebruik ACL; op adres → ACL uit manifest.
-    return orbitdb.open(target, { sync: true, ...STORE_OPTS[key], ...(addresses ? {} : acOpt) })
+    const db = await orbitdb.open(target, { sync: true, ...STORE_OPTS[key], ...(addresses ? {} : acOpt) })
+    // KRITIEK: een peer die een onleesbare/corrupte head-entry stuurt laat OrbitDB-sync
+    // een 'error'-event emitten (sync.js `handleReceiveHeads` → bv. CBOR-decodefout).
+    // `db.events` is dezelfde emitter die Sync gebruikt; zónder listener is dat een
+    // onafgevangen 'error' → Node beëindigt het hele proces. De anker-replicator
+    // crash-loopte hierdoor ~1×/min (login-uitval voor iedereen). Een listener maakt
+    // het non-fataal: log en negeer; die ene peer wordt overgeslagen, de store draait door.
+    db.events.on('error', (e) => console.warn(`⚠ sync-fout in store '${key}' (genegeerd): ${e?.message || e}`))
+    return db
   }
   const transactions = await open('transactions')
   const users = await open('users')

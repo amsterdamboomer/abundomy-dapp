@@ -14,7 +14,7 @@ import { openStores, closeStores } from '../../src/stores.mjs'
 import { deriveCommunityKey, decryptUserProfile } from '../../src/crypto.mjs'
 import { availableCoins, joinedDate, parseSqlDate } from '../../src/ledger.mjs'
 import { createProposal, payProposal } from '../../src/payments.mjs'
-import { claimUser, signup, changePassword, rekeyAuth, deriveAccountKey, updateProfile } from '../../src/identity.mjs'
+import { claimUser, signup, changePassword, rekeyAuth, deriveAccountKey, updateProfile, repairIdentity } from '../../src/identity.mjs'
 import { createKeystore, openKeystore, validatePassword, generateRecoveryCode, formatRecoveryCode, normalizeRecoveryCode } from '../../src/auth.mjs'
 import { exportUserChain } from '../../src/export.mjs'
 import { addToList, removeFromList, getList, BLACKLIST, WHITELIST } from '../../src/lists.mjs'
@@ -22,8 +22,67 @@ import { COMMUNITY_SECRET, DECAY_RATE } from '../../src/config.mjs'
 import { t, getLang, setLang, onLangChange, loadI18n, applyStaticI18n, getFlag, hasLang, LANGUAGES } from './i18n.mjs'
 
 const $ = (id) => document.getElementById(id)
-const log = (...a) => { $('log').textContent += a.join(' ') + '\n'; $('log').scrollTop = 1e9 }
+const log = (...a) => {
+  const line = a.join(' ')
+  $('log').textContent += line + '\n'; $('log').scrollTop = 1e9
+  // Spiegel de laatste regel naar het zichtbare login-statusveld (#log zit in de
+  // dapp-sectie en is op het loginscherm onzichtbaar → anders lijkt er "niets" te gebeuren).
+  try { const ri = $('relayInfo'); if (ri && !$('login').classList.contains('hidden')) ri.textContent = line } catch {}
+}
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+/**
+ * Absolute mailer-API-basis. De app draait op IPFS (dweb.link/IPNS), de mailer is een aparte
+ * server-dienst; daarom roepen we 'm op een ABSOLUTE URL aan (uit relay.json `api`, bv. de
+ * Hetzner-sslip.io), niet relatief. Leeg → relatief (lokale dev met nginx-proxy). Gecachet.
+ */
+let _apiBase
+async function apiUrl (path) {
+  if (_apiBase === undefined) {
+    try { _apiBase = (await (await fetch('relay.json')).json()).api || '' } catch { _apiBase = '' }
+  }
+  return (_apiBase || '') + path
+}
+/**
+ * Bevestig e-mailbezit met de gemailde 6-cijferige CODE (geen klikbare link → veel betere
+ * mail-aflevering; Hotmail/Outlook dropte de oude sslip.io-link-mails). Throwt bij annuleren
+ * of na te veel mislukte pogingen.
+ */
+async function confirmEmailByCode (email, pubkey) {
+  return new Promise((resolve, reject) => {
+    const ov = document.createElement('div')
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px'
+    ov.innerHTML = '<div style="background:#fff;color:#111;max-width:360px;width:100%;padding:22px;border-radius:14px;font-family:sans-serif;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.4)">' +
+      '<p style="margin:0 0 4px;font-weight:bold">Bevestig je e-mailadres</p>' +
+      '<p style="margin:0 0 12px;color:#666;font-size:13px">Vul de 6-cijferige code uit je e-mail in (kijk ook in spam).</p>' +
+      '<input id="__abCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="font-size:24px;letter-spacing:8px;text-align:center;width:7em;padding:10px;border:1px solid #ccc;border-radius:8px" />' +
+      '<p id="__abCodeMsg" style="color:#b00020;min-height:1.2em;margin:10px 0 4px;font-size:13px"></p>' +
+      '<div><button id="__abCodeOk" style="padding:10px 18px;border:0;border-radius:8px;background:#2b7;color:#fff;font-size:15px;cursor:pointer">Bevestigen</button>' +
+      '<button id="__abCodeCancel" style="padding:10px 18px;margin-left:8px;border:1px solid #ccc;border-radius:8px;background:#f4f4f4;cursor:pointer">Annuleer</button></div></div>'
+    document.body.appendChild(ov)
+    const inp = ov.querySelector('#__abCode')
+    const msg = (m) => { ov.querySelector('#__abCodeMsg').textContent = m }
+    const ok = ov.querySelector('#__abCodeOk')
+    setTimeout(() => inp.focus(), 50)
+    const close = () => ov.remove()
+    ov.querySelector('#__abCodeCancel').onclick = () => { close(); reject(new Error('e-mailverificatie geannuleerd')) }
+    ok.onclick = async () => {
+      const code = (inp.value || '').trim()
+      if (!code) { msg('Vul de code in.'); return }
+      ok.disabled = true; msg('Code controleren…')
+      try {
+        const r = await fetch(await apiUrl('/api/email/confirm'), {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email, code, pubkey }),
+        })
+        const j = await r.json().catch(() => ({}))
+        if (r.ok && j.verified) { close(); resolve(true); return }
+        msg('Code klopt niet of is verlopen — probeer opnieuw.')
+      } catch (e) { msg('Fout: ' + e.message) }
+      ok.disabled = false
+    }
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') ok.click() })
+  })
+}
 /** ISO-datum (JJJJ-MM-DD) → Nederlands DD-MM-JJJJ. */
 const formatDateNL = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? `${m[3]}-${m[2]}-${m[1]}` : (iso || '—') }
 
@@ -86,13 +145,15 @@ async function settleSync(db, maxMs = 6000) {
   })
 }
 
-/** Dial de relay en wacht tot er een pubsub-peer is. Geeft het relay-multiaddr terug. */
+/** Dial het anker (blocks) + de replicator (OrbitDB-heads) en wacht op een pubsub-peer.
+ *  Geeft de lijst gedialede multiaddrs terug. De replicator-wss is de niet-gelimiteerde
+ *  verbinding waarover OrbitDB's head-exchange loopt; het anker levert blocks via bitswap. */
 async function dialRelay(n) {
   const relay = await (await fetch('relay.json')).json()
-  const relayMa = multiaddr(relay.addr)
-  await n.ipfs.libp2p.dial(relayMa)
+  const addrs = [relay.addr, relay.replicator].filter(Boolean).map((a) => multiaddr(a))
+  await Promise.allSettled(addrs.map((ma) => n.ipfs.libp2p.dial(ma)))
   await waitFor(() => n.ipfs.libp2p.services.pubsub.getPeers().length > 0, 'relay-peer')
-  return relayMa
+  return addrs
 }
 
 // Eén gedeelde node voor de hele SPA. De OrbitDB/node-identiteit is sinds de
@@ -123,15 +184,15 @@ async function openSession(seed) {
   node = await startBrowserNode({ seed })
   communityKey = await deriveCommunityKey(COMMUNITY_SECRET)
 
-  log('Verbinden met relay…')
-  const relayMa = await dialRelay(node)
+  log('Verbinden met anker + replicator…')
+  const relayMas = await dialRelay(node)
   const pubsub = node.ipfs.libp2p.services.pubsub
 
-  // Houd de relay-verbinding levend (floodsub is fire-and-forget).
+  // Houd de verbinding(en) levend (floodsub is fire-and-forget).
   setInterval(async () => {
     if (pubsub.getPeers().length === 0) {
       log('geen pubsub-peer — opnieuw verbinden…')
-      try { await node.ipfs.libp2p.dial(relayMa) } catch {}
+      for (const ma of relayMas) { try { await node.ipfs.libp2p.dial(ma) } catch {} }
     }
   }, 4000)
 
@@ -154,11 +215,22 @@ async function finishLogin() {
   }
   const lp = node.ipfs.libp2p
   lp.addEventListener('connection:open', () => log(`+ verbonden (${lp.getConnections().length} connectie(s))`))
-  lp.addEventListener('connection:close', () => log(`- connectie weg (${lp.getConnections().length} over)`))
+  // SNEL HERSTEL: zodra een verbinding wegvalt, meteen (gedebounced) een verse head-
+  // uitwisseling forceren i.p.v. wachten op de periodieke tik → gemiste verzoeken komen
+  // binnen enkele seconden binnen i.p.v. pas na de volgende cyclus. `resyncing`-guard
+  // voorkomt dat onze eigen hangUp (in resyncStores) een herstel-lus triggert.
+  let resyncTimer = null
+  const scheduleResync = (delay = 800) => {
+    if (resyncTimer || resyncing) return
+    resyncTimer = setTimeout(() => { resyncTimer = null; resyncStores().catch(() => {}) }, delay)
+  }
+  lp.addEventListener('connection:close', () => { log(`- connectie weg (${lp.getConnections().length} over)`); scheduleResync() })
   setInterval(() => render().catch(() => {}), 2500)
-  // Vangnet voor gemiste floodsub-pushes / half-dode relay-connectie: periodiek
-  // de verbinding vernieuwen zodat gemiste entries alsnog binnenkomen.
-  setInterval(() => resyncStores().catch(() => {}), 20000)
+  // Vangnet voor een HALF-DODE relay-connectie (telt nog als 'verbonden', dus de keepalive
+  // grijpt niet in): periodiek de verbinding vernieuwen → verse head-uitwisseling haalt
+  // gemiste entries alsnog op. Bewezen met een geïsoleerde 3-node-reproductie (writer/
+  // receiver/relay): een gemiste entry wordt na hangUp+redial ingehaald.
+  setInterval(() => resyncStores().catch(() => {}), 15000)
 
   $('app-header').classList.remove('hidden')
   for (const id of ['login', 'signup', 'resetCard']) $(id).classList.add('hidden')
@@ -233,8 +305,19 @@ async function loginWithPassword() {
     }, 'account-lookup', 30000).catch(() => {})
     if (!rec) throw new Error('geen account met die gebruiker/e-mail')
     if (!rec.auth) throw new Error('dit account heeft geen wachtwoord — gebruik de migratie/dev-login')
-    await openKeystore(rec.auth, pwd) // verifieert het wachtwoord (gooit 'verkeerd wachtwoord')
+    const seed = await openKeystore(rec.auth, pwd) // verifieert het wachtwoord (gooit 'verkeerd wachtwoord')
     me = rec.usersId
+    // Self-heal: door historische usersId-collisions kan dit doc inconsistent zijn (pubkey/
+    // claim van een andere identiteit dan auth/recovery) → reset kapot. Repareer met de seed
+    // die dit wachtwoord oplevert, en toon de NIEUWE herstelcode prominent (bewaren!).
+    try {
+      const fix = await repairIdentity({ stores, seed, usersId: me })
+      if (fix.repaired) {
+        log('⚠ Account-identiteit hersteld na historische overschrijving.')
+        log('⚠ NIEUWE HERSTELCODE — bewaar deze (nodig voor wachtwoord-reset): ' + fix.recoveryCode)
+        try { alert('Je account is automatisch hersteld.\n\nNIEUWE HERSTELCODE — bewaar deze goed; je hebt \'m nodig om je wachtwoord te resetten:\n\n' + fix.recoveryCode) } catch {}
+      }
+    } catch (e) { log('identiteit-herstel overgeslagen: ' + e.message) }
     await finishLogin()
   } catch (err) {
     log('FOUT: ' + err.message)
@@ -283,18 +366,14 @@ async function doSignup() {
     const pubkey = (await deriveAccountKey(seed)).pubkey
 
     info('Verificatiemail aanvragen…')
-    const r = await fetch('/api/email/start', {
+    const r = await fetch(await apiUrl('/api/email/start'), {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email, pubkey, recoveryCode: formatRecoveryCode(recoveryRaw) }),
     })
     if (r.status === 409) throw new Error('dit e-mailadres is al in gebruik')
     if (!r.ok) throw new Error('verificatie-aanvraag mislukt — probeer het nog eens')
-    info('✉ Check je e-mail en klik de bevestigingslink — houd dit tabblad open, ik wacht…')
-
-    await waitFor(async () => {
-      const s = await (await fetch('/api/email/status?email=' + encodeURIComponent(email))).json()
-      return s.verified && s.pubkey === pubkey
-    }, 'e-mailverificatie', 10 * 60 * 1000)
+    info('✉ Check je e-mail — vul de verificatiecode in (kijk ook in spam).')
+    await confirmEmailByCode(email, pubkey, info)
 
     info('E-mail bevestigd ✓ — wachtwoord-keystore + herstelkluis aanmaken…')
     const auth = await createKeystore(seed, pwd)
@@ -324,24 +403,26 @@ async function resyncStores() {
   try {
     const lp = node.ipfs.libp2p
     const relay = await (await fetch('relay.json')).json()
-    const relayMa = multiaddr(relay.addr)
-    const relayPeer = relayMa.getPeerId()
-    log('↻ verbinding vernieuwen…')
-    // 1. sluit de (mogelijk half-dode) relay-verbinding(en)
-    for (const conn of lp.getConnections()) {
-      if (relayPeer && conn.remotePeer.toString() === relayPeer) { try { await conn.close() } catch {} }
+    const relayAddrs = [relay.addr, relay.replicator].filter(Boolean)
+    const relayMas = relayAddrs.map((a) => multiaddr(a))
+    // Peer-ID uit de adres-string halen (multiaddr.getPeerId() bestaat niet op de
+    // gebundelde versie → wierp elke 20s een fout waardoor dit vangnet nooit liep).
+    const relayPeers = new Set(relayAddrs.map((a) => a.split('/p2p/').pop()).filter(Boolean))
+    // BROWSER-GEÏNITIEERDE CATCH-UP. Browsers zijn NIET dialbaar → de replicator kan gemiste
+    // OrbitDB-heads niet naar ons PUSHEN. OrbitDB v4 z'n catch-up (sync.js handlePeerSubscribed
+    // → dialProtocol) loopt alléén wanneer WIJ de replicator op een VERSE verbinding (her)dialen.
+    // `db.sync.stop()/start()` (oude aanpak) helpt niet: re-subscriben leunt op een terug-dial
+    // die bij browsers faalt. Daarom forceren we een echte herverbinding: hang de bestaande
+    // relay-connectie op — dit wist de peer uit OrbitDB's sync-set via 'peer:disconnect' — en
+    // dial opnieuw → triggert een UITGAANDE head-uitwisseling die gemiste verzoeken alsnog
+    // ophaalt. Zelfcorrigerend: mist deze cyclus iets in het korte herverbind-venster, dan
+    // haalt de volgende 'm op. Live pubsub blijft de snelle hoofdroute; dit is het vangnet.
+    for (const c of lp.getConnections()) {
+      if (relayPeers.has(c.remotePeer.toString())) { try { await lp.hangUp(c.remotePeer) } catch {} }
     }
-    // 2. laat de relay de disconnect verwerken (onze subscriptions opschonen)
-    await sleep(1200)
-    // 3. verse verbinding
-    await lp.dial(relayMa)
+    for (const ma of relayMas) { try { await lp.dial(ma) } catch {} }
     await waitFor(() => lp.services.pubsub.getPeers().length > 0, 'relay-resync', 12000).catch(() => {})
-    // 4. her-subscribe elke store op de verse verbinding → relay stuurt z'n heads terug
-    for (const db of Object.values(stores)) {
-      try { await db.sync.stop(); await db.sync.start() } catch {}
-    }
-    await sleep(2000) // head-uitwisseling tijd geven
-    log(`↻ vernieuwd (pubsub-peers: ${lp.services.pubsub.getPeers().length})`)
+    await sleep(1500) // head-uitwisseling tijd geven
   } catch (e) { log('↻ resync-fout: ' + e.message) }
   finally { resyncing = false }
   await render().catch(() => {})
@@ -625,7 +706,10 @@ async function renderTransactions({ id } = {}) {
 
   // Maand-transacties.
   const monthTxs = all.filter((t) => { const d = parseSqlDate(t.time_stamp); return d.getUTCFullYear() === txYear && d.getUTCMonth() + 1 === txMonth })
-  if (!monthTxs.some((t) => t.tid === txSelectedTid)) txSelectedTid = monthTxs.length ? monthTxs[0].tid : 0
+  // Standaard de NIEUWSTE transactie van de maand selecteren (monthTxs is op tijd oplopend),
+  // zodat het rekenpaneel bij binnenkomst de actuele staat toont i.p.v. de basis (1000/0 uur)
+  // van de allereerste transactie.
+  if (!monthTxs.some((t) => t.tid === txSelectedTid)) txSelectedTid = monthTxs.length ? monthTxs[monthTxs.length - 1].tid : 0
 
   // Prev/next maand met activiteit.
   const startOfView = Date.UTC(txYear, txMonth - 1, 1)
@@ -663,16 +747,39 @@ async function renderTransactions({ id } = {}) {
 /** Berekening-paneel (decay/income) onder de lijst — uit transactions.php. */
 function renderCalc(all, uid, monthTxs, joined, users) {
   const box = $('txCalc'); box.innerHTML = ''
-  const t = monthTxs.find((x) => x.tid === txSelectedTid)
-  if (!t) return
-  const isGiver = t.giver === uid
-  const st = previousTransactionState(all, uid, t.time_stamp, joined)
-  const newBalance = st.availableBalance + (isGiver ? -t.amount : t.amount)
-  const partnerId = isGiver ? t.receiver : t.giver
+  // LET OP: niet `t` gebruiken voor de transactie — dat overschaduwt de i18n-functie t().
+  const tx = monthTxs.find((x) => x.tid === txSelectedTid)
+  if (!tx) return
+  const isGiver = tx.giver === uid
+  const st = previousTransactionState(all, uid, tx.time_stamp, joined)
+  const newBalance = st.availableBalance + (isGiver ? -tx.amount : tx.amount)
+
+  // BRUG NAAR NU: 'Nieuw saldo' is het saldo direct ná de transactie (historisch).
+  // De kop toont het LIVE saldo (availableCoins, nu) — dat groeit sindsdien door met
+  // basisinkomen/decay, dus die twee wijken af. Voor de NIEUWSTE transactie van de
+  // gebruiker tonen we daarom een afsluitregel 'Huidig saldo' = exact de kopwaarde
+  // (zelfde functie + data als renderHeader → gegarandeerd gelijk), met de aangroei
+  // sinds die transactie ertussen. Zo sluit het overzicht aan op het werkelijke saldo.
+  const isLatest = all.length > 0 && tx.tid === all[all.length - 1].tid
+  let bridge = ''
+  if (isLatest) {
+    const liveBal = availableCoins({ joined, transactions: all, userId: uid, asOf: new Date() })
+    const elapsed = Math.floor(Math.abs(Date.now() - parseSqlDate(tx.time_stamp).getTime()) / 3_600_000)
+    const delta = liveBal - newBalance
+    const dColor = delta >= 0 ? '#00BFFF' : 'var(--error)'
+    const dSign = delta >= 0 ? '+' : '-'
+    bridge =
+      calcRow(`Sinds laatste transactie (${elapsed} u)`, `<span style="color:${dColor}">${dSign}${formatCoins(Math.abs(delta))} ᕫ</span>`) +
+      `<div class="full-screen-line"></div>` +
+      calcRow('<strong>Huidig saldo</strong>', `<strong>${formatCoins(liveBal)} ᕫ</strong>`) +
+      `<div class="full-screen-line"></div>`
+  }
+
+  const partnerId = isGiver ? tx.receiver : tx.giver
   const partnerDoc = users.find((u) => u.usersId === partnerId)
   const color = isGiver ? 'var(--error)' : '#00BFFF'
   const sign = isGiver ? '-' : '+'
-  const desc = (t.description || '').slice(0, 25)
+  const desc = (tx.description || '').slice(0, 25)
 
   box.innerHTML =
     `<div class="full_line"></div>` +
@@ -690,13 +797,14 @@ function renderCalc(all, uid, monthTxs, joined, users) {
           `<img src="${avatarFor(partnerDoc ? { usersId: partnerId } : null)}" class="transactionicon2" />` +
           `<span class="expanded-desc">${desc}</span>` +
         `</span>` +
-        `<span class="calc-val" style="color:${color}; flex-shrink:0; text-align:right;">${sign}${formatCoins(t.amount)} ᕫ</span>` +
+        `<span class="calc-val" style="color:${color}; flex-shrink:0; text-align:right;">${sign}${formatCoins(tx.amount)} ᕫ</span>` +
       `</div>` +
     `</a>` +
     `<div class="full-screen-line"></div>` +
     calcRow('<strong>Nieuw saldo</strong>', `<strong>${formatCoins(newBalance)} ᕫ</strong>`) +
-    `<div class="full-screen-line"></div>`
-  const link = $('calcDetailLink'); if (link) link.href = `#/tx/${t.tid}`
+    `<div class="full-screen-line"></div>` +
+    bridge
+  const link = $('calcDetailLink'); if (link) link.href = `#/tx/${tx.tid}`
 }
 
 const calcRow = (title, val) => `<div class="calc-row"><span class="calc-title">${title}</span><span class="calc-val">${val}</span></div>`
@@ -748,6 +856,11 @@ async function safeProfile(doc) {
 
 // ============================ PROFIEL (eigen + peer) ============================
 let profileEditing = false
+// Profielhistorie-weergave (gat C): de doorbladerbare versies van het getoonde profiel.
+let revVersions = []
+let revIdx = 0
+let revIsMe = false
+let revUid = null
 
 async function renderProfile({ id } = {}) {
   if (profileEditing) return // niet herrenderen tijdens bewerken (zou velden overschrijven)
@@ -760,20 +873,63 @@ async function renderProfile({ id } = {}) {
   if (isMe) p = myProfile
   else {
     const doc = (await stores.users.get(uid))?.value
-    if (!doc) { $('profName').textContent = 'Onbekende gebruiker'; $('profFields').innerHTML = ''; return }
+    if (!doc) { $('profName').textContent = 'Onbekende gebruiker'; $('profFields').innerHTML = ''; $('profRevNav').style.display = 'none'; return }
     p = await safeProfile(doc)
   }
 
   const txs = (await stores.transactions.all()).map((e) => e.value)
   const usersOld = (await stores.usersOld.all()).map((e) => e.value)
   const myDoc = (await stores.users.get(uid))?.value
-  const bal = availableCoins({ joined: joinedDate(myDoc ?? { usersId: uid, start: txs[0]?.time_stamp }, usersOld), transactions: txs, userId: uid, asOf: new Date() })
+  const joined = joinedDate(myDoc ?? { usersId: uid, start: txs[0]?.time_stamp }, usersOld)
+  const bal = availableCoins({ joined, transactions: txs, userId: uid, asOf: new Date() })
 
-  $('profImg').src = avatarFor({ ...p, usersId: uid })
-  $('profName').textContent = p.usersName || `#${uid}`
   $('profBalance').textContent = `${formatCoins(bal)} ᕫ`
   $('profBalanceLink').href = isMe ? '#/transactions' : `#/transactions/${uid}` // saldo → keten (humandetails)
 
+  // Profielhistorie (gat C): huidige versie + de gearchiveerde versies uit users_old
+  // (nieuwste historische eerst), doorbladerbaar met Vorige/Volgende. Alleen échte
+  // snapshots (met enc); de slank-gemigreerde join-only rijen overslaan.
+  const histSnaps = usersOld
+    .filter((o) => o.uid_old === uid && o.enc)
+    .sort((a, b) => (a.start_old < b.start_old ? 1 : a.start_old > b.start_old ? -1 : 0))
+  const hist = []
+  for (const s of histSnaps) hist.push({ profile: await safeProfile(s), start_old: s.start_old, end_old: s.end_old })
+  const today = new Date().toISOString().slice(0, 10)
+  const curStart = hist.length ? hist[0].end_old : joined
+  revUid = uid
+  revIsMe = isMe
+  revVersions = [
+    { profile: p, period: `${formatDateNL(curStart)} – ${formatDateNL(today)}` },
+    ...hist.map((h) => ({ profile: h.profile, period: `${formatDateNL(h.start_old)} – ${formatDateNL(h.end_old)}` })),
+  ]
+  revIdx = 0
+  $('profRevNav').style.display = revVersions.length > 1 ? 'flex' : 'none'
+  renderProfileVersion()
+
+  // Statistieken-blok (alleen op andermans profiel) — uit 1coinh humandetails.php.
+  const statsBox = $('profStatsBox')
+  if (!isMe) {
+    statsBox.style.display = 'block'
+    $('profStats').innerHTML = renderProfileStats(txs, uid, me, joined)
+  } else {
+    statsBox.style.display = 'none'
+  }
+
+  await renderListControls(uid, isMe) // blok-/whitelijst-knoppen
+}
+
+/**
+ * Toon de geselecteerde profielversie (huidig = index 0, of een gearchiveerde uit
+ * users_old) in de profielweergave: avatar, naam en velden wisselen mee; saldo/statistieken
+ * blijven (die horen bij de persoon, niet bij de versie). De caption toont positie +
+ * geldigheidsperiode; bewerken kan alleen op de EIGEN, huidige versie.
+ */
+function renderProfileVersion() {
+  const v = revVersions[revIdx]
+  if (!v) return
+  const p = v.profile
+  $('profImg').src = avatarFor({ ...p, usersId: revUid })
+  $('profName').textContent = p.usersName || `#${revUid}`
   const hair = hairLabels()[p.hair] ?? (p.hair ?? '—')
   const left = eyeLabels()[p.leftEye] ?? (p.leftEye ?? '—')
   const right = eyeLabels()[p.rightEye] ?? (p.rightEye ?? '—')
@@ -785,10 +941,47 @@ async function renderProfile({ id } = {}) {
     calcRow(t('SU_RE'), right) +
     calcRow(t('SU_BD'), formatDateNL(p.birthday)) +
     calcRow(t('SU_SF'), p.specialFeatures || '—')
-  if (isMe) html += calcRow(t('SU_EM'), p.usersEmail || '—') // alleen op eigen profiel
+  if (revIsMe) html += calcRow(t('SU_EM'), p.usersEmail || '—') // alleen op eigen profiel
   $('profFields').innerHTML = html
 
-  await renderListControls(uid, isMe) // blok-/whitelijst-knoppen
+  const histTag = revIdx === 0 ? '' : `${t('BTN_HISTORY')} · `
+  $('profRevLabel').textContent = `${histTag}${revIdx + 1}/${revVersions.length} · ${v.period}`
+  $('profRevPrev').disabled = revIdx >= revVersions.length - 1 // Vorige = ouder
+  $('profRevNext').disabled = revIdx <= 0                      // Volgende = nieuwer
+  $('profEditActions').style.display = (revIsMe && revIdx === 0) ? 'flex' : 'none'
+}
+
+/**
+ * Statistieken + Vertrouwen-score voor een peer-profiel, 1-op-1 uit 1coinh
+ * `humandetails.php` (trust-log-curve + tellingen). `h` = bekeken profiel, `m` = ik.
+ * De score is relatief t.o.v. de kijker (eigen transacties met deze persoon wegen het zwaarst).
+ */
+function renderProfileStats(txs, h, m, joinedStr) {
+  const cnt = (f) => txs.reduce((n, x) => n + (f(x) ? 1 : 0), 0)
+  const uniq = (pick, f) => new Set(txs.filter(f).map(pick)).size
+  const hGiver = cnt((x) => x.giver === h)
+  const hGiverU = uniq((x) => x.receiver, (x) => x.giver === h)
+  const hReceiver = cnt((x) => x.receiver === h)
+  const hReceiverU = uniq((x) => x.giver, (x) => x.receiver === h)
+  const mGiver = cnt((x) => x.giver === m && x.receiver === h) // ik → profiel (van jou)
+  const mReceiver = cnt((x) => x.receiver === m && x.giver === h) // profiel → ik (aan jou betaald)
+  const pOthers = hGiver - mReceiver // profiel betaalde anderen
+  const rOthers = hReceiver - mGiver // profiel ontving van anderen
+
+  const joinedDt = joinedStr ? parseSqlDate(joinedStr) : new Date()
+  const hours = Math.max(0, (Date.now() - joinedDt.getTime()) / 3600000)
+  const days = hours / 24
+  const vdays = days < 10 ? days.toFixed(1) : Math.round(days).toString()
+
+  const curve = (v) => (v <= 0 ? 0 : 7.427 * Math.log(v + 0.008) + 35.85)
+  const trust = curve(mGiver) * 0.37 + curve(mReceiver) * 0.16 + curve(hReceiver) * 0.12 +
+                curve(hGiver) * 0.04 + curve(hReceiverU) * 0.22 + curve(hGiverU) * 0.02 + curve(hours) * 0.07
+  const finalTrust = Math.max(0.1, Math.min(99.9, Math.round(trust)))
+
+  return calcRow(`${t('ST_PART')} ${vdays} ${t('ST_DAYS')}`, `${t('ST_TRUST')} ${finalTrust}%`) +
+         calcRow(`${t('ST_PAID_YOU')}: ${mReceiver}`, `${t('ST_FROM_YOU')}: ${mGiver}`) +
+         calcRow(`${t('ST_PAID_OTHERS')} ${pOthers}`, `${t('ST_RECEIVED')}: ${rOthers}`) +
+         calcRow(`${t('ST_UNI_PAID')}: ${hGiverU}`, `${t('ST_UNI_REC')}: ${hReceiverU}`)
 }
 
 // ============================ BLOK-/WHITELIJST ============================
@@ -965,18 +1158,14 @@ async function changeEmail() {
     if (!pubkey) throw new Error('account-sleutel onbekend — log opnieuw in')
 
     info('Verificatiemail aanvragen…')
-    const r = await fetch('/api/email/start', {
+    const r = await fetch(await apiUrl('/api/email/start'), {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: newEmail, pubkey, usersId: me }),
     })
     if (r.status === 409) throw new Error('dit e-mailadres is al in gebruik')
     if (!r.ok) throw new Error('verificatie-aanvraag mislukt — probeer het nog eens')
-    info('✉ Check je nieuwe mailbox en klik de bevestigingslink — houd dit tabblad open, ik wacht…')
-
-    await waitFor(async () => {
-      const s = await (await fetch('/api/email/status?email=' + encodeURIComponent(newEmail))).json()
-      return s.verified && s.pubkey === pubkey
-    }, 'e-mailverificatie', 10 * 60 * 1000)
+    info('✉ Check je nieuwe mailbox — vul de verificatiecode in (kijk ook in spam).')
+    await confirmEmailByCode(newEmail, pubkey, info)
 
     info('Bevestigd ✓ — e-mailadres bijwerken…')
     await updateProfile({ stores, usersId: me, communityKey, updates: { usersEmail: newEmail } })
@@ -1133,12 +1322,26 @@ async function exportChain(userId = me) {
   log('Keten geëxporteerd.')
 }
 
+/** "07 Jun 2026 07:05:09" — volledige datum met seconden (zoals de legacy-PDF). */
+function fmtFullDate(s) {
+  const d = txDate(s)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${p(d.getUTCDate())} ${monthsShort()[d.getUTCMonth()]} ${d.getUTCFullYear()} ` +
+    `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`
+}
+
 /**
- * PDF-maandoverzicht (transactions.php → download-pdf.php). Serverloos: we openen
- * een printvriendelijk venster met het overzicht van de getoonde gebruiker/maand;
- * de browser maakt er via 'Opslaan als PDF' een echte PDF van.
+ * PDF transactie-overzicht — serverloze tegenhanger van legacy `generate-pdf.inc.php`
+ * (TCPDF). We openen een printvriendelijk venster; de browser maakt er via 'Opslaan
+ * als PDF' een echte PDF van. Toont ALLE transacties van de getoonde gebruiker
+ * (nieuwste eerst), met per transactie de volledige opbouw: uren · solidariteit ·
+ * reductie · betaling · nieuw saldo (1-op-1 met `previousTransactionState`).
+ *
+ * RONDE 2: + ronde avatars (eigen + tegenpartij), + profielblok (lengte/geslacht/
+ * haar/ogen/geboortedatum/bijzondere kenmerken, vertaalde kleurnamen), + brug-regel
+ * 'sinds laatste transactie tot nu'. Labels vallen voor niet-EN/NL talen terug op EN.
  */
-async function printStatement() {
+async function printStatement({ from, to, history } = {}) {
   // Venster METEEN openen (binnen het klik-gebaar) — anders blokkeert de pop-upfilter
   // het na de async data-ophaal. Daarna vullen we het.
   const w = window.open('', '_blank')
@@ -1147,45 +1350,208 @@ async function printStatement() {
     '<body style="font:14px Arial,sans-serif;margin:32px;color:#555">Overzicht voorbereiden…</body>')
 
   const uid = txUserId ?? me
-  if (txYear == null) { w.document.body.textContent = 'Open eerst een maand in Transacties.'; return }
-  const all = await userTransactions(uid)
+  const allFull = await userTransactions(uid) // oplopend op tijd (volledige keten)
+  // Optioneel datumbereik: filter de getoonde rijen op [from, to] (datum-inclusief).
+  // De saldo-/uren-berekening blijft op de VOLLEDIGE keten (previousTransactionState),
+  // zodat 'nieuw saldo' historisch klopt; alleen welke rijen we tónen wordt gefilterd.
+  const fromMs = from ? parseSqlDate(from + ' 00:00:00').getTime() : -Infinity
+  const toMs = to ? parseSqlDate(to + ' 23:59:59').getTime() : Infinity
+  const ranged = !!(from || to)
+  const all = ranged
+    ? allFull.filter((tx) => { const ms = parseSqlDate(tx.time_stamp).getTime(); return ms >= fromMs && ms <= toMs })
+    : allFull
   const users = (await stores.users.all()).map((e) => e.value)
   const usersOld = (await stores.usersOld.all()).map((e) => e.value)
-  const joined = joinedDate(users.find((u) => u.usersId === uid) ?? { usersId: uid, start: all[0]?.time_stamp }, usersOld)
-  const monthTxs = all.filter((t) => { const d = parseSqlDate(t.time_stamp); return d.getUTCFullYear() === txYear && d.getUTCMonth() + 1 === txMonth })
+  const joined = joinedDate(users.find((u) => u.usersId === uid) ?? { usersId: uid, start: allFull[0]?.time_stamp }, usersOld)
   const name = $('txViewName').textContent || `#${uid}`
+  const liveBal = availableCoins({ joined, transactions: allFull, userId: uid, asOf: new Date() })
 
-  const rows = monthTxs.map((t) => {
-    const isGiver = t.giver === uid
-    const st = previousTransactionState(all, uid, t.time_stamp, joined)
-    const bal = st.availableBalance + (isGiver ? -t.amount : t.amount)
-    const color = isGiver ? '#b00000' : '#0070b0'
-    const sign = isGiver ? '−' : '+'
-    return `<tr><td>${fmtRowDate(t.time_stamp)}</td>` +
-      `<td style="text-align:right;color:${color}">${sign}${formatCoins(t.amount)}</td>` +
-      `<td style="text-align:right">${formatCoins(bal)}</td></tr>`
+  // Volledig profiel van de getoonde gebruiker (eigen is al ontsleuteld) — voor de
+  // header-avatar én het profielblok.
+  const byId = new Map(users.map((u) => [u.usersId, u]))
+  const viewer = uid === me ? { ...myProfile, usersId: uid } : await safeProfile(byId.get(uid) ?? { usersId: uid })
+
+  // Profielen van de tegenpartijen ontsleutelen → naam + avatar.
+  const partners = new Map()
+  for (const pid of new Set(allFull.map((tx) => (tx.giver === uid ? tx.receiver : tx.giver)))) {
+    const doc = byId.get(pid)
+    partners.set(pid, doc ? { ...(await safeProfile(doc)), usersId: pid } : { usersId: pid, usersName: `#${pid}` })
+  }
+
+  // Logo (coin) inline als data-URI — de print-pop-up is about:blank, dus relatieve
+  // paden lossen niet op; we halen 'm op t.o.v. de app-locatie en bakken 'm in.
+  let logoSrc = ''
+  try {
+    const r = await fetch('img/1CoinH_140x140.png')
+    if (r.ok) { const b = await r.blob(); logoSrc = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(b) }) }
+  } catch {}
+
+  const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
+  const U = 'ᕫ'
+  // Bedragnotatie als het origineel: spatie-duizendtallen + punt-decimaal ("10 283.26").
+  const fmtPdf = (n) => formatCoins(n).replace(/,/g, ' ')
+  // Bedrag met teken, kleur en munt-symbool (blauw = bij, rood = af) — als de legacy fmt().
+  const amt = (v, bold = false) => {
+    const pos = v >= 0
+    const txt = `${pos ? '+' : '−'}${fmtPdf(Math.abs(v))}&nbsp;${U}`
+    return `<span class="num" style="color:${pos ? '#0055aa' : '#aa0000'}">${bold ? `<b>${txt}</b>` : txt}</span>`
+  }
+  // Eén waarde-cel: bedrag + klein label ernaast (bv. "+24.98 ᕫ Solidarity").
+  const cell = (valHtml, label) => `<div class="cell">${valHtml} <span class="cap">${esc(label)}</span></div>`
+  const pav = (p) => `<img class="pav" src="${avatarFor(p)}" alt="" />`
+
+  const acc = formatDisplayNum(uid)
+  const rowsHtml = [...all].reverse().map((tx) => {
+    const isGiver = tx.giver === uid
+    const st = previousTransactionState(allFull, uid, tx.time_stamp, joined)
+    const vPay = isGiver ? -tx.amount : tx.amount
+    const newBal = st.availableBalance + vPay
+    const solidarity = st.income + st.reductionAmount // netto effect (bruto inkomen − reductie)
+    const partner = partners.get(isGiver ? tx.receiver : tx.giver)
+    return `<div class="tx">` +
+      `<div class="meta">${acc} &nbsp;|&nbsp; ${fmtFullDate(tx.time_stamp)}</div>` +
+      cell(`<span class="num">${st.hours}</span>`, t('TR_HOURS')) +
+      cell(amt(solidarity), t('TR_SOLIDARITY')) +
+      `<div class="pname">${pav(partner)}${esc(partner.usersName || `#${partner.usersId}`)}</div>` +
+      cell(amt(st.reductionAmount), t('TR_REDUCTION')) +
+      cell(amt(vPay), t('TR_PAYMENT')) +
+      `<div class="pdesc">${esc(tx.description || '')}</div>` +
+      cell(amt(st.income), t('TR_INCOME')) +
+      cell(amt(newBal, true), t('TR_NEW_BAL')) +
+      `</div>`
   }).join('')
 
-  const period = `${monthsLong()[txMonth - 1]} ${txYear}`
-  const html = `<!doctype html><html lang="nl"><head><meta charset="utf-8" />` +
-    `<title>Abundomy overzicht ${name} ${period}</title><style>` +
-    `body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:32px;}` +
-    `h1{font-size:20px;margin:0 0 2px;color:#916B01;}h2{font-size:14px;font-weight:normal;margin:0 0 18px;color:#444;}` +
-    `table{width:100%;border-collapse:collapse;font-size:13px;}` +
-    `th,td{padding:6px 8px;border-bottom:1px solid #ddd;}th{text-align:left;border-bottom:2px solid #888;}` +
-    `th:nth-child(2),th:nth-child(3){text-align:right;}` +
-    `.empty{color:#888;font-style:italic;margin-top:12px;}` +
-    `@media print{body{margin:12mm;}}</style></head><body>` +
-    `<h1>${t('TITLE')} — ${t('PDF_TRANSACTION_OVERVIEW')}</h1>` +
-    `<h2>${name} · ${period} · ᕫ</h2>` +
-    (monthTxs.length
-      ? `<table><thead><tr><th>${t('TR_DATE')}</th><th>${t('TR_AMOUNT')}</th><th>${t('PDF_BALANCE')}</th></tr></thead><tbody>${rows}</tbody></table>`
-      : `<p class="empty">${t('APP_NONE_THIS_MONTH')}</p>`) +
+  // Brug-regel: aangroei (uren/solidariteit/reductie/inkomen) sinds de laatste
+  // transactie tot NU; 'nieuw saldo' = live saldo. Zelfde opbouw als een tx-rij,
+  // betaling 0. Bovenaan (nieuwste eerst). (1-op-1 met de brug in renderCalc.)
+  const nowSql = new Date().toISOString().slice(0, 19).replace('T', ' ')
+  let bridgeRow = ''
+  if (!ranged && allFull.length) {
+    const bst = previousTransactionState(allFull, uid, nowSql, joined)
+    bridgeRow = `<div class="tx bridge">` +
+      `<div class="meta">${esc(t('TR_SINCE_LAST'))} &nbsp;|&nbsp; ${fmtFullDate(nowSql)}</div>` +
+      cell(`<span class="num">${bst.hours}</span>`, t('TR_HOURS')) +
+      cell(amt(bst.income + bst.reductionAmount), t('TR_SOLIDARITY')) +
+      `<div class="pname">—</div>` +
+      cell(amt(bst.reductionAmount), t('TR_REDUCTION')) +
+      cell(amt(0), t('TR_PAYMENT')) +
+      `<div class="pdesc"></div>` +
+      cell(amt(bst.income), t('TR_INCOME')) +
+      cell(amt(bst.availableBalance, true), t('TR_NEW_BAL')) +
+      `</div>`
+  }
+
+  // Start-regel: het basis-startgift (1000 ᕫ) op de inschrijfdatum. Alleen bij het
+  // volledige overzicht — bij een datumbereik hoort die regel niet bij de periode.
+  const startRow = ranged ? '' : `<div class="tx start">` +
+    `<div class="meta">${acc} &nbsp;|&nbsp; ${fmtFullDate(joined)}</div>` +
+    `<div></div><div></div><div></div><div></div><div></div>` +
+    `<div></div>${cell(amt(1000, true), t('PDF_OPENING_BAL'))}` +
+    `</div>`
+
+  // Profielblok (1-op-1 met renderProfile): vertaalde haar-/oogkleur + geslacht.
+  const fld = (label, val) => `<div class="pf"><span class="pfk">${esc(label)}</span><span class="pfv">${esc(val)}</span></div>`
+  const profileBlock =
+    `<div class="profile"><img class="pavbig" src="${avatarFor(viewer)}" alt="" /><div class="pfg">` +
+    fld(t('SU_BD'), formatDateNL(viewer.birthday)) +
+    fld(t('SU_GN'), genderLabels()[viewer.gender] ?? '—') +
+    fld(t('SU_HT'), viewer.height || '—') +
+    fld(t('SU_HR'), hairLabels()[viewer.hair] ?? (viewer.hair ?? '—')) +
+    fld(t('SU_LE'), eyeLabels()[viewer.leftEye] ?? (viewer.leftEye ?? '—')) +
+    fld(t('SU_RE'), eyeLabels()[viewer.rightEye] ?? (viewer.rightEye ?? '—')) +
+    fld(t('SU_SF'), viewer.specialFeatures || '—') +
+    `</div></div>`
+
+  // Profielhistorie (optioneel, checkbox): de in `users_old` gearchiveerde OUDE
+  // profielversies van deze gebruiker, chronologisch (oudste eerst). Alleen échte
+  // snapshots (met `enc`); de slank-gemigreerde join-only rijen (enkel start_old)
+  // hebben geen profielvelden → overslaan. Elke versie toont z'n geldigheidsperiode.
+  let historyBlock = ''
+  if (history) {
+    const snaps = usersOld
+      .filter((o) => o.uid_old === uid && o.enc)
+      .sort((a, b) => (a.start_old < b.start_old ? -1 : a.start_old > b.start_old ? 1 : 0))
+    const cards = []
+    for (const s of snaps) {
+      const v = await safeProfile(s)
+      const period = `${formatDateNL(s.start_old)} – ${formatDateNL(s.end_old)}`
+      cards.push(
+        `<div class="profile hist"><img class="pavbig" src="${avatarFor({ ...v, usersId: uid })}" alt="" /><div class="pfg">` +
+        `<div class="pf histtop"><span class="histname">${esc(v.usersName || `#${uid}`)}</span><span class="histcap">${esc(period)}</span></div>` +
+        fld(t('SU_BD'), formatDateNL(v.birthday)) +
+        fld(t('SU_GN'), genderLabels()[v.gender] ?? '—') +
+        fld(t('SU_HT'), v.height || '—') +
+        fld(t('SU_HR'), hairLabels()[v.hair] ?? (v.hair ?? '—')) +
+        fld(t('SU_LE'), eyeLabels()[v.leftEye] ?? (v.leftEye ?? '—')) +
+        fld(t('SU_RE'), eyeLabels()[v.rightEye] ?? (v.rightEye ?? '—')) +
+        fld(t('SU_SF'), v.specialFeatures || '—') +
+        `</div></div>`,
+      )
+    }
+    if (cards.length) historyBlock = `<h2 class="histh">${esc(t('PDF_LBL_HISTORY'))}</h2>` + cards.join('')
+  }
+
+  const printDate = fmtFullDate(nowSql)
+  const logoImg = logoSrc ? `<img class="logo" src="${logoSrc}" alt="" />` : ''
+  // Kop + voet zitten in `position:fixed` blokken: bij printen tekent Chromium die op
+  // ELKE pagina (per-pagina kop/voet). `@page`-marges reserveren de ruimte; op het
+  // scherm doet body-padding hetzelfde. Paginanummers komen uit de browser-printvoet.
+  const html = `<!doctype html><html lang="${getLang()}"><head><meta charset="utf-8" />` +
+    `<title>${esc(name)} — ${esc(t('PDF_TRANSACTION_OVERVIEW'))}</title><style>` +
+    `*{box-sizing:border-box}` +
+    `@page{size:A4;margin:28mm 12mm 16mm;}` +
+    `body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:28mm 12mm 16mm;}` +
+    `.pageheader{position:fixed;top:0;left:0;right:0;background:#fff;padding:7mm 12mm 4px;}` +
+    `.pagefooter{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:4px 12mm 5mm;}` +
+    `.head{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:2px solid #916B01;padding-bottom:8px;}` +
+    `.head .brand{display:flex;align-items:center;gap:9px;}` +
+    `.logo{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;}` +
+    `.head h1{font-size:17px;margin:0;color:#916B01;}.head .sub{font-size:10px;color:#777;margin-top:2px;}` +
+    `.head .right{display:flex;align-items:center;gap:10px;}` +
+    `.avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;border:1px solid #916B01;}` +
+    `.acc{font-size:11px;color:#444;text-align:right;}.who{font-size:15px;font-weight:bold;text-align:right;margin-top:2px;}` +
+    `.joined{font-size:10px;color:#aa0000;text-align:right;}` +
+    `.balance{font-size:15px;margin:0 0 6px;}.balance b{color:#0055aa;}` +
+    `.profile{display:flex;align-items:center;gap:14px;background:#faf6ea;border:1px solid #e6d9b0;border-radius:6px;` +
+    `padding:10px 14px;margin:0 0 14px;page-break-inside:avoid;}` +
+    `.pavbig{width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid #916B01;flex-shrink:0;}` +
+    `.pfg{display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:2px;flex:1;}` +
+    `.pf{font-size:10px;display:flex;justify-content:space-between;border-bottom:1px dotted #ddd;padding:1px 0;}` +
+    `.pfk{color:#777;}.pfv{color:#222;font-weight:bold;}` +
+    `.histh{font-size:12px;color:#916B01;margin:14px 0 6px;border-bottom:1px solid #e6d9b0;padding-bottom:3px;}` +
+    `.profile.hist{background:#f4f7fb;border-color:#cdd8e6;margin:0 0 8px;}` +
+    `.histtop{grid-column:1/-1;border-bottom:1px solid #cdd8e6;margin-bottom:2px;}` +
+    `.histname{color:#222;font-weight:bold;font-size:11px;}.histcap{color:#777;font-size:9px;}` +
+    `.tx{display:grid;grid-template-columns:1.45fr 1fr 1.15fr;grid-auto-rows:auto;column-gap:10px;row-gap:1px;` +
+    `border-top:1px solid #bbb;padding:6px 0;page-break-inside:avoid;}` +
+    `.tx.bridge{background:#f2f8ff;}` +
+    `.meta{font-size:9px;color:#555;}.pname{font-size:12.5px;display:flex;align-items:center;}` +
+    `.pdesc{font-size:10px;color:#555;}` +
+    `.pav{width:18px;height:18px;border-radius:50%;object-fit:cover;margin-right:6px;flex-shrink:0;}` +
+    `.cell{text-align:right;font-size:10px;white-space:nowrap;}.num{font-size:10.5px;}` +
+    `.cap{color:#777;font-size:8px;margin-left:2px;}` +
+    `.start .meta{color:#444;}` +
+    `.foot{border-top:1px solid #916B01;padding-top:6px;font-size:9px;color:#916B01;` +
+    `display:flex;justify-content:space-between;}` +
+    `.empty{color:#888;font-style:italic;margin-top:18px;}` +
+    `</style></head><body>` +
+    `<div class="pageheader"><div class="head">` +
+      `<div class="brand">${logoImg}<div><h1>${esc(t('TITLE'))} — ${esc(t('PDF_TRANSACTION_OVERVIEW'))}</h1>` +
+      `<div class="sub">${esc(ranged ? `${t('PDF_FROM')} ${from || '…'} ${t('PDF_TO')} ${to || '…'}` : t('PDF_LBL_ALL'))}</div></div></div>` +
+      `<div class="right"><img class="avatar" src="${avatarFor(viewer)}" alt="" />` +
+      `<div><div class="acc">${acc}</div><div class="who">${esc(name)}</div>` +
+      `<div class="joined">${fmtFullDate(joined)}</div></div></div></div></div>` +
+    profileBlock +
+    historyBlock +
+    `<div class="balance">${esc(t('PDF_BALANCE'))}:&nbsp; <b>+${fmtPdf(liveBal)}&nbsp;${U}</b></div>` +
+    (all.length ? bridgeRow + rowsHtml + startRow : `<p class="empty">${esc(t('TR_NONE'))}</p>`) +
+    `<div class="pagefooter"><div class="foot"><span>${printDate}</span>` +
+    `<a href="https://www.abundomy.com" style="color:#916B01;text-decoration:none;">www.abundomy.com</a></div></div>` +
     `</body></html>`
 
   w.document.open(); w.document.write(html); w.document.close(); w.focus()
   setTimeout(() => { try { w.print() } catch {} }, 350) // even tijd om te renderen
-  log(`PDF-overzicht ${period} geopend (kies 'Opslaan als PDF').`)
+  log(`PDF-overzicht ${name} geopend (${all.length} transacties) — kies 'Opslaan als PDF'.`)
 }
 
 fetch('relay.json').then((r) => r.ok ? $('relayInfo').textContent = 'Relay gevonden ✓ — klaar om te verbinden.'
@@ -1208,13 +1574,21 @@ $('newRequestBtn').onclick = openRequestForm
 $('newRequestBtn2').onclick = openRequestForm
 $('requestCancelBtn').onclick = () => $('requestCard').classList.add('hidden')
 $('exportBtn').onclick = () => exportChain().catch((e) => log('FOUT: ' + e.message))
-$('txPdfBtn').onclick = () => printStatement().catch((e) => log('FOUT: ' + e.message))
+$('txPdfBtn').onclick = () => $('pdfOpts').classList.toggle('hidden') // toon/verberg opties
+$('pdfGenBtn').onclick = () => {
+  const scope = document.querySelector('input[name="pdfScope"]:checked')?.value || 'all'
+  const history = $('pdfHistory').checked
+  const opts = scope === 'range' ? { from: $('pdfFrom').value, to: $('pdfTo').value, history } : { history }
+  printStatement(opts).catch((e) => log('FOUT: ' + e.message))
+}
 $('txCsvBtn').onclick = () => exportChain(txUserId ?? me).catch((e) => log('FOUT: ' + e.message))
 $('refreshBtn').onclick = () => { log('Verversen (verse sync)…'); location.reload() }
 $('changePwdBtn').onclick = () => doChangePassword().catch((e) => log('FOUT: ' + e.message))
 $('goDashboard').onclick = () => finishLogin().catch((e) => log('FOUT: ' + e.message))
 window.addEventListener('hashchange', () => route())
 $('profEditBtn').onclick = () => enterProfileEdit()
+$('profRevPrev').onclick = () => { if (revIdx < revVersions.length - 1) { revIdx++; renderProfileVersion() } } // ouder
+$('profRevNext').onclick = () => { if (revIdx > 0) { revIdx--; renderProfileVersion() } } // nieuwer
 $('profCancelBtn').onclick = () => cancelProfileEdit()
 $('profSaveBtn').onclick = () => saveProfile().catch((e) => log('FOUT: ' + e.message))
 $('peImgFile').onchange = async (e) => {
