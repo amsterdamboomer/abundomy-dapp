@@ -4,7 +4,6 @@
  * `../../src/*`. Connectiviteit via de relay (zie `web/relay.mjs`).
  *
  * Inloggen kan op drie manieren:
- *  - legacy: gemigreerde gebruiker via usersId (seed = `abundomy-user-<id>`)
  *  - seed-login: nieuw account via zijn seed (usersId wordt opgezocht via de pubkey)
  *  - signup: nieuw account aanmaken met e-mailverificatie (`/api/email/*`)
  */
@@ -14,7 +13,7 @@ import { openStores, closeStores } from '../../src/stores.mjs'
 import { deriveCommunityKey, decryptUserProfile } from '../../src/crypto.mjs'
 import { availableCoins, joinedDate, parseSqlDate } from '../../src/ledger.mjs'
 import { createProposal, payProposal } from '../../src/payments.mjs'
-import { claimUser, signup, changePassword, rekeyAuth, deriveAccountKey, updateProfile, repairIdentity } from '../../src/identity.mjs'
+import { signup, changePassword, rekeyAuth, deriveAccountKey, updateProfile, repairIdentity } from '../../src/identity.mjs'
 import { createKeystore, openKeystore, validatePassword, generateRecoveryCode, formatRecoveryCode, normalizeRecoveryCode } from '../../src/auth.mjs'
 import { exportUserChain } from '../../src/export.mjs'
 import { addToList, removeFromList, getList, BLACKLIST, WHITELIST } from '../../src/lists.mjs'
@@ -259,21 +258,6 @@ async function doChangePassword() {
   }
 }
 
-/** Legacy: gemigreerde gebruiker via usersId. */
-async function connect() {
-  $('connectBtn').disabled = true
-  try {
-    me = Number($('userId').value)
-    await ensureSession()
-    log('Identiteit binden aan gebruiker (ondertekende claim)…')
-    await claimUser({ stores, seed: `abundomy-user-${me}`, usersId: me })
-    await finishLogin()
-  } catch (err) {
-    log('FOUT: ' + err.message)
-    $('connectBtn').disabled = false
-  }
-}
-
 /** Zoek een user-record op gebruikersnaam (leesbaar) of e-mail (versleuteld → ontsleutel). */
 async function findUserByIdentifier(records, identifier, commKey) {
   const id = identifier.toLowerCase()
@@ -304,7 +288,7 @@ async function loginWithPassword() {
       return !!rec
     }, 'account-lookup', 30000).catch(() => {})
     if (!rec) throw new Error('geen account met die gebruiker/e-mail')
-    if (!rec.auth) throw new Error('dit account heeft geen wachtwoord — gebruik de migratie/dev-login')
+    if (!rec.auth) throw new Error('dit account heeft nog geen wachtwoord — meld je aan met je e-mailadres om er een in te stellen')
     const seed = await openKeystore(rec.auth, pwd) // verifieert het wachtwoord (gooit 'verkeerd wachtwoord')
     me = rec.usersId
     // Self-heal: door historische usersId-collisions kan dit doc inconsistent zijn (pubkey/
@@ -1559,7 +1543,6 @@ fetch('relay.json').then((r) => r.ok ? $('relayInfo').textContent = 'Relay gevon
   .catch(() => $('relayInfo').textContent = '⚠ Geen relay.json — draai eerst `npm run relay`.')
 
 $('loginBtn').onclick = () => loginWithPassword().catch((e) => log('FOUT: ' + e.message))
-$('connectBtn').onclick = connect
 $('signupBtn').onclick = () => doSignup().catch((e) => log('FOUT: ' + e.message))
 const showCard = (id) => { for (const c of ['login', 'signup', 'resetCard']) $(c).classList.toggle('hidden', c !== id) }
 $('toSignupBtn').onclick = () => showCard('signup')
