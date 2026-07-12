@@ -100,10 +100,16 @@ fi
 
 # 6) opruimen
 echo "▶ 6/6  Oude CID opruimen…"
-if [ -n "${OLD:-}" ] && [ "$OLD" != "$CID" ]; then
-  ipfs pin rm "$OLD" >/dev/null 2>&1 && echo "  ontpind: $OLD" || echo "  (kon $OLD niet ontpinnen)"
-else
+if [ -z "${OLD:-}" ] || [ "$OLD" = "$CID" ]; then
   echo "  niets te doen (CID ongewijzigd of geen vorige)"
+elif ! ipfs pin ls --type=recursive "$OLD" >/dev/null 2>&1; then
+  # De cluster-ontpin in stap 5b haalt de pin óók lokaal uit Kubo weg. Dan valt hier
+  # niets meer te ontpinnen — dat is de normale gang van zaken, geen fout.
+  echo "  al ontpind via de cluster-ontpin in stap 5b"
+elif ipfs pin rm "$OLD" >/dev/null 2>&1; then
+  echo "  ontpind: $OLD"
+else
+  echo "  ⚠ kon $OLD niet ontpinnen"
 fi
 
 echo
