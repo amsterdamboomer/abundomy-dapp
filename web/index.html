@@ -319,11 +319,6 @@
           </div>
           <div class="full_line"></div>
           <div id="myRequests"></div>
-          <div class="button9-row hidden" id="noRequestsRow">
-            <div class="button9-column1">
-              <button type="button" class="login-button" id="newRequestBtn2" data-i18n="IDX_DO_NEW">Doe een nieuw verzoek</button>
-            </div>
-          </div>
 
           <!-- Betaling-aanvraagformulier (verschijnt via 'Nieuw') -->
           <section class="dapp-card hidden" id="requestCard">
@@ -349,7 +344,8 @@
           </div>
 
           <br />
-          <!-- Hulpmiddelen, status & log -->
+          <!-- Hulpmiddelen, status & log — IPFS-toevoeging (staat niet in het origineel).
+               BEWUST BEHOUDEN: hiermee kun je samen met de gebruiker troubleshooten. -->
           <details class="dapp-card">
             <summary class="muted" data-i18n="APP_TOOLS">Hulpmiddelen, status &amp; log</summary>
             <p class="dapp-status" id="status" style="margin-top:0.6rem;">verbindingsstatus…</p>
@@ -358,20 +354,6 @@
               <button id="refreshBtn" type="button" class="btn-secondary" data-i18n="APP_REFRESH">Ververs</button>
             </div>
             <div id="log" style="margin-top:0.6rem;"></div>
-          </details>
-
-          <!-- Wachtwoord wijzigen -->
-          <details class="dapp-card" id="changePwdCard">
-            <summary class="muted" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</summary>
-            <p class="muted" data-i18n="APP_CHANGE_PWD_HINT">Alleen jij kunt dit — het vereist je huidige wachtwoord.
-              Je identiteit en saldo blijven ongewijzigd.</p>
-            <label><span data-i18n="APP_CUR_PWD">Huidig wachtwoord</span> <input id="cpCurrent" type="password" autocomplete="current-password" /></label>
-            <label><span data-i18n="APP_NEW_PWD">Nieuw wachtwoord</span> <input id="cpNew" type="password" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></label>
-            <label><span data-i18n="APP_REPEAT_NEW">Herhaal nieuw</span> <input id="cpNew2" type="password" autocomplete="new-password" /></label>
-            <div class="actions">
-              <button id="changePwdBtn" type="button" class="login-button" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</button>
-            </div>
-            <p class="dapp-relay-info" id="changePwdInfo"></p>
           </details>
         </section><!-- /#view-home -->
 
@@ -562,6 +544,20 @@
                 <button type="button" class="login-button-small" id="peEmailVerifyBtn" data-i18n="APP_SEND_VERIFY">Verstuur verificatie</button>
               </div>
               <p class="dapp-relay-info" id="peEmailInfo"></p>
+            </details>
+            <!-- Wachtwoord wijzigen — hoort bij de inloggegevens, dus in het profiel.
+                 Staat in #profEdit en is daarmee alleen op je eigen profiel zichtbaar. -->
+            <details class="dapp-card" id="changePwdCard" style="border:none; background:none; padding:0;">
+              <summary class="muted" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</summary>
+              <p class="muted" data-i18n="APP_CHANGE_PWD_HINT">Alleen jij kunt dit — het vereist je huidige wachtwoord.
+                Je identiteit en saldo blijven ongewijzigd.</p>
+              <label><span data-i18n="APP_CUR_PWD">Huidig wachtwoord</span> <input id="cpCurrent" type="password" autocomplete="current-password" /></label>
+              <label><span data-i18n="APP_NEW_PWD">Nieuw wachtwoord</span> <input id="cpNew" type="password" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></label>
+              <label><span data-i18n="APP_REPEAT_NEW">Herhaal nieuw</span> <input id="cpNew2" type="password" autocomplete="new-password" /></label>
+              <div class="actions">
+                <button id="changePwdBtn" type="button" class="login-button-small" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</button>
+              </div>
+              <p class="dapp-relay-info" id="changePwdInfo"></p>
             </details>
             <label><span data-i18n="SU_BD">Geboortedatum</span> <input id="peBirthday" type="date" min="1900-01-01" max="2050-01-01" /></label>
             <label><span data-i18n="SU_HT">Lengte</span> <input id="peHeight" type="text" placeholder="1.78m" /></label>

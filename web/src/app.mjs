@@ -594,7 +594,6 @@ async function renderHome() {
 
   // MIJN VERZOEKEN
   const mr = $('myRequests'); mr.innerHTML = ''
-  $('noRequestsRow').classList.toggle('hidden', myRequests.length > 0)
   for (const p of myRequests) mr.append(buildProposalRow(p, partner.get(p.giver), p.giver, 'mine'))
 
   // TE BETALEN
@@ -1586,7 +1585,6 @@ $('logoutBtn').onclick = () => logout().catch((e) => log('FOUT: ' + e.message))
 $('requestBtn').onclick = () => requestPayment().catch((e) => log('FOUT: ' + e.message))
 const openRequestForm = () => { $('requestCard').classList.remove('hidden'); $('amount').focus?.() }
 $('newRequestBtn').onclick = openRequestForm
-$('newRequestBtn2').onclick = openRequestForm
 $('requestCancelBtn').onclick = () => $('requestCard').classList.add('hidden')
 $('exportBtn').onclick = () => exportChain().catch((e) => log('FOUT: ' + e.message))
 $('txPdfBtn').onclick = () => $('pdfOpts').classList.toggle('hidden') // toon/verberg opties
