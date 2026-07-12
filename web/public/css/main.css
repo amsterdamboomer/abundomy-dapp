@@ -3088,3 +3088,17 @@ input:checked + .slider:before { transform: translateX(26px); }
   display: inline-block;
   text-align: left;
 }
+
+/* Groene bevestiging naast de rode .error (origineel: $msgClass in receiver.php). */
+.success {
+  font-family: 'raleway_bold', sans-serif;
+  font-size: clamp(14px, 3.5vw, 18px);
+  color: var(--button);
+  text-align: center;
+  margin: 0.4rem 0;
+}
+/* Zoekknop blijft zichtbaar maar dood onder de 3 tekens (origineel: inline style). */
+.photo-button.is-disabled { background-color: var(--disabled); opacity: 0.5; pointer-events: none; }
+
+/* Kale knop om een avatar heen (origineel: <button> zonder class in request.php). */
+.avatar-button { background: none; border: none; padding: 0; cursor: pointer; line-height: 0; }
