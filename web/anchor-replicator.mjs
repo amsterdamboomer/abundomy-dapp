@@ -187,7 +187,15 @@ if (process.argv.includes('--self-test')) {
 const relay = JSON.parse(readFileSync(RELAY_JSON, 'utf8'))
 const ANCHOR_ADDR = process.env.ABUNDOMY_ANCHOR_ADDR || relay.addr
 
-const privateKey = await generateKeyPairFromSeed('Ed25519', createHash('sha256').update('abundomy-anchor-replicator').digest())
+// De peer-identiteit is deterministisch uit een seed. Draaien er meerdere replicators
+// (PBFS2 + SER5), dan MOET elke node een eigen ABUNDOMY_NODE_ID hebben — anders krijgen
+// ze dezelfde peer-ID en vechten ze om dezelfde libp2p-verbindingen. Leeg = de
+// oorspronkelijke seed, zodat PBFS2's peer-ID (en dus relay.json) ongewijzigd blijft.
+const NODE_ID = (process.env.ABUNDOMY_NODE_ID || '').trim()
+const SEED = NODE_ID ? `abundomy-anchor-replicator-${NODE_ID}` : 'abundomy-anchor-replicator'
+const ORBIT_ID = NODE_ID ? `abundomy-anchor-replicator-${NODE_ID}` : 'abundomy-anchor-replicator'
+
+const privateKey = await generateKeyPairFromSeed('Ed25519', createHash('sha256').update(SEED).digest())
 const libp2p = await createLibp2p({
   privateKey,
   // GEEN libp2p-`announce` (zie AutoTLS-deadlock, nu niet gebruikt).
@@ -235,8 +243,9 @@ const ipfs = await createHelia({ libp2p, blockstore: new FsBlockstore(`${ROOT}bl
 const mirror = MIRROR ? attachMirror(ipfs) : null
 if (!MIRROR) console.log('⚠ ABUNDOMY_MIRROR=0 → blocks worden NIET naar het anker gespiegeld (alleen repliceren).')
 
-const orbitdb = await createOrbitDB({ ipfs, id: 'abundomy-anchor-replicator', directory: `${ROOT}orbitdb` })
+const orbitdb = await createOrbitDB({ ipfs, id: ORBIT_ID, directory: `${ROOT}orbitdb` })
 
+console.log(`• node-id: ${NODE_ID || '(default — PBFS2)'} — peer ${libp2p.peerId.toString().slice(-8)}`)
 console.log(`• verbinden met anker: ${ANCHOR_ADDR}`)
 await libp2p.dial(multiaddr(ANCHOR_ADDR)).catch((e) => console.log('  ⚠ anker-dial faalde:', e.message))
 for (const b of BOOTSTRAP) {

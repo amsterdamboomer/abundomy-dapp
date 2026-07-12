@@ -34,12 +34,38 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
  * server-dienst; daarom roepen we 'm op een ABSOLUTE URL aan (uit relay.json `api`, bv. de
  * Hetzner-sslip.io), niet relatief. Leeg → relatief (lokale dev met nginx-proxy). Gecachet.
  */
-let _apiBase
-async function apiUrl (path) {
-  if (_apiBase === undefined) {
-    try { _apiBase = (await (await fetch('relay.json')).json()).api || '' } catch { _apiBase = '' }
+let _relayCfg
+async function relayCfg () {
+  if (!_relayCfg) _relayCfg = await (await fetch('relay.json')).json()
+  return _relayCfg
+}
+/**
+ * De bekende nodes als `{name, addr, api}`. Nieuw schema: een `nodes`-array. De oude
+ * losse velden (`addr`/`replicator`/`api`) blijven meedoen zodat een gecachte bundel én
+ * een oude relay.json blijven werken; dubbele adressen vallen weg.
+ */
+async function relayNodes () {
+  const r = await relayCfg()
+  const legacy = [r.addr, r.replicator].filter(Boolean).map((addr) => ({ name: 'legacy', addr, api: r.api || '' }))
+  const seen = new Set()
+  return [...(Array.isArray(r.nodes) ? r.nodes : []), ...legacy]
+    .filter((n) => n?.addr && !seen.has(n.addr) && seen.add(n.addr))
+}
+/**
+ * Roep een server-API (mailer) aan op de eerste node die antwoordt. De app draait op
+ * IPFS (dweb.link/IPNS) en de API is een aparte server-dienst, dus de URL is ABSOLUUT.
+ * Alleen bij een NETWERKfout schuiven we door naar de volgende node — een 4xx/5xx is een
+ * echt antwoord en wordt teruggegeven. Geen enkele node bereikbaar → laatste fout gooien.
+ * Lege api (lokale dev met nginx-proxy) betekent: relatief.
+ */
+async function apiFetch (path, init) {
+  const bases = [...new Set((await relayNodes().catch(() => [])).map((n) => n.api || ''))]
+  if (!bases.length) bases.push('')
+  let last
+  for (const base of bases) {
+    try { return await fetch(base + path, init) } catch (e) { last = e }
   }
-  return (_apiBase || '') + path
+  throw last ?? new Error('geen node bereikbaar')
 }
 /**
  * Bevestig e-mailbezit met de gemailde 6-cijferige CODE (geen klikbare link → veel betere
@@ -69,7 +95,7 @@ async function confirmEmailByCode (email, pubkey) {
       if (!code) { msg('Vul de code in.'); return }
       ok.disabled = true; msg('Code controleren…')
       try {
-        const r = await fetch(await apiUrl('/api/email/confirm'), {
+        const r = await apiFetch('/api/email/confirm', {
           method: 'POST', headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ email, code, pubkey }),
         })
@@ -148,8 +174,7 @@ async function settleSync(db, maxMs = 6000) {
  *  Geeft de lijst gedialede multiaddrs terug. De replicator-wss is de niet-gelimiteerde
  *  verbinding waarover OrbitDB's head-exchange loopt; het anker levert blocks via bitswap. */
 async function dialRelay(n) {
-  const relay = await (await fetch('relay.json')).json()
-  const addrs = [relay.addr, relay.replicator].filter(Boolean).map((a) => multiaddr(a))
+  const addrs = (await relayNodes()).map((x) => multiaddr(x.addr))
   await Promise.allSettled(addrs.map((ma) => n.ipfs.libp2p.dial(ma)))
   await waitFor(() => n.ipfs.libp2p.services.pubsub.getPeers().length > 0, 'relay-peer')
   return addrs
@@ -350,7 +375,7 @@ async function doSignup() {
     const pubkey = (await deriveAccountKey(seed)).pubkey
 
     info('Verificatiemail aanvragen…')
-    const r = await fetch(await apiUrl('/api/email/start'), {
+    const r = await apiFetch('/api/email/start', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email, pubkey, recoveryCode: formatRecoveryCode(recoveryRaw) }),
     })
@@ -386,8 +411,7 @@ async function resyncStores() {
   resyncing = true
   try {
     const lp = node.ipfs.libp2p
-    const relay = await (await fetch('relay.json')).json()
-    const relayAddrs = [relay.addr, relay.replicator].filter(Boolean)
+    const relayAddrs = (await relayNodes()).map((x) => x.addr)
     const relayMas = relayAddrs.map((a) => multiaddr(a))
     // Peer-ID uit de adres-string halen (multiaddr.getPeerId() bestaat niet op de
     // gebundelde versie → wierp elke 20s een fout waardoor dit vangnet nooit liep).
@@ -1142,7 +1166,7 @@ async function changeEmail() {
     if (!pubkey) throw new Error('account-sleutel onbekend — log opnieuw in')
 
     info('Verificatiemail aanvragen…')
-    const r = await fetch(await apiUrl('/api/email/start'), {
+    const r = await apiFetch('/api/email/start', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email: newEmail, pubkey, usersId: me }),
     })
