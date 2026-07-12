@@ -315,25 +315,12 @@
           <div class="button6-row">
             <div class="button6-column1"><p class="title" data-i18n="IDX_MY_REQS">MIJN VERZOEKEN</p></div>
             <div class="button6-column2"></div>
-            <div class="button6-column3"><button type="button" class="login-button" id="newRequestBtn" data-i18n="IDX_NEW_BTN">Nieuw</button></div>
+            <div class="button6-column3">
+              <a href="#/search"><button type="button" class="login-button" id="newRequestBtn" data-i18n="IDX_NEW_BTN">Nieuw</button></a>
+            </div>
           </div>
           <div class="full_line"></div>
           <div id="myRequests"></div>
-
-          <!-- Betaling-aanvraagformulier (verschijnt via 'Nieuw') -->
-          <section class="dapp-card hidden" id="requestCard">
-            <h2 data-i18n="APP_REQUEST_PAYMENT">Betaling aanvragen</h2>
-            <p class="muted" data-i18n="APP_REQUEST_HINT">Jij bent de ontvanger; de gekozen gebruiker moet bevestigen.</p>
-            <label><span data-i18n="APP_FROM">Van</span> <select id="fromUser"></select></label>
-            <label><span data-i18n="RCV_AMT">Bedrag</span> <input id="amount" type="number" value="10" /></label>
-            <label style="flex:1; min-width: 14rem;">
-              <input id="desc" data-i18n-ph="APP_DESC_PH" placeholder="omschrijving" style="flex:1; min-width: 12rem;" />
-            </label>
-            <div class="actions">
-              <button id="requestBtn" type="button" class="login-button" data-i18n="APP_SEND_REQUEST">Verzoek versturen</button>
-              <button id="requestCancelBtn" type="button" class="btn-secondary" data-i18n="RCV_CANCEL">Annuleren</button>
-            </div>
-          </section>
 
           <!-- TE BETALEN (iemand vraagt; ik moet bevestigen/betalen) -->
           <div id="toPaySection" class="hidden">
@@ -461,6 +448,112 @@
             </div></div>
             <div class="button9-row"><div class="button9-column1"><p class="title" id="txdReceiverName"></p></div></div>
           </div>
+          <div class="full_line"></div>
+        </section>
+
+        <!-- ===================== PERSOON ZOEKEN (request.php) =====================
+             Zoekveld accepteert een naam óf een rekeningnummer (puur cijfers = nummer).
+             Zes resultaten per pagina; elke regel is twee knoppen: de foto opent het
+             persoonsdetail, de brede knop gaat direct door naar het verzoek. -->
+        <section class="view hidden" id="view-search">
+          <div class="medium_line"></div>
+          <div class="button4-row">
+            <div class="button4-column1"></div>
+            <div class="button4-column2"><p class="title" data-i18n="REQ_TITLE">ZOEKEN</p></div>
+            <div class="button4-column3">
+              <a href="#/"><button type="button" class="login-button" data-i18n="REQ_CANCEL">Annuleren</button></a>
+            </div>
+          </div>
+          <div class="medium_line"></div>
+
+          <label class="form__label" data-i18n="REQ_LABEL">Voer naam of rekeningnummer in</label><br />
+          <input type="text" class="form__input" id="searchInput" autocomplete="off"
+                 data-i18n-ph="REQ_PLACEHOLDER" placeholder='&gt;2 tekens: "Abc" of "005"' />
+          <div class="medium_line"></div>
+          <button type="button" id="searchBtn" class="photo-button" data-i18n="REQ_SEARCH">Zoeken</button>
+          <br />
+          <div class="medium_line"></div>
+
+          <div id="searchNavTop"></div>
+          <div class="medium_line"></div>
+          <div id="searchResults"></div>
+          <div class="medium_line"></div>
+          <div id="searchNavBottom"></div>
+          <div class="button9-row">
+            <div class="button9-column1">
+              <p class="error hidden" id="searchError" data-i18n="REQ_ERR">Geen resultaten gevonden. Probeer het opnieuw!</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== VERZOEK (receiver.php) =====================
+             Eén gekozen persoon: foto en naam zijn klikbaar naar het detail. Het bedrag
+             kleurt rood zodra het boven hún beschikbare saldo komt. Sta je op hun
+             blokkeerlijst (of buiten hun witte lijst), dan geen formulier maar uitleg. -->
+        <section class="view hidden" id="view-request">
+          <div class="full_line"></div>
+          <div class="button4-row">
+            <div class="button4-column1">
+              <button type="button" class="login-button" id="rcvSendBtn" data-i18n="RCV_SEND">Verzenden</button>
+            </div>
+            <div class="button4-column2"><p class="title" data-i18n="RCV_TITLE">VERZOEK</p></div>
+            <div class="button4-column3">
+              <a href="#/search"><button type="button" class="login-button" data-i18n="RCV_CANCEL">Annuleren</button></a>
+            </div>
+          </div>
+          <div class="medium_line"></div>
+
+          <div class="button9-row">
+            <div class="button9-column1"><div class="display-num2" id="rcvNum"></div></div>
+          </div>
+          <div class="small_line"></div>
+          <div class="button9-row">
+            <div class="button9-column1">
+              <a id="rcvDetailLink"><img id="rcvImg" class="humanicon2" alt="profiel" /></a>
+            </div>
+          </div>
+          <div class="small_line"></div>
+          <div class="button9-row">
+            <div class="button9-column1"><a id="rcvDetailLink2" class="title-link"><p class="title2" id="rcvName"></p></a></div>
+          </div>
+          <div class="button9-row">
+            <div class="button9-column1"><p class="feedback" id="rcvAvail"></p></div>
+          </div>
+
+          <!-- Geblokkeerd: geen formulier, alleen uitleg (RCV_BLOCKED_1..3) -->
+          <div id="rcvBlocked" class="hidden">
+            <div class="large_line"></div>
+            <div class="button9-row"><div class="button9-column1"><p class="feedback" id="rcvBlockedText"></p></div></div>
+          </div>
+
+          <!-- Toegestaan: bedrag + omschrijving -->
+          <div id="rcvForm">
+            <div class="full_line"></div>
+            <div class="button4-row">
+              <div class="button4-column1"></div>
+              <div class="button4-column2"><p class="title" data-i18n="RCV_PAY">TE BETALEN</p></div>
+              <div class="button4-column3"></div>
+            </div>
+            <div class="amount-outer-container">
+              <label class="form__label_amount" data-i18n="RCV_AMT">Bedrag</label>
+              <div class="input-container">
+                <input type="text" class="form__input_amount" id="rcvAmount" placeholder="0" inputmode="decimal" />
+              </div>
+            </div>
+            <div class="full_line"></div>
+            <div class="button4-row">
+              <div class="button4-column1"></div>
+              <div class="button4-column2"><p class="title" data-i18n="RCV_FOR">VOOR</p></div>
+              <div class="button4-column3"></div>
+            </div>
+            <div>
+              <label class="form__label" data-i18n="RCV_DESC">Omschrijving</label><br />
+              <input type="text" class="form__input" id="rcvDesc" />
+            </div>
+          </div>
+
+          <div class="full_line"></div>
+          <div class="signupdiv"><p id="rcvInfo"></p></div>
           <div class="full_line"></div>
         </section>
 

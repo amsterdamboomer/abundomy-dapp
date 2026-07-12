@@ -442,7 +442,8 @@ async function resyncStores() {
 let currentView = 'home'
 let currentParams = {}
 
-const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile' }
+const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', search: 'search', request: 'request' }
+const VIEWS = ['home', 'transactions', 'txdetail', 'profile', 'search', 'request']
 
 function parseHash() {
   const h = (location.hash || '#/').replace(/^#\/?/, '')
@@ -456,7 +457,7 @@ function route() {
   const view = VIEW_NAMES[name] || 'home'
   currentView = view
   currentParams = { id: arg, tid: arg }
-  for (const v of ['home', 'transactions', 'txdetail', 'profile']) {
+  for (const v of VIEWS) {
     $('view-' + v)?.classList.toggle('hidden', v !== view)
   }
   render().catch(() => {})
@@ -537,6 +538,8 @@ async function render() {
     if (currentView === 'transactions') await renderTransactions(currentParams)
     else if (currentView === 'txdetail') await renderTxDetail(currentParams)
     else if (currentView === 'profile') await renderProfile(currentParams)
+    else if (currentView === 'search') await renderSearch()
+    else if (currentView === 'request') await renderRequest(currentParams)
     else await renderHome()
   } catch (e) { log('render-fout: ' + e.message) }
 }
@@ -573,16 +576,6 @@ async function renderHome() {
   const lp = node.ipfs.libp2p
   $('status').textContent = `peers: ${lp.getConnections().length} · pubsub-peers: ${lp.services.pubsub.getPeers().length} · ` +
     `users: ${users.length} · transacties: ${(await stores.transactions.all()).length} · proposals: ${proposals.length}`
-
-  // 'Van'-keuzelijst van het aanvraagformulier (alle andere gebruikers).
-  const sel = $('fromUser')
-  if (sel.options.length !== users.length - 1) {
-    sel.innerHTML = ''
-    for (const u of users.filter((u) => u.usersId !== me)) {
-      const o = document.createElement('option'); o.value = u.usersId
-      o.textContent = `${u.usersName || '#' + u.usersId} (#${u.usersId})`; sel.append(o)
-    }
-  }
 
   // Partnerprofielen ontsleutelen (voor avatar + naam-fallback).
   const partnerIds = new Set([...myRequests.map((p) => p.giver), ...toPay.map((p) => p.receiver)])
@@ -681,6 +674,215 @@ function previousTransactionState(allUserTxs, userId, targetTs, joined) {
   const income = finalHours > 0 ? (r * (1 - Math.pow(r, finalHours))) / (1 - r) : 0
   const availableBalance = currentBalance * reductionFactor + income
   return { previousBalance: currentBalance, hours: finalHours, reductionFactor, reductionAmount: -reductionAmount, income, availableBalance }
+}
+
+// ============================ PERSOON ZOEKEN (request.php) ============================
+// Zoekt op naam óf rekeningnummer, precies zoals het origineel:
+//  - puur cijfers  → nummer. Onder 100 exact, vanaf 100 "begint met" (005 vindt alleen 5,
+//    100 vindt 100, 1001, 1002…). Dat is bewust: de eerste 99 nummers zijn schaars.
+//  - anders        → naam, bevat-zoekopdracht, hoofdletterongevoelig.
+// Zes per pagina; de zoekknop is dood onder de 3 tekens.
+const PAGE_SIZE = 6
+let searchQuery = ''
+let searchStart = 0 // 0-gebaseerd, in tegenstelling tot het origineel (dat telde vanaf 1)
+let searchDone = false
+
+/** Alle andere gebruikers, ontsleuteld, gesorteerd zoals het origineel. */
+async function searchMatches() {
+  const docs = (await stores.users.all()).map((e) => e.value).filter((u) => u.usersId !== me)
+  const profiles = await Promise.all(docs.map((d) => safeProfile(d)))
+  const q = searchQuery.trim()
+  const numeric = q !== '' && /^\d+$/.test(q)
+
+  let hits
+  if (!q) {
+    hits = profiles.sort((a, b) => a.usersId - b.usersId)
+  } else if (numeric) {
+    const n = Number(q)
+    hits = n < 100
+      ? profiles.filter((p) => p.usersId === n)
+      : profiles.filter((p) => String(p.usersId).startsWith(q))
+    hits.sort((a, b) => a.usersId - b.usersId)
+  } else {
+    const needle = q.toLowerCase()
+    hits = profiles.filter((p) => (p.usersName || '').toLowerCase().includes(needle))
+    hits.sort((a, b) => (a.usersName || '').localeCompare(b.usersName || ''))
+  }
+  return hits
+}
+
+async function renderSearch() {
+  const hits = await searchMatches()
+  const total = hits.length
+  if (searchStart >= total) searchStart = 0
+  const page = hits.slice(searchStart, searchStart + PAGE_SIZE)
+
+  const box = $('searchResults'); box.innerHTML = ''
+  for (const p of page) {
+    const row = document.createElement('div')
+    row.className = 'button8-row'
+    row.innerHTML = `
+      <div class="button8-column1">
+        <button type="button" class="avatar-button"><img class="mainusericon" alt="" /></button>
+      </div>
+      <div class="button8-column2"></div>
+      <div class="button8-column3">
+        <button type="button" class="select-button">
+          <span>${formatDisplayNum(p.usersId)}</span><span></span>
+        </button>
+      </div>`
+    row.querySelector('img').src = avatarFor(p)
+    row.querySelector('.select-button span:last-child').textContent = p.usersName || `#${p.usersId}`
+    // Foto → persoonsdetail; brede knop → direct het verzoek (net als in het origineel).
+    row.querySelector('.avatar-button').onclick = () => { location.hash = `#/profile/${p.usersId}` }
+    row.querySelector('.select-button').onclick = () => { location.hash = `#/request/${p.usersId}` }
+    box.append(row)
+    const line = document.createElement('div'); line.className = 'small_line'; box.append(line)
+  }
+
+  renderSearchNav(total)
+  $('searchError').classList.toggle('hidden', !(total === 0 && searchDone))
+}
+
+/** Start/Vorige boven, Einde(totaal)/Volgende onder — alleen bij meer dan één pagina. */
+function renderSearchNav(total) {
+  const top = $('searchNavTop'); const bottom = $('searchNavBottom')
+  top.innerHTML = ''; bottom.innerHTML = ''
+  if (total <= PAGE_SIZE) return
+
+  const atStart = searchStart <= 0
+  const atEnd = searchStart + PAGE_SIZE >= total
+  const btn = (label, disabled, onclick) => {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = disabled ? 'disabled-button' : 'login-button'
+    b.disabled = disabled
+    b.textContent = label
+    if (!disabled) b.onclick = onclick
+    return b
+  }
+  const row = (cls, left, right) => {
+    const d = document.createElement('div'); d.className = `${cls}-row`
+    const c1 = document.createElement('div'); c1.className = `${cls}-column1`; c1.append(left)
+    const c2 = document.createElement('div'); c2.className = `${cls}-column2`
+    const c3 = document.createElement('div'); c3.className = `${cls}-column3`; c3.append(right)
+    d.append(c1, c2, c3); return d
+  }
+  const go = (start) => { searchStart = Math.max(0, start); render().catch(() => {}) }
+
+  top.append(row('button4',
+    btn(t('REQ_START'), atStart, () => go(0)),
+    btn(t('REQ_PREV'), atStart, () => go(searchStart - PAGE_SIZE))))
+  bottom.append(row('button6',
+    btn(`${t('REQ_END')} (${total.toLocaleString('en-US').replace(/,/g, ' ')})`, atEnd, () => go(total - PAGE_SIZE)),
+    btn(t('REQ_NEXT'), atEnd, () => go(searchStart + PAGE_SIZE))))
+}
+
+/** Zoekknop is pas actief vanaf 3 tekens (origineel: validateSearch()). */
+function updateSearchBtn() {
+  const clean = ($('searchInput').value || '').replace(/\s/g, '')
+  $('searchBtn').disabled = clean.length < 3 && clean.length > 0
+  $('searchBtn').classList.toggle('is-disabled', clean.length > 0 && clean.length < 3)
+}
+
+// ============================ VERZOEK (receiver.php) ============================
+// Eén gekozen gever. Toont hun beschikbare saldo, kleurt het bedrag rood zodra het
+// daarboven komt, en respecteert hún firewall: sta ik op hun blokkeerlijst (of, bij
+// witte-lijst-modus, niet op hun witte lijst), dan geen formulier maar uitleg.
+let rcvGiver = 0
+let rcvAvail = 0 // saldo van de gever, gezet bij het openen van het scherm (niet per toetsaanslag)
+
+/** Beschikbaar saldo van een willekeurige gebruiker, met dezelfde ledger-kern als de header. */
+async function availableFor(userId) {
+  const doc = (await stores.users.get(userId))?.value
+  const usersOld = (await stores.usersOld.all()).map((e) => e.value)
+  const txs = (await stores.transactions.all()).map((e) => e.value)
+  return availableCoins({ joined: joinedDate(doc, usersOld), transactions: txs, userId, asOf: new Date() })
+}
+
+/** Mag ik deze persoon een verzoek sturen? Hun lijsten, niet die van mij. */
+async function mayRequestFrom(giverDoc, giverId) {
+  if (Number(giverDoc?.useWhitelist) === 1) {
+    const allows = await getList({ stores, ownerId: giverId, listType: WHITELIST })
+    return allows.includes(me)
+  }
+  const blocks = await getList({ stores, ownerId: giverId, listType: BLACKLIST })
+  return !blocks.includes(me)
+}
+
+async function renderRequest({ id } = {}) {
+  const giver = Number(id)
+  if (!giver || giver === me) { location.hash = '#/search'; return }
+  if (giver !== rcvGiver) { rcvGiver = giver; $('rcvAmount').value = ''; $('rcvDesc').value = ''; $('rcvInfo').textContent = '' }
+
+  const doc = (await stores.users.get(giver))?.value
+  if (!doc) { $('rcvName').textContent = t('HD_ERR_404'); return }
+  const prof = await safeProfile(doc)
+  const avail = await availableFor(giver)
+  rcvAvail = avail
+
+  $('rcvNum').textContent = formatDisplayNum(giver)
+  $('rcvImg').src = avatarFor(prof)
+  $('rcvName').textContent = prof.usersName || `#${giver}`
+  $('rcvAvail').textContent = `${t('RCV_AVAIL')}: ${formatCoins(avail)} ᕫ`
+  $('rcvDetailLink').href = `#/profile/${giver}`
+  $('rcvDetailLink2').href = `#/profile/${giver}`
+
+  const allowed = await mayRequestFrom(doc, giver)
+  $('rcvForm').classList.toggle('hidden', !allowed)
+  $('rcvBlocked').classList.toggle('hidden', allowed)
+  $('rcvSendBtn').classList.toggle('hidden', !allowed)
+  if (!allowed) {
+    $('rcvBlockedText').innerHTML = ''
+    for (const k of ['RCV_BLOCKED_1', 'RCV_BLOCKED_2', 'RCV_BLOCKED_3']) {
+      $('rcvBlockedText').append(document.createTextNode(t(k)), document.createElement('br'))
+    }
+  }
+  checkAmount(avail)
+}
+
+/** Duizendtallen met spaties; rood zodra het bedrag boven hun saldo uitkomt. */
+function checkAmount(avail) {
+  const el = $('rcvAmount')
+  const raw = (el.value || '').replace(/[^\d.]/g, '')
+  const [int, ...rest] = raw.split('.')
+  el.value = rest.length
+    ? `${int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}.${rest.join('')}`
+    : int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  const amount = Number((el.value || '').replace(/\s/g, '')) || 0
+  el.classList.toggle('amount-error', avail != null && amount > avail)
+  return amount
+}
+
+async function sendRequest() {
+  const btn = $('rcvSendBtn'); btn.disabled = true
+  const info = (m) => { $('rcvInfo').textContent = m }
+  try {
+    const giver = rcvGiver
+    const amount = Number(($('rcvAmount').value || '').replace(/\s/g, '')) || 0
+    const description = ($('rcvDesc').value || '').trim()
+    // Dezelfde controles als receiver.inc.php.
+    if (description.length < 3) { $('rcvInfo').className = 'error'; info(t('RCV_ERR_DESC')); return }
+    // Bedrag nul of leeg: geen melding, alleen het veld markeren — er valt niets uit te leggen.
+    if (amount <= 0) { $('rcvAmount').classList.add('amount-error'); $('rcvAmount').focus(); return }
+    // Meer dan hun beschikbare saldo: het origineel weigert dat al bij het verzoek.
+    if (amount > rcvAvail) { $('rcvInfo').className = 'error'; info(t('RCV_ERR_FUNDS')); return }
+
+    const giverDoc = (await stores.users.get(giver))?.value
+    const receiverDoc = (await stores.users.get(me))?.value
+    const p = await createProposal({ stores, giver, receiver: me, amount, description, giverDoc, receiverDoc, asOf: new Date() })
+    log(`Verzoek verstuurd (pid ${p.pid}). Wacht op bevestiging door #${giver}.`)
+    const prof = await safeProfile(giverDoc)
+    $('rcvInfo').className = 'success'
+    info(`${t('RCV_SUCCESS')} ${prof.usersName || '#' + giver}`)
+    $('rcvAmount').value = ''; $('rcvDesc').value = ''
+    await render()
+  } catch (e) {
+    $('rcvInfo').className = 'error'
+    info('FOUT: ' + e.message)
+  } finally {
+    btn.disabled = false
+  }
 }
 
 async function renderTransactions({ id } = {}) {
@@ -1224,21 +1426,6 @@ async function saveProfile() {
   }
 }
 
-async function requestPayment() {
-  const giver = Number($('fromUser').value)
-  const amount = Number($('amount').value)
-  const description = $('desc').value || 'verzoek'
-  log(`Verzoek: #${giver} → jou, ${amount} munten…`)
-  const giverDoc = (await stores.users.get(giver))?.value
-  const receiverDoc = (await stores.users.get(me))?.value
-  const p = await createProposal({ stores, giver, receiver: me, amount, description, giverDoc, receiverDoc, asOf: new Date() })
-  log(`Verzoek verstuurd (pid ${p.pid}). Wacht op bevestiging door #${giver}.`)
-  $('amount').value = ''
-  $('desc').value = ''
-  $('requestCard').classList.add('hidden') // formulier weer dicht
-  await render()
-}
-
 async function confirmPay(proposal) {
   log(`Betalen aan #${proposal.receiver}: ${proposal.amount}…`)
   const usersOld = (await stores.usersOld.all()).map((e) => e.value)
@@ -1582,10 +1769,19 @@ $('resetBackBtn').onclick = () => showCard('login')
 $('toLogin').onclick = (e) => { e.preventDefault(); showCard('login') }
 $('resetBtn').onclick = () => doReset().catch((e) => log('FOUT: ' + e.message))
 $('logoutBtn').onclick = () => logout().catch((e) => log('FOUT: ' + e.message))
-$('requestBtn').onclick = () => requestPayment().catch((e) => log('FOUT: ' + e.message))
-const openRequestForm = () => { $('requestCard').classList.remove('hidden'); $('amount').focus?.() }
-$('newRequestBtn').onclick = openRequestForm
-$('requestCancelBtn').onclick = () => $('requestCard').classList.add('hidden')
+// Zoeken: knop dood onder de 3 tekens, Enter zoekt, elke zoekopdracht begint op pagina 1.
+const doSearch = () => {
+  searchQuery = ($('searchInput').value || '').trim()
+  searchStart = 0
+  searchDone = true
+  render().catch((e) => log('FOUT: ' + e.message))
+}
+$('searchInput').oninput = updateSearchBtn
+$('searchInput').onkeydown = (e) => { if (e.key === 'Enter' && !$('searchBtn').disabled) doSearch() }
+$('searchBtn').onclick = doSearch
+// Verzoek: bedrag live opmaken/valideren, verzenden.
+$('rcvAmount').oninput = () => checkAmount(rcvAvail)
+$('rcvSendBtn').onclick = () => sendRequest()
 $('exportBtn').onclick = () => exportChain().catch((e) => log('FOUT: ' + e.message))
 $('txPdfBtn').onclick = () => $('pdfOpts').classList.toggle('hidden') // toon/verberg opties
 $('pdfGenBtn').onclick = () => {
