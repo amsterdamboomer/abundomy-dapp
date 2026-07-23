@@ -1776,7 +1776,14 @@ for (const id of ['loginId', 'loginPwd']) {
 }
 $('signupBtn').onclick = () => doSignup().catch((e) => log('FOUT: ' + e.message))
 const showCard = (id) => { for (const c of ['login', 'signup', 'resetCard']) $(c).classList.toggle('hidden', c !== id) }
-$('toSignupBtn').onclick = () => showCard('signup')
+$('toSignupBtn').onclick = () => {
+  // 05 (Registratie): e-mail + wachtwoord 1x meenemen naar signup. E-mail alleen als loginId een @ bevat.
+  const lid = $('loginId').value.trim()
+  if (lid.includes('@')) $('suEmail').value = lid
+  const lpw = $('loginPwd').value
+  if (lpw) $('suPwd').value = lpw
+  showCard('signup')
+}
 $('toResetBtn').onclick = () => showCard('resetCard')
 $('resetBackBtn').onclick = () => showCard('login')
 $('toLogin').onclick = (e) => { e.preventDefault(); showCard('login') }
