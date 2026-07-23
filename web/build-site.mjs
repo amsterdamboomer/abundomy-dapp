@@ -160,7 +160,9 @@ window.__abFilter=function(){var q=(document.getElementById('abLangSearch').valu
 .ab-lang-item.ab-active{background:rgba(0,191,255,.15);font-weight:bold}
 .ab-flag img{width:clamp(34px,11vw,44px);height:clamp(34px,11vw,44px);display:block;border-radius:50%;object-fit:cover}
 .ab-lang-name{font-family:raleway_regular,sans-serif;color:#E8B923;font-size:clamp(13px,4.3vw,24px);text-align:left;line-height:1.2}
-</style>`
+
+/* Punt 03 (23 jul 2026): copy-beveiliging weg — content selecteerbaar (header blijft niet-selecteerbaar). */
+html,body{user-select:text !important;-webkit-user-select:text !important;-moz-user-select:text !important;-ms-user-select:text !important}</style>`
 
 /** Eind-injectie: de taalpagina-overlay + flags laden + de vlag tekenen. */
 const BODY_I18N = `<div id="abLangOverlay" class="ab-lang-overlay" role="dialog" aria-label="Language">
