@@ -1786,7 +1786,8 @@ $('toSignupBtn').onclick = () => {
 }
 $('toResetBtn').onclick = () => showCard('resetCard')
 $('resetBackBtn').onclick = () => showCard('login')
-$('toLogin').onclick = (e) => { e.preventDefault(); showCard('login') }
+if ($('toLogin')) $('toLogin').onclick = (e) => { e.preventDefault(); showCard('login') }
+$('suCancelBtn').onclick = () => showCard('login')
 $('resetBtn').onclick = () => doReset().catch((e) => log('FOUT: ' + e.message))
 $('logoutBtn').onclick = () => logout().catch((e) => log('FOUT: ' + e.message))
 // Zoeken: knop dood onder de 3 tekens, Enter zoekt, elke zoekopdracht begint op pagina 1.

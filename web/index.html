@@ -279,7 +279,11 @@
         </section>
 
         <section class="dapp-card hidden" id="signup">
-          <h2 data-i18n="APP_SIGNUP_TITLE">Nieuw account</h2>
+          <div class="button4-row">
+            <div class="button4-column1"><button id="signupBtn" type="button" class="login-button" data-i18n="APP_SIGNUP_VERIFY">Registreer &amp; verifieer e-mail</button></div>
+            <div class="button4-column2"><p class="title">JIJ</p></div>
+            <div class="button4-column3"><button id="suCancelBtn" type="button" class="login-button" data-i18n="RCV_CANCEL">Annuleren</button></div>
+          </div>
           <div style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-bottom:0.6rem;">
             <img id="suImgPreview" class="humanicon2" alt="foto" />
             <label class="login-button-small" style="cursor:pointer;"><span data-i18n="APP_CHOOSE_PHOTO">Foto kiezen</span>
@@ -314,14 +318,10 @@
             <div class="button5-column3"><label class="form__label2"><span data-i18n="SU_RE">Rechteroog</span></label><select id="suRightEye"></select></div>
           </div>
           <textarea id="suSpecial" class="form__input" rows="3" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken zoals tatoeages, littekens, ontbrekende tanden of vingers... om te controleren of u echt bent"></textarea>
-          <div class="actions">
-            <button id="signupBtn" type="button" class="login-button" data-i18n="APP_SIGNUP_VERIFY">Registreer &amp; verifieer e-mail</button>
-          </div>
           <p class="dapp-relay-info" id="signupInfo"></p>
           <div class="actions">
             <button id="goDashboard" type="button" class="login-button hidden" data-i18n="APP_GO_ACCOUNT">Ga naar mijn account &rarr;</button>
           </div>
-          <p class="muted"><a href="#" id="toLogin" data-i18n="APP_HAVE_ACCOUNT">&larr; Heb je al een account? Inloggen</a></p>
         </section>
 
         <section class="view hidden" id="view-home">
