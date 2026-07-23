@@ -691,23 +691,35 @@ let searchDone = false
 /** Alle andere gebruikers, ontsleuteld, gesorteerd zoals het origineel. */
 async function searchMatches() {
   const docs = (await stores.users.all()).map((e) => e.value).filter((u) => u.usersId !== me)
+  // 05: contacten (persons met wie je al proposals/verzoeken hebt) eerst, dan de rest.
+  const proposals = (await stores.proposals.all()).map((e) => e.value)
+  const contactIds = new Set()
+  for (const p of proposals) {
+    if (p.receiver === me) contactIds.add(p.giver)
+    if (p.giver === me) contactIds.add(p.receiver)
+  }
+  const byContact = (a, b) => {
+    const ac = contactIds.has(a.usersId) ? 0 : 1
+    const bc = contactIds.has(b.usersId) ? 0 : 1
+    return ac - bc
+  }
   const profiles = await Promise.all(docs.map((d) => safeProfile(d)))
   const q = searchQuery.trim()
   const numeric = q !== '' && /^\d+$/.test(q)
 
   let hits
   if (!q) {
-    hits = profiles.sort((a, b) => a.usersId - b.usersId)
+    hits = profiles.sort((a, b) => byContact(a, b) || (a.usersId - b.usersId))
   } else if (numeric) {
     const n = Number(q)
     hits = n < 100
       ? profiles.filter((p) => p.usersId === n)
       : profiles.filter((p) => String(p.usersId).startsWith(q))
-    hits.sort((a, b) => a.usersId - b.usersId)
+    hits.sort((a, b) => byContact(a, b) || (a.usersId - b.usersId))
   } else {
     const needle = q.toLowerCase()
     hits = profiles.filter((p) => (p.usersName || '').toLowerCase().includes(needle))
-    hits.sort((a, b) => (a.usersName || '').localeCompare(b.usersName || ''))
+    hits.sort((a, b) => byContact(a, b) || (a.usersName || '').localeCompare(b.usersName || ''))
   }
   return hits
 }
