@@ -146,6 +146,8 @@
       #searchNavTop button, #searchNavBottom button { background: transparent; border: none; padding: 0; font-family: raleway_bold, sans-serif; font-size: clamp(15px, 5.21vw, 30px); }
       #searchNavTop button.login-button, #searchNavBottom button.login-button { color: var(--button); }
       #searchNavTop button.disabled-button, #searchNavBottom button.disabled-button { color: var(--disabled); cursor: default; }
+      /* 02 (Registratie): #signup = V1 layout — form__labels boven velden (block), paren via button5-row. */
+      #signup label.form__label, #signup label.form__label2 { display: block; }
       .app-lang-flag img { width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover; }
 
       /* Taalpagina-overlay (set-language.php-equivalent) */
@@ -271,8 +273,6 @@
 
         <section class="dapp-card hidden" id="signup">
           <h2 data-i18n="APP_SIGNUP_TITLE">Nieuw account</h2>
-          <p class="muted" data-i18n="APP_SIGNUP_HINT">Eén mens = één account. Je e-mail wordt geverifieerd en is uniek.
-            Je kiest een gebruikersnaam en wachtwoord; daarmee log je voortaan in.</p>
           <div style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-bottom:0.6rem;">
             <img id="suImgPreview" class="humanicon2" alt="foto" />
             <label class="login-button-small" style="cursor:pointer;"><span data-i18n="APP_CHOOSE_PHOTO">Foto kiezen</span>
@@ -280,20 +280,33 @@
             </label>
             <button type="button" class="btn-secondary" id="suImgClear" style="display:none;" data-i18n="APP_REMOVE_PHOTO">Foto verwijderen</button>
           </div>
-          <label><span data-i18n="SU_FN">Naam</span> <input id="suName" type="text" autocomplete="name" placeholder=">3" /></label>
-          <label><span data-i18n="APP_EMAIL">E-mailadres</span> <input id="suEmail" type="email" autocomplete="email" placeholder="jij@voorbeeld.nl" /></label>
-          <label><span data-i18n="SU_UN">Gebruikersnaam</span> <input id="suUid" type="text" autocomplete="username" placeholder=">3 az/AZ/09/_" /></label>
-          <label><span data-i18n="SU_PW">Wachtwoord</span> <input id="suPwd" type="password" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></label>
-          <label><span data-i18n="SU_PW2">Herhaal wachtwoord</span> <input id="suPwd2" type="password" autocomplete="new-password" /></label>
-          <label><span data-i18n="SU_BD">Geboortedatum</span> <input id="suBirthday" type="date" min="1900-01-01" max="2050-01-01" /></label>
-          <label><span data-i18n="SU_HT">Lengte</span> <input id="suHeight" type="text" placeholder="1.78m" /></label>
-          <label><span data-i18n="SU_GN">Geslacht</span> <select id="suGender">
-            <option value="0" data-i18n="SU_ML">Man</option><option value="1" data-i18n="SU_FM">Vrouw</option><option value="2" data-i18n="SU_OT">Anders</option>
-          </select></label>
-          <label><span data-i18n="SU_HR">Haarkleur</span> <select id="suHair"></select></label>
-          <label><span data-i18n="SU_LE">Linkeroog</span> <select id="suLeftEye"></select></label>
-          <label><span data-i18n="SU_RE">Rechteroog</span> <select id="suRightEye"></select></label>
-          <label style="flex:1;min-width:14rem"><input id="suSpecial" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken" style="flex:1;min-width:12rem" /></label>
+          <label class="form__label" for="suName"><span data-i18n="SU_FN">Naam</span></label>
+          <input id="suName" type="text" class="form__input" autocomplete="name" placeholder=">3" />
+          <label class="form__label" for="suEmail"><span data-i18n="APP_EMAIL">E-mailadres</span></label>
+          <input id="suEmail" type="email" class="form__input" autocomplete="email" placeholder="jij@voorbeeld.nl" />
+          <label class="form__label" for="suUid"><span data-i18n="SU_UN">Gebruikersnaam</span></label>
+          <input id="suUid" type="text" class="form__input" autocomplete="username" placeholder=">3 az/AZ/09/_" />
+          <div class="button5-row">
+            <div class="button5-column1"><label class="form__label2"><span data-i18n="SU_PW">Wachtwoord</span></label><input id="suPwd" type="password" class="form__input2" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></div>
+            <div class="button5-column2"></div>
+            <div class="button5-column3"><label class="form__label2"><span data-i18n="SU_PW2">Herhaal wachtwoord</span></label><input id="suPwd2" type="password" class="form__input2" autocomplete="new-password" /></div>
+          </div>
+          <div class="button5-row">
+            <div class="button5-column1"><label class="form__label"><span data-i18n="SU_BD">Geboortedatum</span></label><input id="suBirthday" type="date" min="1900-01-01" max="2050-01-01" /></div>
+            <div class="button5-column2"></div>
+            <div class="button5-column3"><label class="form__label"><span data-i18n="SU_GN">Geslacht</span></label><select id="suGender"><option value="0" data-i18n="SU_ML">Man</option><option value="1" data-i18n="SU_FM">Vrouw</option><option value="2" data-i18n="SU_OT">Anders</option></select></div>
+          </div>
+          <div class="button5-row">
+            <div class="button5-column1"><label class="form__label"><span data-i18n="SU_HT">Lengte</span></label><input id="suHeight" type="text" placeholder="1.78m" /></div>
+            <div class="button5-column2"></div>
+            <div class="button5-column3"><label class="form__label"><span data-i18n="SU_HR">Haarkleur</span></label><select id="suHair"></select></div>
+          </div>
+          <div class="button5-row">
+            <div class="button5-column1"><label class="form__label2"><span data-i18n="SU_LE">Linkeroog</span></label><select id="suLeftEye"></select></div>
+            <div class="button5-column2"></div>
+            <div class="button5-column3"><label class="form__label2"><span data-i18n="SU_RE">Rechteroog</span></label><select id="suRightEye"></select></div>
+          </div>
+          <input id="suSpecial" class="form__input" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken" />
           <div class="actions">
             <button id="signupBtn" type="button" class="login-button" data-i18n="APP_SIGNUP_VERIFY">Registreer &amp; verifieer e-mail</button>
           </div>
