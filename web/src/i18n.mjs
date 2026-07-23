@@ -110,7 +110,7 @@ const EXTRA = {
     APP_REQUEST_HINT: 'Jij bent de ontvanger; de gekozen gebruiker moet bevestigen.',
     APP_FROM: 'Van',
     APP_SEND_REQUEST: 'Verzoek versturen',
-    APP_TOOLS: 'System Information',
+    APP_TOOLS: 'Systeem Informatie',
     APP_EXPORT_CSV: 'Exporteer mijn keten (CSV)',
     APP_REFRESH: 'Ververs',
     APP_CHANGE_PWD: 'Wachtwoord wijzigen',
