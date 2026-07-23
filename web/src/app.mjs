@@ -257,6 +257,7 @@ async function finishLogin() {
   setInterval(() => resyncStores().catch(() => {}), 15000)
 
   $('app-header').classList.remove('hidden')
+  $('topNav').classList.add('hidden')
   for (const id of ['login', 'signup', 'resetCard']) $(id).classList.add('hidden')
   $('goDashboard').classList.add('hidden')
   if (!(location.hash || '').startsWith('#/')) location.hash = '#/'
