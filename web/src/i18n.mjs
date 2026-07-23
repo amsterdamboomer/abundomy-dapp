@@ -86,7 +86,7 @@ const EXTRA = {
     APP_NEW_EMAIL: 'New e-mail address',
     APP_SEND_VERIFY: 'Send verification',
     APP_NONE_THIS_MONTH: 'No transactions this month.',
-    APP_FEATURES_PH: 'special features',
+    APP_FEATURES_PH: 'Special features such as tattoos, scars, missing teeth or fingers... to verify you are real',
     APP_DESC_PH: 'description',
   },
   ne: {
@@ -134,7 +134,7 @@ const EXTRA = {
     APP_NEW_EMAIL: 'Nieuw e-mailadres',
     APP_SEND_VERIFY: 'Verstuur verificatie',
     APP_NONE_THIS_MONTH: 'Geen transacties in deze maand.',
-    APP_FEATURES_PH: 'bijzondere kenmerken',
+    APP_FEATURES_PH: 'Bijzondere kenmerken zoals tatoeages, littekens, ontbrekende tanden of vingers... om te controleren of u echt bent',
     APP_DESC_PH: 'omschrijving',
   },
 }
