@@ -189,14 +189,14 @@ export async function loadI18n() {
 export function hasLang(code) { return !!DICT[code] }
 
 /**
- * Ronde land-vlag als inline-SVG (1-op-1 uit het origineel `getFlagSVG`). De bron
- * gebruikt een vaste clip-id `c`; we maken die uniek per gebruik (`uid`) zodat meerdere
- * vlaggen op één pagina niet botsen.
+ * Ronde land-vlag als JPG-afbeelding (vroeger inline-SVG; 23 jul 2026 overgezet naar
+ * JPG's in img/flags/ — punt 01.1). `flags.json` bevat per taalcode een relatief pad;
+ * we geven het terug als <img> (relatief → /app/img/flags/).
  */
 export function getFlag(code, uid) {
-  const svg = FLAGS[code] || FLAGS.en || ''
-  const id = 'c_' + (uid || code)
-  return svg.replace(/id="c"/g, `id="${id}"`).replace(/url\(#c\)/g, `url(#${id})`)
+  const src = FLAGS[code] || FLAGS.en || ''
+  if (!src) return ''
+  return `<img src="${src}" alt="${uid || code}" class="app-flag-img">`
 }
 
 function applyDir() {

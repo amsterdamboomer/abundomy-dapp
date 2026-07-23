@@ -113,7 +113,7 @@ window.__abTrackItem=function(item){
 window.__lang=(function(){try{return localStorage.getItem('abundomy-lang')||'en'}catch(e){return 'en'}})();
 document.documentElement.lang=window.__lang;
 if(window.__ABUNDOMY_RTL.indexOf(window.__lang)>=0)document.documentElement.dir='rtl';
-window.__abFlag=function(code,uid){var s=window.__abFlags[code]||window.__abFlags['en']||'';var id='c_'+(uid||code);return s.replace(/id="c"/g,'id="'+id+'"').replace(/url\\(#c\\)/g,'url(#'+id+')');};
+window.__abFlag=function(code,uid){var s=window.__abFlags[code]||window.__abFlags['en']||'';if(!s)return '';return '<img src="/'+s+'" alt="'+(uid||code||'')+'" class="ab-flag-img">';};
 window.__abRenderFlag=function(){var b=document.getElementById('abLangFlag');if(b)b.innerHTML=window.__abFlag(window.__lang,'hdr');};
 window.__abSetLang=function(code){
   window.__lang=code;
@@ -148,7 +148,7 @@ window.__abFilter=function(){var q=(document.getElementById('abLangSearch').valu
 <style>
 .ab-lang-flag{width:clamp(35px,12.15vw,70px);height:clamp(35px,12.15vw,70px);padding:0;border:2px solid rgba(255,255,255,.7);border-radius:50%;background:transparent;cursor:pointer;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.4);transition:filter .2s,transform .2s;display:block}
 .ab-lang-flag:hover{filter:brightness(1.25);transform:scale(1.06)}
-.ab-lang-flag svg{width:100%;height:100%;display:block}
+.ab-lang-flag img{width:100%;height:100%;display:block;border-radius:50%;object-fit:cover}
 .ab-lang-overlay{display:none;position:fixed;inset:0;z-index:2147483000;overflow-y:auto;background:#0d1228;padding:clamp(10px,3vw,24px) clamp(8px,3vw,20px) 3rem}
 .ab-lang-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;max-width:576px;margin:0 auto clamp(10px,3vw,18px)}
 .ab-lang-bar h2{font-family:raleway_bold,sans-serif;color:#E8B923;margin:0;font-size:clamp(16px,5vw,28px)}
@@ -158,7 +158,7 @@ window.__abFilter=function(){var q=(document.getElementById('abLangSearch').valu
 .ab-lang-item{display:flex;align-items:center;gap:clamp(8px,2.6vw,15px);padding:clamp(7px,1.8vw,10px) clamp(8px,2.4vw,14px);border-bottom:1px solid rgba(255,255,255,.08);cursor:pointer}
 .ab-lang-item:hover{background:rgba(255,255,255,.06)}
 .ab-lang-item.ab-active{background:rgba(0,191,255,.15);font-weight:bold}
-.ab-flag svg{width:clamp(34px,11vw,44px);height:clamp(34px,11vw,44px);display:block;border-radius:50%}
+.ab-flag img{width:clamp(34px,11vw,44px);height:clamp(34px,11vw,44px);display:block;border-radius:50%;object-fit:cover}
 .ab-lang-name{font-family:raleway_regular,sans-serif;color:#E8B923;font-size:clamp(13px,4.3vw,24px);text-align:left;line-height:1.2}
 </style>`
 
@@ -297,6 +297,10 @@ if (existsSync(FLAGS_SRC)) {
 } else {
   console.log('⚠ web/public/json/flags.json ontbreekt — vlag-taalkiezer toont geen vlaggen')
 }
+
+// Vlag-JPG's (punt 01.1, 23 jul 2026: SVG→JPG) → content-bundel, zodat /img/flags/flag_XX.jpg werkt.
+const FLAGS_IMG = fileURLToPath(new URL('./public/img/flags/', import.meta.url))
+if (existsSync(FLAGS_IMG)) { cpSync(FLAGS_IMG, OUT + 'img/flags', { recursive: true }); console.log('• vlag-JPG\'s: img/flags/') }
 
 // Extra bundel-assets die niet in de Abundomy-bron zitten (bv. OneCoinHDemo.xlsx — door
 // youtube01/tiktok01 gelinkt maar nooit meegekomen; opgehaald van abundomy.com). Map-
