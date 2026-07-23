@@ -1783,7 +1783,7 @@ $('searchBtn').onclick = doSearch
 // Verzoek: bedrag live opmaken/valideren, verzenden.
 $('rcvAmount').oninput = () => checkAmount(rcvAvail)
 $('rcvSendBtn').onclick = () => sendRequest()
-$('exportBtn').onclick = () => exportChain().catch((e) => log('FOUT: ' + e.message))
+if ($('exportBtn')) $('exportBtn').onclick = () => exportChain().catch((e) => log('FOUT: ' + e.message))
 $('txPdfBtn').onclick = () => $('pdfOpts').classList.toggle('hidden') // toon/verberg opties
 $('pdfGenBtn').onclick = () => {
   const scope = document.querySelector('input[name="pdfScope"]:checked')?.value || 'all'

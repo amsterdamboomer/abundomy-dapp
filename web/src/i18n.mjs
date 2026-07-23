@@ -62,7 +62,7 @@ const EXTRA = {
     APP_REQUEST_HINT: 'You are the receiver; the chosen user has to confirm.',
     APP_FROM: 'From',
     APP_SEND_REQUEST: 'Send request',
-    APP_TOOLS: 'Tools, status & log',
+    APP_TOOLS: 'System Information',
     APP_EXPORT_CSV: 'Export my chain (CSV)',
     APP_REFRESH: 'Refresh',
     APP_CHANGE_PWD: 'Change password',
