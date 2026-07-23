@@ -146,7 +146,7 @@ window.__abCloseLang=function(){var o=document.getElementById('abLangOverlay');i
 window.__abFilter=function(){var q=(document.getElementById('abLangSearch').value||'').toLowerCase();var items=document.querySelectorAll('#abLangList .ab-lang-item');for(var i=0;i<items.length;i++){var n=items[i].getAttribute('data-s');items[i].style.display=(!q||n.indexOf(q)>=0)?'':'none';}};
 </script>
 <style>
-.ab-lang-flag{width:clamp(35px,12.15vw,70px);height:clamp(35px,12.15vw,70px);padding:0;border:2px solid rgba(255,255,255,.7);border-radius:50%;background:transparent;cursor:pointer;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.4);transition:filter .2s,transform .2s;display:block}
+.ab-lang-flag{width:40px;height:40px;padding:0;border:2px solid rgba(255,255,255,.7);border-radius:50%;background:transparent;cursor:pointer;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.4);transition:filter .2s,transform .2s;display:block}
 .ab-lang-flag:hover{filter:brightness(1.25);transform:scale(1.06)}
 .ab-lang-flag img{width:100%;height:100%;display:block;border-radius:50%;object-fit:cover}
 .ab-lang-overlay{display:none;position:fixed;inset:0;z-index:2147483000;overflow-y:auto;background:#0d1228;padding:clamp(10px,3vw,24px) clamp(8px,3vw,20px) 3rem}
