@@ -878,8 +878,8 @@ async function sendRequest() {
     if (description.length < 3) { $('rcvInfo').className = 'error'; info(t('RCV_ERR_DESC')); return }
     // Bedrag nul of leeg: geen melding, alleen het veld markeren — er valt niets uit te leggen.
     if (amount <= 0) { $('rcvAmount').classList.add('amount-error'); $('rcvAmount').focus(); return }
-    // Meer dan hun beschikbare saldo: het origineel weigert dat al bij het verzoek.
-    if (amount > rcvAvail) { $('rcvInfo').className = 'error'; info(t('RCV_ERR_FUNDS')); return }
+    // 06: altijd kunnen vragen — geen saldo-limiet bij versturen. Proposal blijft open tot
+    // de gever voldoende saldo heeft (confirmPay weigert dan, proposal blijft staan).
 
     const giverDoc = (await stores.users.get(giver))?.value
     const receiverDoc = (await stores.users.get(me))?.value
