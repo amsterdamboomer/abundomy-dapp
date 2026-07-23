@@ -135,9 +135,9 @@
       .app-lang-flag:hover { filter: brightness(1.25); transform: scale(1.06); }
       /* 02.01d: woordmerk = V1: uppercase + geen p-margin (hoog, zoals 1coinh.com). */
       .menu-column2 .feedback2 { margin: 0; text-transform: uppercase; }
-      /* 02.02: Login-titel exact midden + 25% groter. */
-      #login .button9-column1 { width: 100%; }
-      #login .button9-row { font-size: clamp(18.75px, 6.51vw, 37.5px); text-align: center; }
+      /* 02.02: Login-titel exact midden + 25% groter. p.title heeft eigen font-size +
+         padding-inline-end (verschuift links) in main.css; daarom op #login .title zelf. */
+      #login .title { font-size: clamp(18.75px, 6.51vw, 37.5px); padding-inline-end: 0; }
       .app-lang-flag img { width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover; }
 
       /* Taalpagina-overlay (set-language.php-equivalent) */
