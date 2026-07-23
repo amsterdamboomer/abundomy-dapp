@@ -132,17 +132,6 @@
         overflow: hidden;
         transition: filter 0.2s ease, transform 0.2s ease;
       }
-      .app-topbrand {
-        flex: 1 1 auto;
-        text-align: center;
-        font-family: raleway_bold, sans-serif;
-        color: var(--text);
-        font-size: clamp(13px, 4.5vw, 24px);
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        margin: 0;
-        pointer-events: none;
-      }
       .app-lang-flag:hover { filter: brightness(1.25); transform: scale(1.06); }
       .app-lang-flag img { width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover; }
 
@@ -192,7 +181,7 @@
           <a href="/" class="nav-item" tabindex="-1" aria-label="Home">
             <img src="/img/Home_70x70.png" alt="Home" />
           </a>
-          <p class="app-topbrand" data-i18n="TITLE">ABUNDOMY MONEY</p>
+          <div class="menu-column2"><p class="feedback2" data-i18n="TITLE">ABUNDOMY MONEY</p></div>
           <button id="langFlag" class="app-lang-flag" type="button" aria-label="Language"></button>
         </header>
       </div>
