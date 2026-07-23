@@ -258,6 +258,9 @@ function renderPhp(src, { title = 'Abundomy', desc = 'Abundomy - Realizing Resou
   s = s.replace(/(href=["'][^"']*?)\.php(["'?#])/g, '$1.html$2')
   // money-app-link → onze IPFS-app (op /app/), i.p.v. het oude bron-domein 1coinh.com
   s = s.replace(/https?:\/\/(www\.)?1coinh\.com\/?/g, '/app/')
+  // Punt 02 (23 jul 2026): verwijder de overbodige <br> direct na een title1-span.
+  // title1 is display:block -> de <br> geeft een extra lege regel onder de titel.
+  s = s.replace(/(<span class=['"]title1['"][^>]*>[^<]*<\/span>)\s*<br\s*\/?>/gi, '$1')
   return s
 }
 
