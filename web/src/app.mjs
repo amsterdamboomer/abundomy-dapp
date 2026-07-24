@@ -1923,15 +1923,24 @@ $('imgSnapBtn').onclick = async () => {
   if (webcamStream) {
     // SNAP: neem een frame van de live video → canvas (cover-fit), stop webcam.
     const v = $('webcamVideo'), c = $('imgCanvas'), x = c.getContext('2d')
-    if (!v.videoWidth) { $('imgInstr').textContent = 'webcam nog niet gereed — wacht 1 sec en probeer opnieuw'; return }
-    const r = Math.max(c.width / v.videoWidth, c.height / v.videoHeight)
-    const dw = v.videoWidth * r, dh = v.videoHeight * r
-    x.drawImage(v, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh)
+    if (v.videoWidth) {
+      const r = Math.max(c.width / v.videoWidth, c.height / v.videoHeight)
+      const dw = v.videoWidth * r, dh = v.videoHeight * r
+      x.drawImage(v, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh)
+    } else { x.drawImage(v, 0, 0, c.width, c.height) }
+    // Punt 04-foto: verify non-empty frame — camera moet beeld hebben (niet zwart/transparant).
+    try {
+      const px = x.getImageData((c.width / 2) | 0, (c.height / 2) | 0, 1, 1).data
+      if (px[3] === 0 || (px[0] + px[1] + px[2] < 30)) {
+        $('imgInstr').textContent = 'camera nog niet gereed — wacht op beeld en probeer opnieuw'
+        return  // laat stream draaien, geen webcamOff
+      }
+    } catch { /* tainted canvas zeldzaam bij getUserMedia; neem genoegen met draw */ }
     webcamOff()
   } else {
     try {
       webcamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-      const v = $('webcamVideo'); v.srcObject = webcamStream; v.style.display = 'block'; await v.play().catch(() => {})
+      const v = $('webcamVideo'); v.muted = true; v.srcObject = webcamStream; v.style.display = 'block'; await v.play().catch(() => {})
       $('imgSnapLbl').textContent = t('IMG_ABORT')
     } catch (e) { $('imgInstr').textContent = 'FOUT: ' + e.message }
   }
