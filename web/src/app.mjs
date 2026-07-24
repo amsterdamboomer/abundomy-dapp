@@ -1904,8 +1904,28 @@ $('loadpicture').onchange = (e) => {
   e.target.value = ''
 }
 $('imgUseBtn').onclick = () => {
+  const c = $('imgCanvas'), x = c.getContext('2d')
+  // Punt 04-foto: als webcam aan staat → impliciet snap vóór gebruik (vergevingsgezigind: "gebruik" met webcam aan = snap+gebruik).
+  if (webcamStream) {
+    const v = $('webcamVideo')
+    if (v.videoWidth) {
+      const r = Math.max(c.width / v.videoWidth, c.height / v.videoHeight)
+      const dw = v.videoWidth * r, dh = v.videoHeight * r
+      x.drawImage(v, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh)
+    }
+    try {
+      const px = x.getImageData((c.width / 2) | 0, (c.height / 2) | 0, 1, 1).data
+      if (px[3] === 0 || (px[0] + px[1] + px[2] < 30)) { $('imgInstr').textContent = 'camera nog niet gereed — wacht op beeld en probeer opnieuw'; return }
+    } catch {}
+    webcamOff()
+  }
+  // canvas moet iets bevatten (anders geen Upload/snap gedaan)
+  try {
+    const px = x.getImageData((c.width / 2) | 0, (c.height / 2) | 0, 1, 1).data
+    if (px[3] === 0) { $('imgInstr').textContent = 'kies eerst een foto (Upload of Camera)'; return }
+  } catch {}
   if (imageViewReturnTo === 'signup') {
-    signupImage = $('imgCanvas').toDataURL('image/png')
+    signupImage = c.toDataURL('image/png')
     saveSignupForm()
     closeViewImage()
     refreshSignupImagePreview()
