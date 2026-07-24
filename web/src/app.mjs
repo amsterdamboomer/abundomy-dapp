@@ -1841,21 +1841,10 @@ $('peEmailVerifyBtn').onclick = () => changeEmail().catch((e) => log('FOUT: ' + 
 // Foto kiezen bij signup (vóór account-aanmaak).
 let signupImage = ''
 function refreshSignupImagePreview() {
-  const hasImg = (typeof signupImage === 'string' && signupImage.startsWith('data:image'))
-  if (hasImg) { $('suImgPreview').src = signupImage }  // Punt 02-24-07: toon echte foto, niet de naam-avatar-placeholder
-  $('suImgPreview').style.display = hasImg ? 'block' : 'none'
   // Punt 04-foto stap 3: avatar (topNav, ipv vlag) updaten met de gekozen foto / naam-placeholder.
   $('suAvatar').src = avatarFor({ usersName: $('suName').value, image: signupImage })
-  $('suImgClear').style.display = hasImg ? 'inline-block' : 'none'
 }
 $('suPhotoBtn').onclick = () => showViewImage('signup')  // Punt 04-foto: opent V1 image.php-achtige view (was direct file-picker)
-$('suImgFile').onchange = async (e) => {
-  const file = e.target.files?.[0]; if (!file) return
-  try { signupImage = await fileToAvatarDataURL(file); refreshSignupImagePreview(); saveSignupForm() }
-  catch (err) { $('signupInfo').textContent = 'FOUT: ' + err.message }
-  e.target.value = ''
-}
-$('suImgClear').onclick = () => { signupImage = ''; refreshSignupImagePreview(); saveSignupForm() }
 $('suName').addEventListener('input', () => { if (!signupImage) refreshSignupImagePreview() })
 refreshSignupImagePreview()
 
