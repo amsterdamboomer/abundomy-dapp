@@ -1839,7 +1839,7 @@ function refreshSignupImagePreview() {
   $('suImgPreview').style.display = hasImg ? 'block' : 'none'
   $('suImgClear').style.display = hasImg ? 'inline-block' : 'none'
 }
-$('suPhotoBtn').onclick = () => $('suImgFile').click()  // Punt 02-24-07: groene knop opent file-picker
+$('suPhotoBtn').onclick = () => showViewImage('signup')  // Punt 04-foto: opent V1 image.php-achtige view (was direct file-picker)
 $('suImgFile').onchange = async (e) => {
   const file = e.target.files?.[0]; if (!file) return
   try { signupImage = await fileToAvatarDataURL(file); refreshSignupImagePreview(); saveSignupForm() }
@@ -1873,6 +1873,46 @@ function restoreSignupForm() {
 function clearSignupForm() { try { localStorage.removeItem(SIGNUP_FORM_KEY) } catch {} }
 $('signup').addEventListener('input', saveSignupForm)
 $('signup').addEventListener('change', saveSignupForm)
+
+// Punt 04-foto stap 1: #view-image (V1 image.php-layout). Upload → canvas → terug. Webcam/bewerking = stap 2.
+let imageViewReturnTo = 'signup'
+function showViewImage(returnTo) {
+  imageViewReturnTo = returnTo || 'signup'
+  for (const v of VIEWS) $('view-' + v)?.classList.add('hidden')
+  $('signup').classList.add('hidden')
+  $('view-image').classList.remove('hidden')
+  const c = $('imgCanvas'), x = c.getContext('2d'); x.clearRect(0, 0, c.width, c.height)
+}
+function closeViewImage() {
+  $('view-image').classList.add('hidden')
+  if (imageViewReturnTo === 'signup') $('signup').classList.remove('hidden')
+  else route()  // later: profile-integratie (stap 3)
+}
+function drawImageOnCanvas(img) {
+  const c = $('imgCanvas'), x = c.getContext('2d'), W = c.width, H = c.height
+  x.clearRect(0, 0, W, H)
+  const r = Math.max(W / img.width, H / img.height)
+  const dw = img.width * r, dh = img.height * r
+  x.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh)
+}
+$('imgUploadBtn').onclick = () => $('loadpicture').click()
+$('loadpicture').onchange = (e) => {
+  const f = e.target.files?.[0]; if (!f) return
+  const img = new Image()
+  img.onload = () => drawImageOnCanvas(img)
+  img.src = URL.createObjectURL(f)
+  e.target.value = ''
+}
+$('imgUseBtn').onclick = () => {
+  if (imageViewReturnTo === 'signup') {
+    signupImage = $('imgCanvas').toDataURL('image/png')
+    saveSignupForm()
+    closeViewImage()
+    refreshSignupImagePreview()
+  }
+}
+$('imgCancelBtn').onclick = () => closeViewImage()
+// stap 2 placeholders: imgSnapBtn / imgResetBtn / imgRotateBtn / zoom*/brightness*/contrast*/color* = no-op tot image.js-port
 $('navYear').onchange = (e) => { txYear = Number(e.target.value); txSelectedTid = 0; renderTransactions(currentParams).catch(() => {}) }
 $('navMonth').onchange = (e) => { txMonth = Number(e.target.value); txSelectedTid = 0; renderTransactions(currentParams).catch(() => {}) }
 // ============================ I18N-BOOT + TAALKIEZER ============================
