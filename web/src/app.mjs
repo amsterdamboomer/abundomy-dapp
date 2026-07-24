@@ -1921,13 +1921,17 @@ function webcamOff() {
 }
 $('imgSnapBtn').onclick = async () => {
   if (webcamStream) {
+    // SNAP: neem een frame van de live video → canvas (cover-fit), stop webcam.
     const v = $('webcamVideo'), c = $('imgCanvas'), x = c.getContext('2d')
-    x.drawImage(v, 0, 0, c.width, c.height)
+    if (!v.videoWidth) { $('imgInstr').textContent = 'webcam nog niet gereed — wacht 1 sec en probeer opnieuw'; return }
+    const r = Math.max(c.width / v.videoWidth, c.height / v.videoHeight)
+    const dw = v.videoWidth * r, dh = v.videoHeight * r
+    x.drawImage(v, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh)
     webcamOff()
   } else {
     try {
       webcamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-      const v = $('webcamVideo'); v.srcObject = webcamStream; v.style.display = 'block'
+      const v = $('webcamVideo'); v.srcObject = webcamStream; v.style.display = 'block'; await v.play().catch(() => {})
       $('imgSnapLbl').textContent = t('IMG_ABORT')
     } catch (e) { $('imgInstr').textContent = 'FOUT: ' + e.message }
   }
