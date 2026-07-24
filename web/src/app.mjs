@@ -393,6 +393,7 @@ async function doSignup() {
     info(`Account #${me} aangemaakt ✓ — log voortaan in met je gebruikersnaam en wachtwoord. ` +
       `De herstelcode staat in je welkomstmail.`)
     $('goDashboard').classList.remove('hidden')
+    clearSignupForm()  // Punt 04-24-07: form leegmaken na succesvolle account-aanmaak
   } catch (e) {
     info('FOUT: ' + e.message)
     btn.disabled = false
@@ -1841,13 +1842,37 @@ function refreshSignupImagePreview() {
 $('suPhotoBtn').onclick = () => $('suImgFile').click()  // Punt 02-24-07: groene knop opent file-picker
 $('suImgFile').onchange = async (e) => {
   const file = e.target.files?.[0]; if (!file) return
-  try { signupImage = await fileToAvatarDataURL(file); refreshSignupImagePreview() }
+  try { signupImage = await fileToAvatarDataURL(file); refreshSignupImagePreview(); saveSignupForm() }
   catch (err) { $('signupInfo').textContent = 'FOUT: ' + err.message }
   e.target.value = ''
 }
-$('suImgClear').onclick = () => { signupImage = ''; refreshSignupImagePreview() }
+$('suImgClear').onclick = () => { signupImage = ''; refreshSignupImagePreview(); saveSignupForm() }
 $('suName').addEventListener('input', () => { if (!signupImage) refreshSignupImagePreview() })
 refreshSignupImagePreview()
+
+// Punt 04-24-07: signup-form persistentie bij refresh (wachtwoord NIET opslaan, per Patrick keuze 3).
+const SIGNUP_FORM_KEY = 'abundomy-signup-form'
+const SIGNUP_FIELDS = ['suName','suEmail','suUid','suBirthday','suGender','suHeight','suHair','suLeftEye','suRightEye','suSpecial']
+function saveSignupForm() {
+  try {
+    const data = {}
+    for (const id of SIGNUP_FIELDS) data[id] = $(id).value
+    data.signupImage = signupImage
+    localStorage.setItem(SIGNUP_FORM_KEY, JSON.stringify(data))
+  } catch {}
+}
+function restoreSignupForm() {
+  try {
+    const data = JSON.parse(localStorage.getItem(SIGNUP_FORM_KEY) || '{}')
+    if (!data || typeof data !== 'object') return
+    for (const id of SIGNUP_FIELDS) if (id in data && data[id] != null) $(id).value = data[id]
+    signupImage = data.signupImage || ''
+    refreshSignupImagePreview()
+  } catch {}
+}
+function clearSignupForm() { try { localStorage.removeItem(SIGNUP_FORM_KEY) } catch {} }
+$('signup').addEventListener('input', saveSignupForm)
+$('signup').addEventListener('change', saveSignupForm)
 $('navYear').onchange = (e) => { txYear = Number(e.target.value); txSelectedTid = 0; renderTransactions(currentParams).catch(() => {}) }
 $('navMonth').onchange = (e) => { txMonth = Number(e.target.value); txSelectedTid = 0; renderTransactions(currentParams).catch(() => {}) }
 // ============================ I18N-BOOT + TAALKIEZER ============================
@@ -1890,6 +1915,7 @@ function chooseLang(code) { setLang(code); closeLangOverlay() }
   await loadI18n()
   applyStaticI18n()
   populateSelects()
+  restoreSignupForm()  // Punt 04-24-07: herstel opgeslagen signup-velden (na populateSelects, zodat selects gevuld zijn)
   renderLangFlag()
   $('langFlag').onclick = openLangOverlay
   $('langCancelBtn').onclick = closeLangOverlay
