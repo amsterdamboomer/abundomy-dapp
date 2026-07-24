@@ -1833,9 +1833,12 @@ $('peEmailVerifyBtn').onclick = () => changeEmail().catch((e) => log('FOUT: ' + 
 // Foto kiezen bij signup (vóór account-aanmaak).
 let signupImage = ''
 function refreshSignupImagePreview() {
-  $('suImgPreview').src = avatarFor({ usersId: 0, usersName: $('suName').value, image: signupImage })
-  $('suImgClear').style.display = (typeof signupImage === 'string' && signupImage.startsWith('data:image')) ? 'inline-block' : 'none'
+  const hasImg = (typeof signupImage === 'string' && signupImage.startsWith('data:image'))
+  if (hasImg) { $('suImgPreview').src = signupImage }  // Punt 02-24-07: toon echte foto, niet de naam-avatar-placeholder
+  $('suImgPreview').style.display = hasImg ? 'block' : 'none'
+  $('suImgClear').style.display = hasImg ? 'inline-block' : 'none'
 }
+$('suPhotoBtn').onclick = () => $('suImgFile').click()  // Punt 02-24-07: groene knop opent file-picker
 $('suImgFile').onchange = async (e) => {
   const file = e.target.files?.[0]; if (!file) return
   try { signupImage = await fileToAvatarDataURL(file); refreshSignupImagePreview() }

@@ -162,6 +162,8 @@
       #signup.dapp-card { border: none; background: none; padding: 0; }
       #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select, #signup textarea { background-color: var(--black); border: none; color: var(--white); }
       #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select { border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); }
+      /* Punt 02-24-07: #signup foto-knop = V1 .photo-button (groen, volledige breedte, pill). */
+      #signup .photo-button { border: none; border-radius: clamp(15px, 5.21vw, 30px); background-color: var(--button); color: var(--black); font-family: raleway_bold, sans-serif; font-size: clamp(14px, 3.82vw, 22px); width: 100%; height: clamp(40px, 10.42vw, 60px); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-top: clamp(8px, 1.5vw, 12px); }
       .app-lang-flag img { width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover; }
 
       /* Taalpagina-overlay (set-language.php-equivalent) */
@@ -291,15 +293,12 @@
             <div class="button4-column2"><p class="title">JIJ</p></div>
             <div class="button4-column3"><button id="suCancelBtn" type="button" class="login-button" data-i18n="RCV_CANCEL">Annuleren</button></div>
           </div>
-          <div style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-bottom:0.6rem;">
-            <img id="suImgPreview" class="humanicon2" alt="foto" />
-            <label class="login-button-small" style="cursor:pointer;"><span data-i18n="APP_CHOOSE_PHOTO">Foto kiezen</span>
-              <input id="suImgFile" type="file" accept="image/*" style="display:none;" />
-            </label>
-            <button type="button" class="btn-secondary" id="suImgClear" style="display:none;" data-i18n="APP_REMOVE_PHOTO">Foto verwijderen</button>
-          </div>
           <label class="form__label" for="suName"><span data-i18n="SU_FN">Naam</span></label>
           <input id="suName" type="text" class="form__input" autocomplete="name" placeholder=">3" />
+          <button type="button" class="photo-button" id="suPhotoBtn" data-i18n="SU_IMG">Upload uw pasfoto</button>
+          <input id="suImgFile" type="file" accept="image/*" style="display:none;" />
+          <img id="suImgPreview" class="humanicon2" alt="foto" style="display:none;" />
+          <button type="button" class="btn-secondary" id="suImgClear" style="display:none;" data-i18n="APP_REMOVE_PHOTO">Foto verwijderen</button>
           <label class="form__label" for="suEmail"><span data-i18n="APP_EMAIL">E-mailadres</span></label>
           <input id="suEmail" type="email" class="form__input" autocomplete="email" placeholder="jij@voorbeeld.nl" />
           <label class="form__label" for="suUid"><span data-i18n="SU_UN">Gebruikersnaam</span></label>
