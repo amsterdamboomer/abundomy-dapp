@@ -160,6 +160,8 @@
       #signup textarea { width: 100%; box-sizing: border-box; min-height: clamp(100px, 20vw, 150px); margin-top: clamp(8px, 1.5vw, 12px); resize: vertical; font-family: raleway_regular, sans-serif; font-size: clamp(15px, 5.21vw, 30px); color: var(--white); border-radius: 0.6rem; }
       /* Punt 01: #signup = V1 — container-box weg, velden zwart (V1 .form__input). */
       #signup.dapp-card { border: none; background: none; padding: 0; }
+      /* Punt 03-24-07: #signup ~1 cm breder (max 550 → 600, richting V1 576+). */
+      #signup.dapp-card { width: clamp(300px, 95.49vw, 600px); }
       #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select, #signup textarea { background-color: var(--black); border: none; color: var(--white); }
       #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select { border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); }
       /* Punt 02-24-07: #signup foto-knop = V1 .photo-button (groen, volledige breedte, pill). */
