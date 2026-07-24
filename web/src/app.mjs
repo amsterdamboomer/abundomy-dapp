@@ -1776,7 +1776,14 @@ for (const id of ['loginId', 'loginPwd']) {
   }
 }
 $('signupBtn').onclick = () => doSignup().catch((e) => log('FOUT: ' + e.message))
-const showCard = (id) => { for (const c of ['login', 'signup', 'resetCard']) $(c).classList.toggle('hidden', c !== id) }
+const showCard = (id) => {
+  for (const c of ['login', 'signup', 'resetCard']) $(c).classList.toggle('hidden', c !== id)
+  // Punt 04-foto: op signup → avatar ipv vlag (taal alleen op home vóór inlog, per Patrick); elders → vlag.
+  const onSignup = (id === 'signup')
+  $('suAvatar').style.display = onSignup ? 'block' : 'none'
+  $('langFlag').style.display = onSignup ? 'none' : 'block'
+  if (onSignup) $('suAvatar').src = avatarFor({ usersName: $('suName').value, image: signupImage })
+}
 $('toSignupBtn').onclick = () => {
   // 05 (Registratie): e-mail + wachtwoord 1x meenemen naar signup. E-mail alleen als loginId een @ bevat.
   const lid = $('loginId').value.trim()
@@ -1837,6 +1844,8 @@ function refreshSignupImagePreview() {
   const hasImg = (typeof signupImage === 'string' && signupImage.startsWith('data:image'))
   if (hasImg) { $('suImgPreview').src = signupImage }  // Punt 02-24-07: toon echte foto, niet de naam-avatar-placeholder
   $('suImgPreview').style.display = hasImg ? 'block' : 'none'
+  // Punt 04-foto stap 3: avatar (topNav, ipv vlag) updaten met de gekozen foto / naam-placeholder.
+  $('suAvatar').src = avatarFor({ usersName: $('suName').value, image: signupImage })
   $('suImgClear').style.display = hasImg ? 'inline-block' : 'none'
 }
 $('suPhotoBtn').onclick = () => showViewImage('signup')  // Punt 04-foto: opent V1 image.php-achtige view (was direct file-picker)
@@ -1884,10 +1893,12 @@ function showViewImage(returnTo) {
   const c = $('imgCanvas'), x = c.getContext('2d'); x.clearRect(0, 0, c.width, c.height)
 }
 function closeViewImage() {
+  webcamOff()  // Punt 04-foto stap 2: webcam stoppen bij sluiten (geen live stream laten hangen)
   $('view-image').classList.add('hidden')
-  if (imageViewReturnTo === 'signup') $('signup').classList.remove('hidden')
-  else route()  // later: profile-integratie (stap 3)
+  showCard(imageViewReturnTo === 'profile' ? 'login' : 'signup')  // 'profile' later: echte profile-integratie (stap 3+)
 }
+// Punt 04-foto stap 3: avatar (topNav, ipv vlag) klikbaar → foto wijzigen.
+$('suAvatar').onclick = () => showViewImage('signup')
 function drawImageOnCanvas(img) {
   const c = $('imgCanvas'), x = c.getContext('2d'), W = c.width, H = c.height
   x.clearRect(0, 0, W, H)
@@ -1912,7 +1923,27 @@ $('imgUseBtn').onclick = () => {
   }
 }
 $('imgCancelBtn').onclick = () => closeViewImage()
-// stap 2 placeholders: imgSnapBtn / imgResetBtn / imgRotateBtn / zoom*/brightness*/contrast*/color* = no-op tot image.js-port
+// Punt 04-foto stap 2 (deel): webcam-snap (foto maken) via getUserMedia. Bewerking = later.
+let webcamStream = null
+function webcamOff() {
+  if (webcamStream) { webcamStream.getTracks().forEach((t) => t.stop()); webcamStream = null }
+  const v = $('webcamVideo'); if (v) { v.style.display = 'none'; v.srcObject = null }
+  const lbl = $('imgSnapLbl'); if (lbl) lbl.textContent = t('IMG_SNAP')
+}
+$('imgSnapBtn').onclick = async () => {
+  if (webcamStream) {
+    const v = $('webcamVideo'), c = $('imgCanvas'), x = c.getContext('2d')
+    x.drawImage(v, 0, 0, c.width, c.height)
+    webcamOff()
+  } else {
+    try {
+      webcamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      const v = $('webcamVideo'); v.srcObject = webcamStream; v.style.display = 'block'
+      $('imgSnapLbl').textContent = t('IMG_ABORT')
+    } catch (e) { $('imgInstr').textContent = 'FOUT: ' + e.message }
+  }
+}
+// stap 2 placeholders: imgResetBtn / imgRotateBtn / zoom*/brightness*/contrast*/color* = no-op tot image.js-port
 $('navYear').onchange = (e) => { txYear = Number(e.target.value); txSelectedTid = 0; renderTransactions(currentParams).catch(() => {}) }
 $('navMonth').onchange = (e) => { txMonth = Number(e.target.value); txSelectedTid = 0; renderTransactions(currentParams).catch(() => {}) }
 // ============================ I18N-BOOT + TAALKIEZER ============================
