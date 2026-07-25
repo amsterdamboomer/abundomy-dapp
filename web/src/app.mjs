@@ -2019,7 +2019,6 @@ function closeViewImage() {
   showCard(imageViewReturnTo === 'profile' ? 'login' : 'signup')  // 'profile' later: echte profile-integratie (stap 3+)
 }
 // Punt 04-foto stap 3: avatar (topNav, ipv vlag) klikbaar → foto wijzigen.
-$('suAvatar').onclick = () => showViewImage('signup')
 // imgUploadBtn dubbelrol: choose → file picker; edit (Ready) → save (canvas→signupImage→close).
 $('imgUploadBtn').onclick = () => {
   if (imageViewMode === 'edit') {
