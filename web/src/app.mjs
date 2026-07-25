@@ -1896,10 +1896,27 @@ function showViewImage(returnTo) {
   for (const v of VIEWS) $('view-' + v)?.classList.add('hidden')
   $('signup').classList.add('hidden')
   $('view-image').classList.remove('hidden')
-  drawPaspartout()  // zwart + rode selector (paspartout) bij openen, zoals 1coinh
+  setImageViewMode('choose')  // stap 1: zwart+rood + Foto/Klik (bewerkingstabel verborgen)
+}
+// 2-staps flow zoals 1coinh image.js: 'choose' (stap 1) ↔ 'edit' (stap 2 na foto/snap).
+let imageViewMode = 'choose'
+function setImageViewMode(mode) {
+  imageViewMode = mode
+  const ve = $('view-image')
+  if (mode === 'edit') {
+    ve.classList.add('edit-mode')
+    $('imgUploadLbl').textContent = t('IMG_USE')   // 'Ready' (imgUploadBtn = save in stap 2)
+    $('imgSnapLbl').textContent = t('IMG_ABORT')  // 'Afbreken' (imgSnapBtn = abort in stap 2)
+  } else {
+    ve.classList.remove('edit-mode')
+    $('imgUploadLbl').textContent = t('IMG_GET')   // 'Foto'
+    $('imgSnapLbl').textContent = t('IMG_SNAP')    // 'Klik'
+    drawPaspartout()  // zwart + rode selector (paspartout) in stap 1
+  }
 }
 function closeViewImage() {
-  webcamOff()  // Punt 04-foto stap 2: webcam stoppen bij sluiten (geen live stream laten hangen)
+  webcamOff()  // webcam stoppen bij sluiten (geen live stream laten hangen)
+  $('view-image').classList.remove('edit-mode')
   $('view-image').classList.add('hidden')
   showCard(imageViewReturnTo === 'profile' ? 'login' : 'signup')  // 'profile' later: echte profile-integratie (stap 3+)
 }
@@ -1912,60 +1929,56 @@ function drawImageOnCanvas(img) {
   const dw = img.width * r, dh = img.height * r
   x.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh)
 }
-$('imgUploadBtn').onclick = () => $('loadpicture').click()
+// imgUploadBtn dubbelrol: choose → file picker; edit (Ready) → save (canvas→signupImage→close).
+$('imgUploadBtn').onclick = () => {
+  if (imageViewMode === 'edit') {
+    const c = $('imgCanvas'), x = c.getContext('2d')
+    try {
+      const px = x.getImageData((c.width / 2) | 0, (c.height / 2) | 0, 1, 1).data
+      if (px[3] === 0) { $('imgInstr').textContent = 'kies eerst een foto (Upload of Camera)'; return }
+    } catch {}
+    if (imageViewReturnTo === 'signup') {
+      signupImage = c.toDataURL('image/png')
+      saveSignupForm()
+      closeViewImage()
+      refreshSignupImagePreview()
+    }
+  } else {
+    $('loadpicture').click()
+  }
+}
+// loadpicture: foto gekozen → drawImageOnCanvas + stap 2 (edit-mode).
 $('loadpicture').onchange = (e) => {
   const f = e.target.files?.[0]; if (!f) return
   const img = new Image()
-  img.onload = () => drawImageOnCanvas(img)
+  img.onload = () => { drawImageOnCanvas(img); setImageViewMode('edit') }
   img.src = URL.createObjectURL(f)
   e.target.value = ''
 }
-$('imgUseBtn').onclick = () => {
-  const c = $('imgCanvas'), x = c.getContext('2d')
-  // Punt 04-foto: als webcam aan staat → impliciet snap vóór gebruik (vergevingsgezigind: "gebruik" met webcam aan = snap+gebruik).
-  if (webcamStream) {
-    const v = $('webcamVideo')
-    if (v.videoWidth) {
-      const r = Math.max(c.width / v.videoWidth, c.height / v.videoHeight)
-      const dw = v.videoWidth * r, dh = v.videoHeight * r
-      x.drawImage(v, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh)
-    }
-    try {
-      const px = x.getImageData((c.width / 2) | 0, (c.height / 2) | 0, 1, 1).data
-      if (px[3] === 0 || (px[0] + px[1] + px[2] < 30)) { $('imgInstr').textContent = 'camera nog niet gereed — wacht op beeld en probeer opnieuw'; return }
-    } catch {}
-    webcamOff()
-  }
-  // canvas moet iets bevatten (anders geen Upload/snap gedaan)
-  try {
-    const px = x.getImageData((c.width / 2) | 0, (c.height / 2) | 0, 1, 1).data
-    if (px[3] === 0) { $('imgInstr').textContent = 'kies eerst een foto (Upload of Camera)'; return }
-  } catch {}
-  if (imageViewReturnTo === 'signup') {
-    signupImage = c.toDataURL('image/png')
-    saveSignupForm()
-    closeViewImage()
-    refreshSignupImagePreview()
-  }
-}
 $('imgCancelBtn').onclick = () => closeViewImage()
-// Punt 04-foto stap 2 (deel): webcam-snap (foto maken) via getUserMedia. Bewerking = later.
+// webcam-snap (foto maken) via getUserMedia.
 let webcamStream = null
 function webcamOff() {
-  if (webcamStream) { webcamStream.getTracks().forEach((t) => t.stop()); webcamStream = null }
+  if (webcamStream) { webcamStream.getTracks().forEach((track) => track.stop()); webcamStream = null }
   const v = $('webcamVideo'); if (v) { v.style.display = 'none'; v.srcObject = null }
-  const lbl = $('imgSnapLbl'); if (lbl) lbl.textContent = t('IMG_SNAP')
+  // label wordt gezet door setImageViewMode (afhankelijk van mode), niet hier.
 }
+// imgSnapBtn dubbelrol: choose → camera toggle (Klik→Opname→snap→edit); edit (Afbreken) → abort (terug naar choose).
 $('imgSnapBtn').onclick = async () => {
+  if (imageViewMode === 'edit') {
+    // Afbreken: abort bewerking → terug naar stap 1.
+    webcamOff()
+    setImageViewMode('choose')
+    return
+  }
   if (webcamStream) {
-    // SNAP: neem een frame van de live video → canvas (cover-fit), stop webcam.
+    // SNAP: neem frame → canvas → stap 2 (edit).
     const v = $('webcamVideo'), c = $('imgCanvas'), x = c.getContext('2d')
     if (v.videoWidth) {
       const r = Math.max(c.width / v.videoWidth, c.height / v.videoHeight)
       const dw = v.videoWidth * r, dh = v.videoHeight * r
       x.drawImage(v, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh)
     } else { x.drawImage(v, 0, 0, c.width, c.height) }
-    // Punt 04-foto: verify non-empty frame — camera moet beeld hebben (niet zwart/transparant).
     try {
       const px = x.getImageData((c.width / 2) | 0, (c.height / 2) | 0, 1, 1).data
       if (px[3] === 0 || (px[0] + px[1] + px[2] < 30)) {
@@ -1974,11 +1987,13 @@ $('imgSnapBtn').onclick = async () => {
       }
     } catch { /* tainted canvas zeldzaam bij getUserMedia; neem genoegen met draw */ }
     webcamOff()
+    setImageViewMode('edit')  // na snap → bewerkingsscherm
   } else {
+    // Klik: camera aan → label 'Opname'.
     try {
       webcamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       const v = $('webcamVideo'); v.muted = true; v.srcObject = webcamStream; v.style.display = 'block'; await v.play().catch(() => {})
-      $('imgSnapLbl').textContent = t('IMG_CAPTION')  // 'Opname' (camera aan = snap-knop), was IMG_ABORT
+      $('imgSnapLbl').textContent = t('IMG_CAPTION')  // 'Opname'
     } catch (e) { $('imgInstr').textContent = 'FOUT: ' + e.message }
   }
 }

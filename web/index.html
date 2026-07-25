@@ -176,6 +176,7 @@
       #view-image .image-text { background-color: var(--button); font-family: raleway_bold, sans-serif; font-size: 22px; width: 125px; color: black; text-align: right; }
       #view-image .dark { background-color: #162042; }
       #view-image .img-makecenter { display: flex; justify-content: center; }
+      #view-image:not(.edit-mode) .edit-only { display: none; }
       .app-lang-flag img { width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover; }
 
       /* Taalpagina-overlay (set-language.php-equivalent) */
@@ -356,7 +357,7 @@
             </div>
           </div>
           <div class="parent-container">
-            <div>
+            <div class="edit-only">
               <table cellspacing="0" cellpadding="0" class="tableclass1">
                 <tr>
                   <td class="dark" style="height:50px;"><button type="button" class="image-button2" id="zoomout"><img src="img/ZoomOut_Icon_35x35.png"/></button></td>
@@ -379,17 +380,16 @@
             </div>
             <div>
               <table cellspacing="0" cellpadding="0" class="tableclass1">
-                <tr>
+                <tr class="edit-only">
                   <td class="dark" style="width:175px;height:50px;"><button type="button" class="image-button" id="imgResetBtn"><img src="img/Reset_Icon_70x70.png" class="iconclass35"/><span class="image-text" data-i18n="IMG_RESET">Reset</span></button></td>
                   <td class="dark" style="width:175px;height:50px;"><button type="button" class="image-button" id="imgRotateBtn"><img src="img/Rotate_Icon_70x70.png" class="iconclass35"/><span class="image-text" data-i18n="IMG_ROTATE">Draaien</span></button></td>
                 </tr>
                 <tr>
-                  <td class="dark" style="width:175px;height:50px;"><button type="button" class="image-button" id="imgUploadBtn"><img src="img/Upload_Icon_70x70.png" class="iconclass35"/><span class="image-text" data-i18n="IMG_GET">Foto</span></button></td>
+                  <td class="dark" style="width:175px;height:50px;"><button type="button" class="image-button" id="imgUploadBtn"><img src="img/Upload_Icon_70x70.png" class="iconclass35"/><span id="imgUploadLbl" class="image-text" data-i18n="IMG_GET">Foto</span></button></td>
                   <td class="dark" style="width:175px;height:50px;"><button type="button" class="image-button" id="imgSnapBtn"><img src="img/Camera_Icon_70x70.png" class="iconclass35"/><span id="imgSnapLbl" class="image-text" data-i18n="IMG_SNAP">Klik</span></button></td>
                 </tr>
               </table>
             </div>
-            <div style="margin-top:0.6rem;"><button type="button" id="imgUseBtn" class="login-button" data-i18n="IMG_USE">Gebruik deze foto</button></div>
           </div>
           <input type="file" id="loadpicture" accept="image/*" style="display:none;"/>
           <input type="file" id="camerapicture" accept="image/*" capture="user" style="display:none;"/>
