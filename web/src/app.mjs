@@ -1875,22 +1875,119 @@ $('signup').addEventListener('change', saveSignupForm)
 // Punt 04-foto stap 1: #view-image (V1 image.php-layout). Upload → canvas → terug. Webcam/bewerking = stap 2.
 let imageViewReturnTo = 'signup'
 // Punt foto-flow stap 1: paspartout (zwart + rode selector) bij openen — zoals 1coinh image.php.
+// === Image-edit core (V1 image.js-port, stap 2) ===
+const IE = { img: null, imageWidth: 0, imageHeight: 0, imw: 0, imh: 0, rot: 0, focx: 0, focy: 0, ox: 0, oy: 0, scale: 100, co: 100, br: 100, sa: 100, ww: 350, hh: 250, preload: true, zoomVal: 50, contrastVal: 50, brightnessVal: 50, colorVal: 50 }
+const IE_PORT = { x1: (350 - 140) / 2, y1: (250 - 140) / 2, x2: (350 + 140) / 2, y2: (250 + 140) / 2 }
+function drawBack() {
+  const x = $('imgCanvas').getContext('2d'), x2 = $('canvas2').getContext('2d')
+  x.fillStyle = '#000'; x.fillRect(0, 0, 350, 250)
+  x2.fillStyle = '#000'; x2.fillRect(0, 0, 350, 250)
+}
 function drawPaspartout() {
-  const c = $('imgCanvas'), x = c.getContext('2d'), W = c.width, H = c.height
-  x.fillStyle = '#000'; x.fillRect(0, 0, W, H)
-  const sz = 140, px = (W - sz) / 2, py = (H - sz) / 2, L = 40
-  // Duidelijke rode selectie-rechthoek (3px, volledig kader) — zoals Patrick verwacht ('rode selector').
-  x.beginPath(); x.lineWidth = 3; x.strokeStyle = '#ff0000'
-  x.rect(px, py, sz, sz)
-  x.stroke()
-  // Plus V1-hoek-L-markers (4×, 40px armen) voor de crop-markers.
+  const x = $('imgCanvas').getContext('2d'), { x1, y1, x2, y2 } = IE_PORT, L = 40
+  x.fillStyle = 'rgba(2,2,2,0.8)'
+  x.fillRect(0, 0, 350, y1); x.fillRect(0, y1, x1, y2 - y1); x.fillRect(x2, y1, 350 - x2, y2 - y1); x.fillRect(0, y2, 350, 250 - y2)
   x.beginPath(); x.lineWidth = 2; x.strokeStyle = '#ff0000'
-  x.moveTo(px - 1, py + L); x.lineTo(px - 1, py - 1); x.lineTo(px + L, py - 1)
-  x.moveTo(px + sz - L, py - 1); x.lineTo(px + sz + 1, py - 1); x.lineTo(px + sz + 1, py + L)
-  x.moveTo(px + sz + 1, py + sz - L); x.lineTo(px + sz + 1, py + sz + 1); x.lineTo(px + sz - L, py + sz + 1)
-  x.moveTo(px + L, py + sz + 1); x.lineTo(px - 1, py + sz + 1); x.lineTo(px - 1, py + sz - L)
+  x.moveTo(x1 - 1, y1 + L); x.lineTo(x1 - 1, y1 - 1); x.lineTo(x1 + L, y1 - 1)
+  x.moveTo(x2 - L, y1 - 1); x.lineTo(x2 + 1, y1 - 1); x.lineTo(x2 + 1, y1 + L)
+  x.moveTo(x2 + 1, y2 - L); x.lineTo(x2 + 1, y2 + 1); x.lineTo(x2 - L, y2 + 1)
+  x.moveTo(x1 + L, y2 + 1); x.lineTo(x1 - 1, y2 + 1); x.lineTo(x1 - 1, y2 - L)
   x.stroke()
 }
+function drawImg() {
+  if (IE.preload) return
+  const x = $('imgCanvas').getContext('2d'), x2 = $('canvas2').getContext('2d'), c2 = $('canvas2')
+  const ww = IE.ww, hh = IE.hh
+  x2.filter = `contrast(${IE.co}%) brightness(${IE.br}%) saturate(${IE.sa}%)`
+  let ccx, ccy, cwx, cwy
+  if (IE.rot !== 0) {
+    x2.save()
+    if (IE.rot === 1) x2.translate(Math.round(ww / 2 + hh / 2), Math.round(hh / 2 - ww / 2))
+    else if (IE.rot === 2) x2.translate(ww, hh)
+    else x2.translate(Math.round(ww / 2 - hh / 2), Math.round(ww / 2 + hh / 2))
+    x2.rotate(IE.rot * Math.PI * 0.5)
+    const imw2 = IE.imw
+    IE.imw = Math.round(IE.imageWidth * IE.scale / 100)
+    IE.imh = Math.round(IE.imageHeight * IE.scale / 100)
+    if (imw2) { IE.focx = Math.round(IE.focx * (IE.imw / imw2)); IE.focy = Math.round(IE.focy * (IE.imw / imw2)) }
+    IE.ox = Math.round(ww / 2) - IE.focx; IE.oy = Math.round(hh / 2) - IE.focy
+    x2.drawImage(IE.img, IE.ox, IE.oy, IE.imw, IE.imh)
+    if (IE.rot === 1) { ccx = (Math.round(ww / 2) + Math.round(hh / 2)) - (IE.oy + IE.imh); ccy = (Math.round(hh / 2) - Math.round(ww / 2)) + IE.ox; cwx = IE.imh; cwy = IE.imw }
+    else if (IE.rot === 2) { ccx = ww - (IE.ox + IE.imw); ccy = hh - (IE.oy + IE.imh); cwx = IE.imw; cwy = IE.imh }
+    else { ccx = (Math.round(ww / 2) - Math.round(hh / 2)) + IE.oy; ccy = (Math.round(hh / 2) + Math.round(ww / 2)) - (IE.ox + IE.imw); cwx = IE.imh; cwy = IE.imw }
+    x2.restore()
+  } else {
+    const imw2 = IE.imw
+    IE.imw = Math.round(IE.imageWidth * IE.scale / 100)
+    IE.imh = Math.round(IE.imageHeight * IE.scale / 100)
+    if (imw2) { IE.focx = Math.round(IE.focx * (IE.imw / imw2)); IE.focy = Math.round(IE.focy * (IE.imw / imw2)) }
+    IE.ox = Math.round(ww / 2) - IE.focx; IE.oy = Math.round(hh / 2) - IE.focy
+    x2.drawImage(IE.img, IE.ox, IE.oy, IE.imw, IE.imh)
+    ccx = IE.ox; ccy = IE.oy; cwx = IE.imw; cwy = IE.imh
+  }
+  if (ccx < 0) { cwx += ccx; ccx = 0; if (cwx < 0) cwx = 0; if (cwx > ww) cwx = ww - 1 }
+  if (ccy < 0) { cwy += ccy; ccy = 0; if (cwy < 0) cwy = 0; if (cwy > hh) cwy = hh - 1 }
+  x.drawImage(c2, ccx, ccy, cwx, cwy, ccx, ccy, cwx, cwy)
+}
+function ieRedraw() { drawBack(); drawImg(); drawPaspartout() }
+function initIE(img) {
+  IE.img = img; IE.preload = false
+  IE.imageWidth = img.width; IE.imageHeight = img.height
+  IE.imw = img.width; IE.imh = img.height
+  IE.focx = Math.round(img.width / 2); IE.focy = Math.round(img.height / 2)
+  IE.rot = 0
+  IE.scale = Math.round(Math.min(IE.ww / img.width, IE.hh / img.height) * 100 * 0.80)
+  IE.co = 100; IE.br = 100; IE.sa = 100
+  IE.zoomVal = 50; IE.contrastVal = 50; IE.brightnessVal = 50; IE.colorVal = 50
+}
+function rotateIt() { IE.rot = (IE.rot + 1) % 4; ieRedraw() }
+function ieZoom(delta) { IE.zoomVal = Math.max(0, Math.min(100, IE.zoomVal + delta)); IE.scale = 100 * Math.pow(1.07, 50 - IE.zoomVal); ieRedraw() }
+function ieReset() {
+  IE.zoomVal = 50; IE.contrastVal = 50; IE.brightnessVal = 50; IE.colorVal = 50
+  IE.co = 100; IE.br = 100; IE.sa = 100; IE.rot = 0
+  if (IE.imageWidth) IE.scale = Math.round(Math.min(IE.ww / IE.imageWidth, IE.hh / IE.imageHeight) * 100 * 0.80)
+  IE.focx = Math.round(IE.imageWidth / 2); IE.focy = Math.round(IE.imageHeight / 2)
+  ieRedraw()
+}
+function ieFilter(kind, delta) {
+  if (kind === 'co') IE.contrastVal = Math.max(0, Math.min(100, IE.contrastVal + delta))
+  else if (kind === 'br') IE.brightnessVal = Math.max(0, Math.min(100, IE.brightnessVal + delta))
+  else IE.colorVal = Math.max(0, Math.min(100, IE.colorVal + delta))
+  IE.co = Math.round(100 * Math.pow(1.02, 50 - IE.contrastVal))
+  IE.br = Math.round(100 * Math.pow(1.02, 50 - IE.brightnessVal))
+  IE.sa = Math.round(100 * Math.pow(1.02, 50 - IE.colorVal))
+  ieRedraw()
+}
+let ieDragging = false, ieMx1 = 0, ieMy1 = 0, ieTtx = 0, ieTty = 0
+function ieDragFoc(dx, dy) {
+  if (IE.rot === 0) { IE.focx += dx; IE.focy += dy }
+  else if (IE.rot === 1) { IE.focx += dy; IE.focy -= dx }
+  else if (IE.rot === 2) { IE.focx -= dx; IE.focy -= dy }
+  else { IE.focx -= dy; IE.focy += dx }
+  ieRedraw()
+}
+function ieMouseDown(e) { if (imageViewMode === 'edit') { ieMx1 = e.clientX; ieMy1 = e.clientY; ieDragging = true } }
+function ieMouseMove(e) { if (imageViewMode === 'edit' && ieDragging) { ieDragFoc(ieMx1 - e.clientX, ieMy1 - e.clientY); ieMx1 = e.clientX; ieMy1 = e.clientY } }
+function ieMouseUp() { ieDragging = false }
+function ieTouchStart(e) { if (imageViewMode === 'edit' && e.touches[0]) { ieTtx = e.touches[0].clientX; ieTty = e.touches[0].clientY; e.preventDefault() } }
+function ieTouchMove(e) { if (imageViewMode === 'edit' && e.touches[0]) { ieDragFoc(ieTtx - e.touches[0].clientX, ieTty - e.touches[0].clientY); ieTtx = e.touches[0].clientX; ieTty = e.touches[0].clientY; e.preventDefault() } }
+$('imgResetBtn').onclick = ieReset
+$('imgRotateBtn').onclick = rotateIt
+$('zoomin').onclick = () => ieZoom(-1)
+$('zoomout').onclick = () => ieZoom(1)
+$('brightnessmax').onclick = () => ieFilter('br', -1)
+$('brightnessmin').onclick = () => ieFilter('br', 1)
+$('contrastmax').onclick = () => ieFilter('co', -1)
+$('contrastmin').onclick = () => ieFilter('co', 1)
+$('colormax').onclick = () => ieFilter('sa', -1)
+$('colormin').onclick = () => ieFilter('sa', 1)
+$('imgCanvas').addEventListener('mousedown', ieMouseDown)
+$('imgCanvas').addEventListener('mousemove', ieMouseMove)
+$('imgCanvas').addEventListener('mouseup', ieMouseUp)
+$('imgCanvas').addEventListener('mouseout', ieMouseUp)
+$('imgCanvas').addEventListener('touchstart', ieTouchStart, { passive: false })
+$('imgCanvas').addEventListener('touchmove', ieTouchMove, { passive: false })
+function showPaspartoutEmpty() { IE.preload = true; drawBack(); drawPaspartout() }
 function showViewImage(returnTo) {
   imageViewReturnTo = returnTo || 'signup'
   for (const v of VIEWS) $('view-' + v)?.classList.add('hidden')
@@ -1911,7 +2008,8 @@ function setImageViewMode(mode) {
     ve.classList.remove('edit-mode')
     $('imgUploadLbl').textContent = t('IMG_GET')   // 'Foto'
     $('imgSnapLbl').textContent = t('IMG_SNAP')    // 'Klik'
-    drawPaspartout()  // zwart + rode selector (paspartout) in stap 1
+    IE.preload = true
+    drawBack(); drawPaspartout()  // zwart + rode selector (paspartout) in stap 1
   }
 }
 function closeViewImage() {
@@ -1922,13 +2020,6 @@ function closeViewImage() {
 }
 // Punt 04-foto stap 3: avatar (topNav, ipv vlag) klikbaar → foto wijzigen.
 $('suAvatar').onclick = () => showViewImage('signup')
-function drawImageOnCanvas(img) {
-  const c = $('imgCanvas'), x = c.getContext('2d'), W = c.width, H = c.height
-  x.clearRect(0, 0, W, H)
-  const r = Math.max(W / img.width, H / img.height)
-  const dw = img.width * r, dh = img.height * r
-  x.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh)
-}
 // imgUploadBtn dubbelrol: choose → file picker; edit (Ready) → save (canvas→signupImage→close).
 $('imgUploadBtn').onclick = () => {
   if (imageViewMode === 'edit') {
@@ -1951,7 +2042,7 @@ $('imgUploadBtn').onclick = () => {
 $('loadpicture').onchange = (e) => {
   const f = e.target.files?.[0]; if (!f) return
   const img = new Image()
-  img.onload = () => { drawImageOnCanvas(img); setImageViewMode('edit') }
+  img.onload = () => { initIE(img); ieRedraw(); setImageViewMode('edit') }
   img.src = URL.createObjectURL(f)
   e.target.value = ''
 }
@@ -1987,7 +2078,10 @@ $('imgSnapBtn').onclick = async () => {
       }
     } catch { /* tainted canvas zeldzaam bij getUserMedia; neem genoegen met draw */ }
     webcamOff()
-    setImageViewMode('edit')  // na snap → bewerkingsscherm
+    // Snap levert een frame op canvas; maak een Image van de canvas-data om initIE te voeden (zodat tools werken).
+    const snapImg = new Image()
+    snapImg.onload = () => { initIE(snapImg); ieRedraw(); setImageViewMode('edit') }
+    snapImg.src = c.toDataURL('image/png')
   } else {
     // Klik: camera aan → label 'Opname'.
     try {
@@ -1997,7 +2091,6 @@ $('imgSnapBtn').onclick = async () => {
     } catch (e) { $('imgInstr').textContent = 'FOUT: ' + e.message }
   }
 }
-// stap 2 placeholders: imgResetBtn / imgRotateBtn / zoom*/brightness*/contrast*/color* = no-op tot image.js-port
 $('navYear').onchange = (e) => { txYear = Number(e.target.value); txSelectedTid = 0; renderTransactions(currentParams).catch(() => {}) }
 $('navMonth').onchange = (e) => { txMonth = Number(e.target.value); txSelectedTid = 0; renderTransactions(currentParams).catch(() => {}) }
 // ============================ I18N-BOOT + TAALKIEZER ============================
