@@ -1874,12 +1874,24 @@ $('signup').addEventListener('change', saveSignupForm)
 
 // Punt 04-foto stap 1: #view-image (V1 image.php-layout). Upload → canvas → terug. Webcam/bewerking = stap 2.
 let imageViewReturnTo = 'signup'
+// Punt foto-flow stap 1: paspartout (zwart + rode selector) bij openen — zoals 1coinh image.php.
+function drawPaspartout() {
+  const c = $('imgCanvas'), x = c.getContext('2d'), W = c.width, H = c.height
+  x.fillStyle = '#000'; x.fillRect(0, 0, W, H)
+  const sz = 140, px = (W - sz) / 2, py = (H - sz) / 2, L = 40
+  x.beginPath(); x.lineWidth = 2; x.strokeStyle = 'red'
+  x.moveTo(px - 1, py + L); x.lineTo(px - 1, py - 1); x.lineTo(px + L, py - 1)
+  x.moveTo(px + sz - L, py - 1); x.lineTo(px + sz + 1, py - 1); x.lineTo(px + sz + 1, py + L)
+  x.moveTo(px + sz + 1, py + sz - L); x.lineTo(px + sz + 1, py + sz + 1); x.lineTo(px + sz - L, py + sz + 1)
+  x.moveTo(px + L, py + sz + 1); x.lineTo(px - 1, py + sz + 1); x.lineTo(px - 1, py + sz - L)
+  x.stroke()
+}
 function showViewImage(returnTo) {
   imageViewReturnTo = returnTo || 'signup'
   for (const v of VIEWS) $('view-' + v)?.classList.add('hidden')
   $('signup').classList.add('hidden')
   $('view-image').classList.remove('hidden')
-  const c = $('imgCanvas'), x = c.getContext('2d'); x.clearRect(0, 0, c.width, c.height)
+  drawPaspartout()  // zwart + rode selector (paspartout) bij openen, zoals 1coinh
 }
 function closeViewImage() {
   webcamOff()  // Punt 04-foto stap 2: webcam stoppen bij sluiten (geen live stream laten hangen)
@@ -1961,7 +1973,7 @@ $('imgSnapBtn').onclick = async () => {
     try {
       webcamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       const v = $('webcamVideo'); v.muted = true; v.srcObject = webcamStream; v.style.display = 'block'; await v.play().catch(() => {})
-      $('imgSnapLbl').textContent = t('IMG_ABORT')
+      $('imgSnapLbl').textContent = t('IMG_CAPTION')  // 'Opname' (camera aan = snap-knop), was IMG_ABORT
     } catch (e) { $('imgInstr').textContent = 'FOUT: ' + e.message }
   }
 }
