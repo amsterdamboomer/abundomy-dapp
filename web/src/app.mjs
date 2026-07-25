@@ -2023,13 +2023,15 @@ $('suAvatar').onclick = () => showViewImage('signup')
 // imgUploadBtn dubbelrol: choose → file picker; edit (Ready) → save (canvas→signupImage→close).
 $('imgUploadBtn').onclick = () => {
   if (imageViewMode === 'edit') {
-    const c = $('imgCanvas'), x = c.getContext('2d')
-    try {
-      const px = x.getImageData((c.width / 2) | 0, (c.height / 2) | 0, 1, 1).data
-      if (px[3] === 0) { $('imgInstr').textContent = 'kies eerst een foto (Upload of Camera)'; return }
-    } catch {}
+    if (IE.preload || !IE.img) { $('imgInstr').textContent = 'kies eerst een foto (Upload of Camera)'; return }
+    // Clean redraw (zonder rode paspartout) → crop 140×140 paspartout-venster → opslaan.
+    // De rode selector is een hulplijn bij maken/bewerken, niet in de opgeslagen foto.
+    drawBack(); drawImg()
+    const tmp = document.createElement('canvas'); tmp.width = 140; tmp.height = 140
+    tmp.getContext('2d').drawImage($('imgCanvas'), IE_PORT.x1, IE_PORT.y1, 140, 140, 0, 0, 140, 140)
+    signupImage = tmp.toDataURL('image/png')
+    drawPaspartout()  // weergave herstellen (rode selector terug voor gebruiker)
     if (imageViewReturnTo === 'signup') {
-      signupImage = c.toDataURL('image/png')
       saveSignupForm()
       closeViewImage()
       refreshSignupImagePreview()
