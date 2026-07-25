@@ -1879,7 +1879,12 @@ function drawPaspartout() {
   const c = $('imgCanvas'), x = c.getContext('2d'), W = c.width, H = c.height
   x.fillStyle = '#000'; x.fillRect(0, 0, W, H)
   const sz = 140, px = (W - sz) / 2, py = (H - sz) / 2, L = 40
-  x.beginPath(); x.lineWidth = 2; x.strokeStyle = 'red'
+  // Duidelijke rode selectie-rechthoek (3px, volledig kader) — zoals Patrick verwacht ('rode selector').
+  x.beginPath(); x.lineWidth = 3; x.strokeStyle = '#ff0000'
+  x.rect(px, py, sz, sz)
+  x.stroke()
+  // Plus V1-hoek-L-markers (4×, 40px armen) voor de crop-markers.
+  x.beginPath(); x.lineWidth = 2; x.strokeStyle = '#ff0000'
   x.moveTo(px - 1, py + L); x.lineTo(px - 1, py - 1); x.lineTo(px + L, py - 1)
   x.moveTo(px + sz - L, py - 1); x.lineTo(px + sz + 1, py - 1); x.lineTo(px + sz + 1, py + L)
   x.moveTo(px + sz + 1, py + sz - L); x.lineTo(px + sz + 1, py + sz + 1); x.lineTo(px + sz - L, py + sz + 1)
