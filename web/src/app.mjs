@@ -260,7 +260,7 @@ async function finishLogin() {
   $('topNav').classList.add('hidden')
   for (const id of ['login', 'signup', 'resetCard']) $(id).classList.add('hidden')
   $('goDashboard').classList.add('hidden')
-  if (!(location.hash || '').startsWith('#/')) location.hash = '#/'
+  location.hash = '#/' // punt 02: na login altijd dashboard (1coinh index.php?login=success), ook als je op #/profile herlaadde
   route() // toont de juiste view + rendert (header + inhoud)
 }
 
