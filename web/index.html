@@ -174,6 +174,11 @@
       #profEdit input[readonly] { opacity: 0.7; }
       /* Punt 10-25-07: privacy-box (#profView) select ook zwart/wit (V1 .form__input). */
       #profView select, #profView input[type="text"] { background-color: var(--black); border: none; color: var(--white); border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); font-family: raleway_regular, sans-serif; font-size: clamp(15px, 5.21vw, 30px); }
+      /* Punt 02-30-07: profiel-header uitgelijnd onder #app-header — JIJ exact center, Opslaan onder huisje, Terug onder avatar (zelfde breedte + padding + margins als header). */
+      #view-profile .button4-row { width: clamp(0px, 100vw, 576px); padding: 0 clamp(5px, 1.74vw, 15px); box-sizing: border-box; }
+      #view-profile .button4-column1 { justify-content: flex-start; margin-left: clamp(4px, 1.5vw, 10px); }
+      #view-profile .button4-column3 { justify-content: flex-end; margin-right: clamp(4px, 1.5vw, 10px); }
+      #view-profile .button4-column2 { flex: 1 1 auto; width: auto; }
       /* Punt 04-foto stap 1: #view-image = V1 image.php-layout (scaffolding + upload). */
       #view-image .parent-container { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 20px 0; }
       #view-image .tableclass1 { width: 350px; background-color: #162042; border: 0; padding: 5px; box-shadow: inset 0 2px 2px 2px rgba(120,120,120,0.05); }
