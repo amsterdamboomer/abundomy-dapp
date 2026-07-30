@@ -174,8 +174,8 @@
       #profEdit input[readonly] { opacity: 0.7; }
       /* Punt 10-25-07: privacy-box (#profView) select ook zwart/wit (V1 .form__input). */
       #profView select, #profView input[type="text"] { background-color: var(--black); border: none; color: var(--white); border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); font-family: raleway_regular, sans-serif; font-size: clamp(15px, 5.21vw, 30px); }
-      /* Punt 02-30-07: profiel-header uitgelijnd onder #app-header — JIJ exact center, Opslaan onder huisje, Terug onder avatar (zelfde breedte + padding + margins als header). */
-      #view-profile .button4-row { width: clamp(0px, 100vw, 576px); padding: 0 clamp(5px, 1.74vw, 15px); box-sizing: border-box; }
+      /* Punt 02-30-07: profiel-header break-out naar viewport-breedte, zelfde centering+padding+margins als #app-header (576 content) — JIJ exact center, Opslaan onder huisje, Terug onder avatar. Row zit normaal in .field-wrapper (550px); break-out (margin-left calc(50% - 50vw) + width 100vw) ontsnapt daaruit. body{overflow-x:hidden} voorkomt scroll. */
+      #view-profile .button4-row { width: 100vw; margin-left: calc(50% - 50vw); box-sizing: border-box; padding: 0 calc(max(0px, 50vw - 288px) + clamp(5px, 1.74vw, 15px)); }
       #view-profile .button4-column1 { justify-content: flex-start; margin-left: clamp(4px, 1.5vw, 10px); }
       #view-profile .button4-column3 { justify-content: flex-end; margin-right: clamp(4px, 1.5vw, 10px); }
       #view-profile .button4-column2 { flex: 1 1 auto; width: auto; }
