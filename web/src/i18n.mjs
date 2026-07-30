@@ -43,6 +43,7 @@ const RTL_LANGS = ['ar', 'he', 'pe', 'ur', 'pa']
 const EXTRA = {
   en: {
     APP_PROFILE: 'PROFILE',
+    APP_YOU: 'YOU',
     APP_PRIV_TITLE: 'Privacy & lists',
     APP_PRIV_WL_MODE: 'White-list mode: only people you allow can send you requests.',
     APP_PRIV_BL_MODE: 'Black-list mode: everyone may, except those you block.',
@@ -93,6 +94,7 @@ const EXTRA = {
   },
   ne: {
     APP_PROFILE: 'PROFIEL',
+    APP_YOU: 'JIJ',
     APP_PRIV_TITLE: 'Privacy & lijsten',
     APP_PRIV_WL_MODE: 'Witte-lijst-modus: alleen wie je toestaat kan je verzoeken sturen.',
     APP_PRIV_BL_MODE: 'Zwarte-lijst-modus: iedereen mag, behalve wie je blokkeert.',

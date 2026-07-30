@@ -166,6 +166,14 @@
       #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select { border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); }
       /* Punt 02-24-07: #signup foto-knop = V1 .photo-button (groen, volledige breedte, pill). */
       #signup .photo-button { border: none; border-radius: clamp(15px, 5.21vw, 30px); background-color: var(--button); color: var(--black); font-family: raleway_bold, sans-serif; font-size: clamp(14px, 3.82vw, 22px); width: 100%; height: clamp(40px, 10.42vw, 60px); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-top: clamp(8px, 1.5vw, 12px); }
+      /* Punt 10-25-07: #profEdit = V1 profiel-bewerken — labels blok/goud, velden zwart/wit (V1 .form__input), pill. */
+      #profEdit.dapp-card { width: clamp(300px, 95.49vw, 600px); }
+      #profEdit label { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.5rem; }
+      #profEdit label > span { color: var(--text); font-family: raleway_bold, sans-serif; font-size: clamp(13px, 4vw, 20px); }
+      #profEdit input[type="text"], #profEdit input[type="email"], #profEdit input[type="password"], #profEdit input[type="date"], #profEdit select, #profEdit textarea { width: 100%; box-sizing: border-box; font-size: clamp(15px, 5.21vw, 30px); background-color: var(--black); border: none; color: var(--white); border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); font-family: raleway_regular, sans-serif; }
+      #profEdit input[readonly] { opacity: 0.7; }
+      /* Punt 10-25-07: privacy-box (#profView) select ook zwart/wit (V1 .form__input). */
+      #profView select, #profView input[type="text"] { background-color: var(--black); border: none; color: var(--white); border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); font-family: raleway_regular, sans-serif; font-size: clamp(15px, 5.21vw, 30px); }
       /* Punt 04-foto stap 1: #view-image = V1 image.php-layout (scaffolding + upload). */
       #view-image .parent-container { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 20px 0; }
       #view-image .tableclass1 { width: 350px; background-color: #162042; border: 0; padding: 5px; box-shadow: inset 0 2px 2px 2px rgba(120,120,120,0.05); }
@@ -657,11 +665,9 @@
         <section class="view hidden" id="view-profile">
           <div class="medium_line"></div>
           <div class="button4-row">
-            <div class="button4-column1"></div>
-            <div class="button4-column2"><p class="title" data-i18n="APP_PROFILE">PROFIEL</p></div>
-            <div class="button4-column3">
-              <a href="#/"><button type="button" class="login-button" data-i18n="PR_BACK">Terug</button></a>
-            </div>
+            <div class="button4-column1"><button type="button" class="login-button" id="profHeaderSave" data-i18n="PR_SAVE">Opslaan</button></div>
+            <div class="button4-column2"><p class="title" id="profHeaderTitle" data-i18n="APP_YOU">JIJ</p></div>
+            <div class="button4-column3"><button type="button" class="login-button" id="profHeaderBack" data-i18n="PR_BACK">Terug</button></div>
           </div>
           <div class="full_line"></div>
 
@@ -757,10 +763,6 @@
             <label><span data-i18n="SU_LE">Linkeroog</span> <select id="peLeftEye"></select></label>
             <label><span data-i18n="SU_RE">Rechteroog</span> <select id="peRightEye"></select></label>
             <label style="flex:1;min-width:14rem"><input id="peSpecial" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken" style="flex:1;min-width:12rem" /></label>
-            <div class="actions">
-              <button type="button" class="login-button" id="profSaveBtn" data-i18n="PR_SAVE">Opslaan</button>
-              <button type="button" class="btn-secondary" id="profCancelBtn" data-i18n="RCV_CANCEL">Annuleren</button>
-            </div>
             <p class="dapp-relay-info" id="profEditInfo"></p>
           </div>
         </section>

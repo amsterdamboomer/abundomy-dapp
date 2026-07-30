@@ -1089,16 +1089,18 @@ async function renderProfile({ id } = {}) {
   if (profileEditing) return // niet herrenderen tijdens bewerken (zou velden overschrijven)
   const uid = id != null ? Number(id) : me
   const isMe = uid === me
-  $('profEditActions').style.display = isMe ? 'flex' : 'none'
+  // Header (punt 02): eigen profiel = direct-edit (Opslaan/JIJ/Terug); peer = alleen-lezen.
+  $('profHeaderSave').style.display = isMe ? '' : 'none'
+  if (isMe) { $('profHeaderTitle').textContent = t('APP_YOU'); enterProfileEdit(); return }
+  $('profHeaderTitle').textContent = '' // peer-naam wordt hieronder ingevuld
+  $('profEditActions').style.display = 'none'
   $('profView').classList.remove('hidden')
   $('profEdit').classList.add('hidden')
   let p
-  if (isMe) p = myProfile
-  else {
-    const doc = (await stores.users.get(uid))?.value
-    if (!doc) { $('profName').textContent = 'Onbekende gebruiker'; $('profFields').innerHTML = ''; $('profRevNav').style.display = 'none'; return }
-    p = await safeProfile(doc)
-  }
+  const doc = (await stores.users.get(uid))?.value
+  if (!doc) { $('profName').textContent = 'Onbekende gebruiker'; $('profHeaderTitle').textContent = 'Onbekende gebruiker'; $('profFields').innerHTML = ''; $('profRevNav').style.display = 'none'; return }
+  p = await safeProfile(doc)
+  $('profHeaderTitle').textContent = p.usersName || `#${uid}`
 
   const txs = (await stores.transactions.all()).map((e) => e.value)
   const usersOld = (await stores.usersOld.all()).map((e) => e.value)
@@ -1407,7 +1409,7 @@ async function changeEmail() {
 /** Profielwijzigingen opslaan (versleuteld), myProfile verversen, terug naar bekijken. */
 async function saveProfile() {
   const info = (m) => { $('profEditInfo').textContent = m }
-  const btn = $('profSaveBtn'); btn.disabled = true
+  const btn = $('profHeaderSave'); btn.disabled = true
   try {
     const uid = $('peUid').value.trim()
     if (uid.length <= 3) throw new Error('gebruikersnaam moet langer dan 3 tekens zijn')
@@ -1827,8 +1829,8 @@ window.addEventListener('hashchange', () => route())
 $('profEditBtn').onclick = () => enterProfileEdit()
 $('profRevPrev').onclick = () => { if (revIdx < revVersions.length - 1) { revIdx++; renderProfileVersion() } } // ouder
 $('profRevNext').onclick = () => { if (revIdx > 0) { revIdx--; renderProfileVersion() } } // nieuwer
-$('profCancelBtn').onclick = () => cancelProfileEdit()
-$('profSaveBtn').onclick = () => saveProfile().catch((e) => log('FOUT: ' + e.message))
+$('profHeaderSave').onclick = () => saveProfile().catch((e) => log('FOUT: ' + e.message))
+$('profHeaderBack').onclick = () => history.back()
 $('peImgFile').onchange = async (e) => {
   const file = e.target.files?.[0]; if (!file) return
   try { pendingImage = await fileToAvatarDataURL(file); refreshImagePreview() }
