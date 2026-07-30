@@ -1655,12 +1655,12 @@ textarea:focus,
   text-align: center;
 }
 .header-main-index-logo {
-  width: clamp(35px, 12.15vw, 70px) !important;
-  height: clamp(35px, 12.15vw, 70px) !important;
-  background-image: url(../img/1CoinH_140x140.png);
+  /* Huisje site-wiid i.p.v. coin (besluit 24-07): zelfde icoon + sizing als #topNav-huisje. */
+  width: clamp(40px, 13.89vw, 70px) !important;
+  height: clamp(40px, 13.89vw, 70px) !important;
+  background-image: url(../img/Home_70x70.png);
   background-repeat: no-repeat;
   background-size: cover;
-  background-color: var(--headerback);
   transition: filter 0.3s ease;
   margin-left: clamp(4px, 1.5vw, 8px);
 }
