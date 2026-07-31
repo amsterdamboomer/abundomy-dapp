@@ -1091,7 +1091,7 @@ async function renderProfile({ id } = {}) {
   const isMe = uid === me
   // Header (punt 02): eigen profiel = direct-edit (Opslaan/JIJ/Terug); peer = alleen-lezen.
   $('profHeaderSave').style.display = isMe ? '' : 'none'
-  if (isMe) { $('profHeaderTitle').textContent = t('APP_YOU'); enterProfileEdit(); return }
+  if (isMe) { window.location.replace('/profile/profile.html?from=/app/'); return }  // punt 10: eigen profiel = live statische profile.html (identiek)
   $('profHeaderTitle').textContent = '' // peer-naam wordt hieronder ingevuld
   $('profEditActions').style.display = 'none'
   $('profView').classList.remove('hidden')
