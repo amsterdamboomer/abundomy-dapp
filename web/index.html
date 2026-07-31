@@ -166,11 +166,11 @@
       #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select { border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); }
       /* Punt 02-24-07: #signup foto-knop = V1 .photo-button (groen, volledige breedte, pill). */
       #signup .photo-button { border: none; border-radius: clamp(15px, 5.21vw, 30px); background-color: var(--button); color: var(--black); font-family: raleway_bold, sans-serif; font-size: clamp(14px, 3.82vw, 22px); width: 100%; height: clamp(40px, 10.42vw, 60px); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-top: clamp(8px, 1.5vw, 12px); }
-      /* Punt 10 header-rij: break-out naar viewport-breedte, uitgelijnd onder #app-header — Opslaan onder huisje, JIJ exact center, Terug onder avatar. Row zit in .field-wrapper (550px); break-out ontsnapt daaruit. body{overflow-x:hidden} voorkomt scroll. */
-      #view-profile .button4-row { width: 100vw; margin-left: calc(50% - 50vw); box-sizing: border-box; padding: 0 calc(max(0px, 50vw - 288px) + clamp(5px, 1.74vw, 15px)); }
-      #view-profile .button4-column1 { justify-content: flex-start; margin-left: clamp(4px, 1.5vw, 10px); }
-      #view-profile .button4-column3 { justify-content: flex-end; margin-right: clamp(4px, 1.5vw, 10px); }
-      #view-profile .button4-column2 { flex: 1 1 auto; width: auto; }
+      /* Punt 10 header-rij: grid 1fr/auto/1fr = JIJ exact center (onafhankelijk van knopbreedtes), Opslaan links, Terug rechts; break-out naar viewport-breedte uitgelijnd onder #app-header. */
+      #view-profile .button4-row { width: 100vw; margin-left: calc(50% - 50vw); box-sizing: border-box; padding: 0 calc(max(0px, 50vw - 288px) + clamp(5px, 1.74vw, 15px)); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+      #view-profile .button4-column1 { justify-self: start; margin-left: clamp(4px, 1.5vw, 10px); }
+      #view-profile .button4-column3 { justify-self: end; margin-right: clamp(4px, 1.5vw, 10px); }
+      #view-profile .button4-column2 { justify-self: center; width: auto; }
       /* Punt 04-foto stap 1: #view-image = V1 image.php-layout (scaffolding + upload). */
       #view-image .parent-container { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 20px 0; }
       #view-image .tableclass1 { width: 350px; background-color: #162042; border: 0; padding: 5px; box-shadow: inset 0 2px 2px 2px rgba(120,120,120,0.05); }
