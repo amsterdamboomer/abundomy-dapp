@@ -1334,17 +1334,17 @@ let pendingImage = '' // de (nog niet opgeslagen) gekozen profielfoto in bewerkm
 
 /** Update de foto-preview + zichtbaarheid van 'verwijderen' in bewerkmodus. */
 function refreshImagePreview() {
-  $('peImgPreview').src = avatarFor({ ...myProfile, usersId: me, image: pendingImage })
-  $('peImgClear').style.display = (typeof pendingImage === 'string' && pendingImage.startsWith('data:image')) ? 'inline-block' : 'none'
+  // Foto in #app-header (geen inline preview meer, 1:1 met statische profile.php).
+  $('headerAvatar').src = avatarFor({ ...myProfile, usersId: me, image: pendingImage })
 }
 
 /** Bewerkmodus openen (alleen eigen profiel): velden vullen uit myProfile. */
 function enterProfileEdit() {
   profileEditing = true
   $('profEditInfo').textContent = ''
-  $('peNewEmail').value = ''; $('peEmailInfo').textContent = ''; $('emailChangeBox').open = false
   pendingImage = myProfile.image || ''
   refreshImagePreview()
+  if (myProfile.start) $('profFooterDate').textContent = formatDateNL(myProfile.start)
   $('peName').value = myProfile.usersName || ''
   $('peUid').value = myProfile.usersUid || ''
   $('peEmail').value = myProfile.usersEmail || ''
@@ -1823,17 +1823,14 @@ $('pdfGenBtn').onclick = () => {
 }
 $('txCsvBtn').onclick = () => exportChain(txUserId ?? me).catch((e) => log('FOUT: ' + e.message))
 $('refreshBtn').onclick = () => { log('Verversen (verse sync)…'); location.reload() }
-$('changePwdBtn').onclick = () => doChangePassword().catch((e) => log('FOUT: ' + e.message))
 $('goDashboard').onclick = () => finishLogin().catch((e) => log('FOUT: ' + e.message))
 window.addEventListener('hashchange', () => route())
 $('profEditBtn').onclick = () => enterProfileEdit()
 $('profRevPrev').onclick = () => { if (revIdx < revVersions.length - 1) { revIdx++; renderProfileVersion() } } // ouder
 $('profRevNext').onclick = () => { if (revIdx > 0) { revIdx--; renderProfileVersion() } } // nieuwer
 $('profHeaderSave').onclick = () => saveProfile().catch((e) => log('FOUT: ' + e.message))
-// profHeaderBack = <a href="#/"> (dashboard, 1coinh Cancel->index.php) — geen onclick nodig.
+// profHeaderBack = <a href="#/"> (dashboard) — geen onclick nodig.
 $('profPhotoBtn').onclick = () => showViewImage('profile')  // 1coinh: photo-button opent editor
-$('peImgClear').onclick = () => { pendingImage = ''; refreshImagePreview() }
-$('peEmailVerifyBtn').onclick = () => changeEmail().catch((e) => log('FOUT: ' + e.message))
 
 // Foto kiezen bij signup (vóór account-aanmaak).
 let signupImage = ''

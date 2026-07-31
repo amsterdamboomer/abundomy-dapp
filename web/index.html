@@ -166,11 +166,6 @@
       #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select { border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); }
       /* Punt 02-24-07: #signup foto-knop = V1 .photo-button (groen, volledige breedte, pill). */
       #signup .photo-button { border: none; border-radius: clamp(15px, 5.21vw, 30px); background-color: var(--button); color: var(--black); font-family: raleway_bold, sans-serif; font-size: clamp(14px, 3.82vw, 22px); width: 100%; height: clamp(40px, 10.42vw, 60px); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-top: clamp(8px, 1.5vw, 12px); }
-      /* Punt 10 header-rij: grid 1fr/auto/1fr = JIJ exact center (onafhankelijk van knopbreedtes), Opslaan links, Terug rechts; break-out naar viewport-breedte uitgelijnd onder #app-header. */
-      #view-profile .button4-row { width: 100vw; margin-left: calc(50% - 50vw); box-sizing: border-box; padding: 0 calc(max(0px, 50vw - 288px) + clamp(5px, 1.74vw, 15px)); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
-      #view-profile .button4-column1 { justify-self: start; margin-left: clamp(4px, 1.5vw, 10px); }
-      #view-profile .button4-column3 { justify-self: end; margin-right: clamp(4px, 1.5vw, 10px); }
-      #view-profile .button4-column2 { justify-self: center; width: auto; }
       /* Punt 04-foto stap 1: #view-image = V1 image.php-layout (scaffolding + upload). */
       #view-image .parent-container { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 20px 0; }
       #view-image .tableclass1 { width: 350px; background-color: #162042; border: 0; padding: 5px; box-shadow: inset 0 2px 2px 2px rgba(120,120,120,0.05); }
@@ -717,7 +712,7 @@
             </details>
           </div>
 
-          <!-- BEWERKEN (eigen profiel) — 1:1 naar 1coinh profile.php (zelfde form-klassen: form__label/form__input/select-wrap/photo-button/special-features2/button5-row). Alleen huisje<>coin in header wijkt af. -->
+          <!-- BEWERKEN (eigen profiel) — 1:1 naar statische profile.html (repo-klassen; pe*-IDs behouden voor dapp-OrbitDB). Foto in #app-header (geen inline preview). Taal/whitelist/newsletter/paymentEmails/footer = static-elementen (no-op in dapp). emailChange/passwordChange weg (niet in static). -->
           <div class="dapp-card hidden" id="profEdit" style="border:none; background:none; padding:0;">
             <div class="full_line"></div>
             <div class="small_line"></div>
@@ -726,10 +721,8 @@
               <input type="text" class="form__input" id="peName" autocomplete="name" />
               <div class="full_line"></div>
               <button type="button" class="photo-button" id="profPhotoBtn" data-i18n="APP_CHOOSE_PHOTO">Pasfoto wijzigen</button>
-              <img id="peImgPreview" class="humanicon2" alt="foto" style="display:block; margin:0.5rem auto 0;" />
-              <button type="button" class="btn-secondary" id="peImgClear" style="display:none;" data-i18n="APP_REMOVE_PHOTO">Foto verwijderen</button>
               <label class="form__label" for="peEmail">E-mail</label><br>
-              <input type="email" class="form__input" id="peEmail" readonly title="Huidig e-mailadres — wijzigen kan hieronder met verificatie" />
+              <input type="email" class="form__input" id="peEmail" readonly />
               <label class="form__label" for="peUid">Gebruikersnaam</label><br>
               <input type="text" class="form__input" id="peUid" autocomplete="username" />
               <div class="button5-row">
@@ -750,29 +743,28 @@
               <label class="form__label" for="peSpecial">Bijzondere kenmerken</label><br>
               <textarea class="special-features2" id="peSpecial" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken"></textarea>
             </div>
-            <details id="emailChangeBox">
-              <summary class="muted" data-i18n="APP_EMAIL_CHANGE">E-mailadres wijzigen (met verificatie)</summary>
-              <label class="form__label" for="peNewEmail">Nieuw e-mailadres</label><br>
-              <input type="email" class="form__input" id="peNewEmail" autocomplete="email" placeholder="nieuw@voorbeeld.nl" />
-              <div class="actions">
-                <button type="button" class="login-button-small" id="peEmailVerifyBtn" data-i18n="APP_SEND_VERIFY">Verstuur verificatie</button>
-              </div>
-              <p class="dapp-relay-info" id="peEmailInfo"></p>
-            </details>
-            <details class="dapp-card" id="changePwdCard" style="border:none; background:none; padding:0;">
-              <summary class="muted" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</summary>
-              <p class="muted" data-i18n="APP_CHANGE_PWD_HINT">Alleen jij kunt dit — het vereist je huidige wachtwoord. Je identiteit en saldo blijven ongewijzigd.</p>
-              <label class="form__label" for="cpCurrent">Huidig wachtwoord</label><br>
-              <input type="password" class="form__input" id="cpCurrent" autocomplete="current-password" />
-              <label class="form__label" for="cpNew">Nieuw wachtwoord</label><br>
-              <input type="password" class="form__input" id="cpNew" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" />
-              <label class="form__label" for="cpNew2">Herhaal nieuw</label><br>
-              <input type="password" class="form__input" id="cpNew2" autocomplete="new-password" />
-              <div class="actions">
-                <button id="changePwdBtn" type="button" class="login-button-small" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</button>
-              </div>
-              <p class="dapp-relay-info" id="changePwdInfo"></p>
-            </details>
+            <label class="form__label" style="display:block">Taal</label>
+            <button type="button" onclick="alert('Taal wijzigen via de home-vlag (pre-login)')" style="text-decoration:none;background:none;border:none;width:100%;padding:0;cursor:pointer;">
+              <div class="profile-lang-button"><div class="profile-lang-flag"><span class="flag-crop-container page-list-flag" style="display:inline-block;"><img src="img/flags/flag_ne.jpg" alt="Taal" class="flag-img-round"></span></div><span class="profile-lang-text">Nederlands</span></div>
+            </button>
+            <div class="small_line"></div>
+            <label class="form__label2">Spam voorkomen</label><br><div class="small_line"></div>
+            <a href="#/"><button type="button" id="manage-list-btn" class="photo-button" style="width:100%;">Lijst beheren</button></a>
+            <div class="medium_line"></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="whitelist-toggle" onchange="alert('Whitelist beheer niet in dapp-profiel')"><span class="slider round"></span></label><span class="feedback5">Whitelist gebruiken</span></div></div>
+            <div class="medium_line"></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" onchange="alert('Voorkeur niet in dapp-profiel')"><span class="slider round"></span></label><span class="feedback5">Nieuwsbrief ontvangen</span></div></div>
+            <div class="medium_line"></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" onchange="alert('Voorkeur niet in dapp-profiel')"><span class="slider round"></span></label><span class="feedback5">Betalingsmails ontvangen</span></div></div>
+            <div class="full_line"></div>
+            <br><div class="signupdiv"></div>
+            <div class="full-screen-line"></div>
+            <div class="profile-footer-row">
+              <div class="footer-item footer-date" id="profFooterDate"></div>
+              <div class="footer-item"><button type="button" class="login-button" onclick="alert('PDF niet in dapp-profiel')">PDF</button></div>
+              <div class="footer-item"><button type="button" class="login-button" onclick="alert('CSV niet in dapp-profiel')">CSV</button></div>
+              <div class="footer-item"><button type="button" class="login-button" onclick="alert('Geschiedenis niet in dapp-profiel')">Geschiedenis</button></div>
+            </div>
             <p class="dapp-relay-info" id="profEditInfo"></p>
           </div>
         </section>
