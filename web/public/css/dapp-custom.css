@@ -1,0 +1,71 @@
+/* ============================================================================
+   dapp-custom.css — dApp-eigen overrides (bovenop main.css [money-app] + content.css [content-site])
+   Laadvolgorde: reset.css → main.css → content.css → dapp-custom.css (deze wint).
+   ELKE override heeft een /* reden: ... */ commentaar. Geldigheid: alleen dApp-specifieke
+   aanpassingen; money-app-basisklassen worden alleen overschreven bij een dApp-specifieke reden.
+   Bron: diff abundomy-money-git/css/main.css vs (oude) dapp main.css — 38 MODIFIED regels.
+   Architectuur: zie AbundomyWEB/CSS-REFACTOR-PLAN.md (Strategie A, keuze (a): behoud mobile-fit).
+   ============================================================================ */
+
+/* --- 1. SPA-header-layout (dApp heeft topNav + app-header, geen PHP-header) --- */
+.header-main { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: clamp(5px, 1.74vw, 10px) clamp(5px, 1.74vw, 15px); }
+/* reden: SPA-header is flex/space-between (huisje/saldo/avatar) i.p.v. repo width-clamp */
+.full-width-header-wrapper { width: 100%; background-color: var(--headerback); border-bottom: 1px solid rgba(145, 107, 1, 0.2); }
+/* reden: subtiele gouden onderlijn onder de SPA-header */
+.header-main-index-logo { width: clamp(40px, 13.89vw, 70px) !important; height: clamp(40px, 13.89vw, 70px) !important; background-image: url(../img/Home_70x70.png); background-repeat: no-repeat; background-size: cover; transition: filter 0.3s ease; margin-left: clamp(4px, 1.5vw, 8px); }
+/* reden: huisje (Home_70x70.png) i.p.v. coin (1CoinH_140x140.png) — Patrick's keuze; 40px min i.p.v. 35px */
+
+/* --- 2. Mobile-fit font-size-reductie (18px→15px, 16px→12.5px) — keuze (a) --- */
+html, body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; text-align: center; background-color: var(--background); margin: 0; height: 100%; font-family: raleway_regular, sans-serif; font-size: clamp(12.5px, 4.34vw, 25px); color: var(--text); }
+/* reden: mobile-fit (kleiner basis-font voor smalle viewports); repo gebruikt 16px/5.21vw/30px */
+.button1-row, .button2-row, .button3-row, .button4-row { background-color: var(--background); font-family: raleway_bold, sans-serif; font-size: clamp(15px, 5.21vw, 30px); color: var(--text); width: clamp(300px, 95.49vw, 550px); display: flex; align-items: center; margin: 0 auto; }
+/* reden: mobile-fit (15px i.p.v. 18px) */
+.button9-row { background-color: var(--background); font-family: raleway_bold, sans-serif; font-size: clamp(15px, 5.21vw, 30px); color: var(--text); width: clamp(300px, 98.96vw, 570px); max-width: 100%; display: flex; justify-content: center; align-items: center; margin: 0 auto; }
+.button10-row { background-color: var(--background); font-family: raleway_bold, sans-serif; font-size: clamp(15px, 5.21vw, 30px); color: var(--text); width: clamp(300px, 95.49vw, 550px); display: flex; justify-content: space-between; align-items: center; margin: 0 auto; }
+.feedback, .feedback2, .error { font-family: raleway_regular, sans-serif; font-size: clamp(15px, 5.21vw, 30px); text-align: center; display: block; }
+.feedback3 { font-family: raleway_bold, sans-serif; font-size: clamp(15px, 5.21vw, 30px); text-align: center; color: var(--button); white-space: nowrap; overflow: visible; display: block; }
+/* reden: feedback3 = raleway_bold + groen (var(--button)) i.p.v. roboto_bold + goud */
+.feedback4 { font-family: raleway_bold, sans-serif; font-size: clamp(15px, 5.21vw, 30px); text-align: center; color: var(--text); white-space: normal; overflow-wrap: break-word; display: block; width: 100%; max-width: 100%; margin: 0 auto; line-height: 1.2; }
+.feedback5 { font-family: raleway_bold, sans-serif; font-size: clamp(15px, 5.21vw, 30px); text-align: center; color: var(--text); white-space: normal; overflow-wrap: break-word; display: block; width: 100%; max-width: 100%; margin: 0 auto; line-height: 1.2; }
+.form__input { font-family: raleway_regular, sans-serif; color: var(--white); font-size: clamp(15px, 5.21vw, 30px); padding-left: clamp(15px, 5.21vw, 30px); border-radius: 2rem; background-color: var(--black); border: none; width: 100%; height: clamp(40px, 10.42vw, 60px); }
+.login-button, .action-button, .error-button { font-family: raleway_bold, sans-serif; font-size: clamp(15px, 5.21vw, 30px); }
+.login-button-small { font-family: raleway_regular, sans-serif; font-size: clamp(12.5px, 4.34vw, 25px); }
+/* reden: mobile-fit (15px/12.5px i.p.v. 18px/16px) */
+
+/* --- 3. Knop-layout (flex/center i.p.v. inline-block, voor SPA-knoppen) --- */
+.login-button, .login-button-small, .action-button, .error-button { cursor: pointer; background: none; border: none; transition: filter 0.3s ease, transform 0.1s ease, color 0.3s ease, text-shadow 0.3s ease; display: flex; align-items: center; justify-content: center; text-align: center; width: 100%; max-width: 100%; white-space: normal; overflow-wrap: break-word; outline: none; padding: clamp(5px, 1.74vw, 10px) 0; }
+/* reden: SPA-knoppen = flex/center/full-width i.p.v. inline-block */
+
+/* --- 4. Content-site dark-theme restyle (content-site in app-theme i.p.v. repo print-style) --- */
+.blockquote { width: 95%; margin: 20px auto; padding: clamp(5.2px, 1.74vw, 10px) clamp(13px, 4.34vw, 25px); background: var(--headerback); border-left: clamp(5px, 1.73vw, 10px) solid var(--text); box-sizing: border-box; }
+.blockquote__text { font-family: 'raleway_regular', sans-serif; font-style: italic; font-size: clamp(7.7px, 2.67vw, 15.4px); line-height: 1.4; color: var(--white); margin: 0; }
+.par { font-family: 'raleway_regular', sans-serif; color: var(--white); }
+.photo { font-family: 'raleway_light', sans-serif; font-style: italic; font-size: clamp(7px, 2.43vw, 14px); color: var(--disabled); }
+.title1 { font-family: 'raleway_bold', sans-serif; font-size: clamp(20px, 8.68vw, 40px); color: var(--text); line-height: 1; margin-top: 0 !important; padding-top: 0 !important; display: block; text-transform: uppercase; }
+.title3 { font-family: 'raleway_bold', sans-serif; font-size: clamp(13px, 4.51vw, 26px); color: var(--text); margin-top: 1.5em; margin-bottom: 0px; text-transform: capitalize; display: block; }
+.title, .title2 { font-family: 'raleway_bold', sans-serif; font-size: clamp(15px, 5.21vw, 30px); color: var(--text); white-space: normal; overflow-wrap: break-word; display: block; width: 100%; box-sizing: border-box; padding-inline-end: clamp(25px, 8.68vw, 50px); text-align: center; line-height: 1.1; margin: 0 auto; transition: filter 0.3s ease; }
+.link { font-family: 'raleway_regular', sans-serif; font-size: clamp(13px, 4.34vw, 25px); color: var(--button); transition: filter 0.3s ease; }
+.article-img { width: 100%; height: auto; border-radius: 4px; margin: 20px 0; }
+.name-table td { padding-left: 15px; vertical-align: middle; }
+.title-link { display: block; text-decoration: none; transition: filter 0.3s ease; cursor: pointer; }
+.title-link:hover { filter: brightness(1.5); }
+/* reden: content-site gebruikt app-dark-theme (raleway, var(--white)/var(--text), clamp) i.p.v. repo-Times-New-Roman/#000000-print-style */
+
+/* --- 5. Loader (dApp-eigen stijl) --- */
+.loader { width: 60px; height: 60px; border: 6px solid rgba(255, 255, 255, 0.1); border-top: 6px solid #ffffff; border-radius: 50%; animation: spin 1s linear infinite; }
+.loader-text { margin-top: 15px; color: #ffffff; font-family: 'raleway_regular', sans-serif; letter-spacing: 1px; }
+.loader-wrapper { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background-color: #162042 !important; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 999999 !important; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+/* reden: dApp-loader (60px/wit/!important) + spin-keyframe (repo heeft een color-keyframe, geen spin) */
+
+/* --- 6. Misc dApp-eigen --- */
+:root { caret-color: transparent !important; }
+/* reden: verborg de caret (dApp gebruikt geen zichtbare tekst-cursor in de UI) */
+.special-features { width: clamp(280px, 94.79vw, 546px); min-height: clamp(60px, 18vw, 110px); appearance: none; padding-left: clamp(15px, 5.21vw, 30px); padding-top: clamp(5px, 1.74vw, 10px); background-color: var(--black); color: var(--white); border: none; border-radius: clamp(15px, 5.21vw, 30px); font-family: raleway_regular, sans-serif; font-size: clamp(15px, 4.5vw, 24px); line-height: 1.4; display: block; margin: 0 auto; box-sizing: border-box; white-space: pre-wrap; }
+/* reden: special-features = bewerkbare textarea (dApp) i.p.v. read-only pointer-events:none (repo) */
+table, th, td { border: none; border-collapse: collapse; color: var(--white); }
+/* reden: dApp-tabellen = geen randen + witte tekst (dark theme) */
+.action-icon { width: clamp(35px, 12.15vw, 70px); height: clamp(35px, 12.15vw, 70px); display: block; transition: filter 0.3s ease; cursor: pointer; }
+.balance-link { text-decoration: none; display: inline-block; transition: filter 0.3s ease; cursor: pointer; }
+#capture-section { display: none; }
+/* reden: capture-section verborgen in dApp (geen PHP-upload); action-icon/balance-link = cursor:pointer (klikbaar)

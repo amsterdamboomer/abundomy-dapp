@@ -1,3 +1,4 @@
+/* --- 1. FONTS --- */
 @font-face {
     font-family: 'raleway_bold';
     src: url('../font/raleway-bold-webfont.woff2') format('woff2'),
@@ -26,7 +27,7 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'roboto_bold';font-size
+    font-family: 'roboto_bold';
     src: url('../font/Roboto-ExtraBold.ttf') format('truetype');
     font-weight: 800;
     font-style: normal;
@@ -97,7 +98,7 @@ html, body {
     height: 100%;
     font-family: raleway_regular, sans-serif;
     /* Fluid Font: starts shrinking below 576px */
-    font-size: clamp(12.5px, 4.34vw, 25px);
+    font-size: clamp(16px, 5.21vw, 30px); 
     color: var(--text);
 }
 
@@ -114,60 +115,22 @@ a {
     text-decoration: none;
 }
 
-
-
-
-
-/* --- HEADER INTERACTION RESET --- */
-/* 1. Kill caret and selection globally in the header area */
-.full-width-header-wrapper, 
-.header-main, 
-.header-main * {
-    caret-color: transparent !important;       /* Hides blinking line in all browsers */
-    caret-shape: none !important;              /* Modern browser support */
-    outline: none !important;                  /* Removes focus rings */
-    user-select: none !important;              /* Disables text highlighting */
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -webkit-tap-highlight-color: transparent;  /* Removes mobile touch flash */
-}
-
-/* 2. Standardize Header Link Behavior */
-.header-main a {
-    cursor: pointer !important;
-    display: inline-block;
-    pointer-events: auto !important;           /* Ensures icons remain clickable */
-    -webkit-user-modify: read-only !important; /* Prevents "edit mode" cursor */
-    overflow: hidden !important;               /* Clips ghost carets */
-    -webkit-user-drag: none;                   /* Prevents ghost image dragging */
-}
-
-/* 3. Handle Focus States (The "When I focus the window" fix) */
-/* Force all header elements to remain caret-free even when focused */
-.header-main *:focus {
-    outline: none !important;
-    caret-color: transparent !important;
-    box-shadow: none !important;
-}
-
-/* Global focus safety: hides caret everywhere except inputs */
-:focus {
-    caret-color: transparent !important;
-}
-
-/* 4. Restore Caret for Inputs ONLY */
-/* This ensures you can still see the cursor when actually typing in your search/forms */
-#searchlan:focus, 
-.form__input:focus,
-#capture-section input:focus,
-#capture-section textarea:focus {
-    caret-color: var(--text) !important; 
-    user-select: text !important;
+/* Specific class for the Service page to allow interaction */
+.selectable-text {
     -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+    
+    /* THE FIX: Re-enable mouse interaction for scrolling and dragging */
+    pointer-events: auto !important; 
+    cursor: text !important;
 }
 
-
-
+/* Ensure the scrollbar of the textarea specifically allows interaction */
+textarea::-webkit-scrollbar {
+    pointer-events: auto !important;
+}
 
 
 #centerContainer { 
@@ -177,15 +140,6 @@ a {
     flex-direction: column;
     align-items: center;
 }
-
-.centerContainer2 { 
-        width: clamp(288px, 100vw, 576px); 
-        text-align: left; 
-        margin: 0vw auto;
-        background-color: var(--background-color);
-        color: var(--text-color);
-    }
-
 
 #centerContainer form {
     width: 100%;
@@ -199,105 +153,1763 @@ a {
     width: 100%;
 }
 
-#searchlan:focus, 
-.form__input:focus {
-    outline: none !important;      /* Removes the default focus ring */
-    box-shadow: none !important;   /* Removes any glow effects */
-}
-
-/* This stops the gray/red flash on mobile devices when you tap the input */
-#searchlan, 
-.form__input {
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
-    -webkit-appearance: none; /* Removes iOS internal shadows */
-}
-
 /*======================  HEADER MAIN  =============================*/
 
-/* --- HEADER STYLES --- */
+.header-main {
+    width: clamp(0px, 100vw, 576px) !important;
+    height: clamp(40px, 13.89vw, 80px);
+    background-color: var(--headerback);
+    display: inline-flex;
+    justify-content: space-between;
+    align-items: center; 
+    overflow: visible !important; /* Allows the +123.45 to float above the header */
+}
+
+.header-main-logo {
+    width: 50%;
+    height: 100%;
+    display: inline-flex;
+    background-color: var(--headerback);
+}
+
+.header-main-index {
+    width: clamp(40px, 13.89vw, 80px) !important;
+    height: 100%;
+    /* THE FIX: Restores the 5px gap at the top */
+    padding-top: clamp(2px, 0.87vw, 5px); 
+    padding-left: clamp(8px, 2.6vw, 15px);
+    display: flex;
+    align-items: flex-start; /* Keeps the logo itself near the top but respects padding */
+}
+
+.header-main-index-logo {
+    /* 70px logo scaled */
+    width: clamp(35px, 12.15vw, 70px) !important;
+    height: clamp(35px, 12.15vw, 70px) !important;
+    background-image: url(../img/1CoinH_140x140.png);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-color: var(--headerback);
+    transition: filter 0.3s ease;
+    margin-left: clamp(4px, 1.5vw, 8px);
+}
+
+.header-main-index-logo:hover {
+    cursor: pointer;
+    filter: brightness(1.5);
+}
+
+#balance-float {
+    position: absolute;
+    top: -10px; /* Adjust based on where you want the number to start */
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: roboto_bold, sans-serif;
+    font-size: 22px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 999;
+}
+
+
+/* The "Explosion" effect */
+@keyframes explode-white {
+    0% { transform: scale(1); filter: brightness(1); }
+    40% { transform: scale(1.3); filter: brightness(10); color: #ffffff; text-shadow: 0 0 10px #fff; }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+
+.animate-explode {
+    animation: explode-white 0.8s ease-in-out;
+    display: inline-block;
+}
+
+#balance-float {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/*======================== HEADER BACKGROUND ============================*/
+
 .full-width-header-wrapper {
     width: 100%;
     background-color: var(--headerback);
-    border-bottom: 1px solid rgba(145, 107, 1, 0.2);
-}
-
-.header-content {
-    width: 100%;
-    /* Constraints header to match your site content width */
-    max-width: clamp(0px, 100vw, 576px); 
-    margin: 0 auto;
-}
-
-.header-main {
     display: flex;
-    align-items: center;
-    /* Distributes the 6 items with equal space between them */
-    justify-content: space-between; 
-    width: 100%;
-    padding: clamp(5px, 1.74vw, 10px) clamp(5px, 1.74vw, 15px);
-}
-
-/* First 5 Icons: Targets 70x70px using your ratio */
-.nav-item img, 
-.rotating-world {
-    width: clamp(40px, 13.89vw, 70px);
-    height: clamp(40px, 13.89vw, 70px);
-    display: block;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-}
-
-.nav-item img:hover, 
-.rotating-world:hover {
-    transform: scale(1.06);
-}
-
-/* --- HEADER SPECIFIC --- */
-
-.header-main a {
-    display: flex;
-    align-items: center;
     justify-content: center;
 }
 
-/* 1. Allows the flag to grow outside its base boundaries without clipping */
-.header-lang .lang-icon {
-    display: inline-block !important; 
-    width: 50px;
-    height: 50px;
-    overflow: visible !important; /* Let the scaled flag expand outside */
+/* Redundant width removed since it's defined in Batch 2, 
+   but kept here to show the fluid scaling logic */
+.header-main {
+    width: clamp(0px, 100vw, 576px);
+    max-width: 100%;
+    background-color: var(--headerback);
+}
+
+/*======================== MENU ROW ============================*/
+
+.menu-row {
+    border: none;
+    outline: none;
+    background-color: var(--background);
+    font-family: roboto_bold, sans-serif;
+    font-weight: 600;
+    /* 40px -> 6.94vw */
+    font-size: clamp(20px, 6.94vw, 40px);
+    color: var(--text);    
+    width: clamp(0px, 100vw, 576px);
+    height: clamp(40px, 13.89vw, 80px);
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Replaces manual padding/margins */
+}
+
+/* Container logic */
+.menu-column1 {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    /* Fluid margin on the left for the logo */
+    margin-left: clamp(4px, 1.5vw, 10px); 
+}
+
+.menu-column3 {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    /* Fluid margin on the right for the icon/flag */
+    margin-right: clamp(4px, 1.5vw, 10px); 
+    margin-left: auto; /* Keeps it pushed to the right */
+}
+
+/* Remove the fixed clamp width/height from the columns 
+   so the margin actually touches the edge of the screen */
+.menu-column1, .menu-column3 {
+    width: auto; 
+    height: auto;
+}
+
+.menu-column2 {
+    /* 426px -> 73.96vw */
+    width: clamp(0px, 73.96vw, 426px);
+    height: clamp(35px, 12.15vw, 70px);
+    text-align: center;
+}
+
+/*======================== AMOUNT & DISPLAY NUM ============================*/
+
+.amount-container {
+    display: inline-block;
+    text-decoration: none;
+    background-color: var(--headerback);
+    /* 10px -> 1.74vw */
+    padding: clamp(5px, 1.74vw, 10px);
+}
+
+.amount-container2 {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-decoration: none;
+    height: 100%;
+    line-height: 1.1;
+    transition: filter 0.3s ease;
+}
+
+.amount-container2:hover {
+    cursor: pointer;
+    filter: brightness(1.5);
+}
+
+.amount {
+    border: none;
+    outline: none;
+    font-family: roboto_bold, sans-serif;
+    font-weight: 600;
+    font-size: clamp(20px, 6.94vw, 40px);
+    color: var(--button);
+}
+
+.display-num, .display-num2 {
+    font-family: roboto_bold, sans-serif;
+    font-weight: 400;
+    /* 22px -> 3.82vw */
+    font-size: clamp(12px, 3.82vw, 22px);
+    text-align: center;
+}
+
+.display-num { color: var(--button); }
+.display-num2 { color: var(--text); }
+
+/*======================== FORM-INPUT ============================*/
+
+.field-wrapper {
+    display: flex;
+    flex-direction: column;
+    /* 550px -> 95.49vw */
+    width: clamp(300px, 95.49vw, 550px);
+    text-align: left;
+    margin: 0 auto;
+}
+
+.form__label, .form__label2, .form__label_amount {
+    font-family: raleway_bold, sans-serif;
+    /* 22px -> 3.82vw */
+    font-size: clamp(14px, 3.82vw, 22px);
+    /* 30px -> 5.21vw */
+    margin-left: clamp(15px, 5.21vw, 30px);
+    margin-top: clamp(2px, 0.87vw, 5px);
+}
+
+
+.form__label {
+    color: var(--text);
+}
+
+
+.form__label2 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* 270px -> 46.88vw */
+    max-width: clamp(150px, 46.88vw, 270px); 
+}
+
+.form__input {
+    font-family: raleway_regular, sans-serif;
+    color: var(--white);
+    font-size: clamp(18px, 5.21vw, 30px);
+    padding-left: clamp(15px, 5.21vw, 30px);
+    border-radius: 2rem;
+    background-color: var(--black);
+    border: none;
+    width: 100%; /* Respects field-wrapper width */
+    height: clamp(40px, 10.42vw, 60px);
+}
+
+.form__input2 {
+    font-family: raleway_regular, sans-serif;
+    color: var(--white);
+    font-size: clamp(18px, 5.21vw, 30px);
+    padding-left: clamp(15px, 5.21vw, 30px);
+    border-radius: 2rem;
+    background-color: var(--black);
+    border: none;
+    /* 272px -> 47.22vw */
+    width: clamp(140px, 47.22vw, 272px);
+    height: clamp(40px, 10.42vw, 60px);
+}
+
+/*======================== FORM-INPUT-AMOUNT ============================*/
+
+.amount-outer-container {
+    /* 350px -> 60.76vw */
+    width: clamp(250px, 60.76vw, 350px);
+    margin: 0 auto;
+    text-align: left;
+}
+
+.form__label_amount {
+    display: inline-block;
+    color: var(--text);
+}
+
+.input-container {
     position: relative;
-    
-    /* Fixes the rendering engine bug on hover without needing to clip */
-    transform: translate3d(0, 0, 0); 
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
+    width: 100%;
 }
 
-/* 2. The Wrapper Container handles the size, round crop, and the scale animation */
-.flag-crop-container {
-    width: 50px;
-    height: 50px;
-    border-radius: 50% !important;
-    overflow: hidden !important; /* Guarantees the circle mask stays locked inside the moving element */
+.input-container::after {
+    content: "ᕫ";
+    position: absolute;
+    /* 20px -> 3.47vw */
+    right: clamp(10px, 3.47vw, 20px);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text); 
+    font-size: clamp(18px, 5.21vw, 30px);
+    pointer-events: none;
+}
+
+.form__input_amount {
+    font-family: roboto_bold, sans-serif;
+    color: var(--white);
+    font-size: clamp(18px, 5.21vw, 30px);
+    text-align: right;
+    padding-left: clamp(10px, 3.47vw, 20px);
+    /* 55px -> 9.55vw */
+    padding-right: clamp(30px, 9.55vw, 55px);
+    border-radius: 2rem;
+    background-color: var(--black);
+    border: none;
+    width: 100%;
+    height: clamp(35px, 8.68vw, 50px);
+    box-sizing: border-box;
+}
+
+.amount-error {
+    color: var(--error) !important;
+}
+
+/*======================== FORM-INPUT OTHER ============================*/
+
+.form__text, .form__numbers {
+    font-family: raleway_regular, sans-serif;
+    color: var(--white);
+    /* 30px -> 5.21vw */
+    font-size: clamp(18px, 5.21vw, 30px);
+    padding-left: clamp(15px, 5.21vw, 30px);
+    border-radius: 2rem;
+    background-color: var(--black);
+    border: none;
+    /* Scales with field-wrapper */
+    width: clamp(300px, 95.49vw, 550px);
+    height: clamp(40px, 10.42vw, 60px);
+    display: flex;
+    align-items: center;
+    box-sizing: border-box; 
+}
+
+.form__numbers {
+    /* Kept your specific font preference for numbers */
+    font-family: roboto_regular, sans-serif;
+}
+
+.form__text2, .form__numbers2 {
+    font-family: raleway_regular, sans-serif;
+    color: var(--white);
+    font-size: clamp(18px, 5.21vw, 30px);
+    padding-left: clamp(15px, 5.21vw, 30px);
+    border-radius: 2rem;
+    background-color: var(--black);
+    border: none;
+    /* 272px -> 47.22vw */
+    width: clamp(140px, 47.22vw, 272px);
+    height: clamp(40px, 10.42vw, 60px);
+    display: flex;
+    align-items: center;
+    box-sizing: border-box; 
+}
+
+.form__numbers2 {
+    font-family: roboto_regular, sans-serif;
+}
+
+/*======================== SPACERS (FLUID) ============================*/
+
+.small_line {
+    /* 3px -> 0.52vw */
+    height: clamp(2px, 0.52vw, 3px);
+}
+
+.medium_line {
+    /* 12px -> 2.08vw */
+    height: clamp(6px, 2.08vw, 12px);
+}
+
+.full_line {
+    /* 24px -> 4.17vw */
+    height: clamp(12px, 4.17vw, 24px);
+}
+
+.large_line {
+    /* 50px -> 8.68vw */
+    height: clamp(25px, 8.68vw, 50px);
+}
+
+/* ===========================  BUTTONS  ===============================*/
+
+/* 1. Base Button Styles */
+.login-button, 
+.login-button-small, 
+.action-button, 
+.error-button {
+    cursor: pointer;
+    background: none;
+    border: none;
+    /* ADDED 'color' and 'text-shadow' to this list */
+    transition: filter 0.3s ease, transform 0.1s ease, color 0.3s ease, text-shadow 0.3s ease;
+    display: inline-block;
+    outline: none;
+}
+
+/* 2. Sizes and Fonts */
+.login-button, 
+.action-button, 
+.error-button {
+    font-family: raleway_bold, sans-serif;
+    font-size: clamp(18px, 5.21vw, 30px);
+}
+
+.login-button-small {
+    font-family: raleway_regular, sans-serif;
+    font-size: clamp(16px, 4.51vw, 26px);
+}
+
+/* 3. Colors */
+.login-button, 
+.login-button-small, 
+.action-button {
+    color: var(--button); /* Green */
+}
+
+.error-button {
+    color: var(--error); /* Red */
+}
+
+/* 4. Unified Hover Effect */
+/* This now applies the same brightness 'glow' to ALL buttons, green or red */
+.login-button:hover, 
+.login-button-small:hover, 
+.action-button:hover {
+    filter: brightness(1.5);
+}
+
+/* 5. Optional: Active state for better feedback */
+.login-button:active, 
+.error-button:active {
+    transform: scale(0.98);
+}
+
+/* MEDIUM-LIGHT RED HOVER - Sharp & Balanced with 0.3s timing */
+.error-button:hover {
+    /* Halfway light red */
+    color: #ff5555 !important; 
+    cursor: pointer;
+    /* Keeps text sharp - no thickness effect */
+    font-weight: normal; 
+    /* Small, tight aura */
+    text-shadow: 0 0 6px rgba(255, 85, 85, 0.3);
+    /* Filter none prevents text 'blooming' */
+    filter: none !important;
+}
+
+.login-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(1);
+    /* Keeps the button from reacting to hover effects */
+    pointer-events: none; 
+}
+
+/* ===========================  DISABLED-BUTTON  ===============================*/
+
+.disabled-button {
+    color: var(--disabled);
+    cursor: default;
+}
+
+/* ===========================  PHOTO-BUTTON  ===============================*/
+
+.photo-button {
+    border: none;
+    outline: none;
+    /* 30px -> 5.21vw */
+    border-radius: clamp(15px, 5.21vw, 30px);
+    background-color: var(--button);
+    font-family: raleway_bold, sans-serif;
+    /* 22px -> 3.82vw */
+    font-size: clamp(14px, 3.82vw, 22px);
+    color: var(--black);    
+    /* 546px -> 94.79vw */
+    width: clamp(280px, 94.79vw, 546px);
+    /* 60px -> 10.42vw */
+    height: clamp(40px, 10.42vw, 60px);
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
+    transition: filter 0.3s ease;
+}
+
+.photo-button:hover:enabled {
+    filter: brightness(1.5) !important;
+}
+
+/* ===========================  SELECT-BUTTON  ===============================*/
+
+.select-button {
+    border: none;
+    outline: none;
+    /* 35px -> 6.08vw */
+    border-radius: clamp(18px, 6.08vw, 35px);
+    background-color: var(--selectbutton);
+    font-family: raleway_bold, sans-serif;
+    font-size: clamp(14px, 3.82vw, 22px);
+    color: var(--button);    
+    /* 470px -> 81.6vw */
+    width: clamp(250px, 81.6vw, 470px);
+    /* 70px -> 12.15vw */
+    height: clamp(45px, 12.15vw, 70px);
+    cursor: pointer;
+    gap: clamp(2px, 0.69vw, 4px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    line-height: 1.2;
+    transition: filter 0.3s ease;
+}
+
+.select-button:hover:enabled {
+    filter: brightness(1.5) !important;
+}
+
+.select-button span:first-child {
+    font-family: roboto_regular, sans-serif; /* Updated from robotomono-light */
+    font-size: clamp(14px, 3.82vw, 22px);
+    font-weight: 400;
+    color: var(--button);
+    text-align: center;
+}
+
+/*======================== INDEX-TITLE ROW ============================*/
+
+.index-title-row {
+    background-color: var(--background);
+    font-family: raleway_bold, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(18px, 5.21vw, 30px); 
+    color: var(--text);    
+    /* 576px -> 100vw */
+    width: clamp(300px, 100vw, 576px);
+    max-width: 100%;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+}
+
+.index-title-column {
+    display: flex;
+    flex: 1;
+}
+
+.index-title-column1 { justify-content: flex-start; }
+.index-title-column2 { justify-content: flex-end; }
+
+.index-title-row button {
+    width: auto;
+    white-space: nowrap;
+}
+
+/*======================== REQUEST ROW ============================*/
+
+/* --- SHARED STYLES --- */
+.request-row, .my-request-row {
+    /* 560px -> 97.22vw */
+    width: clamp(280px, 97.22vw, 560px);
+    display: flex;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.request-column1 { 
+    /* 70px -> 12.15vw */
+    width: clamp(35px, 12.15vw, 70px); 
+    flex-shrink: 0;
+}
+
+/* --- SECTION 2: TO PAY (Standard Width) --- */
+.request-column2 { 
+    /* 332px -> 57.64vw */
+    width: clamp(160px, 57.64vw, 332px); 
+    /* 10px -> 1.74vw */
+    margin: 0 clamp(5px, 1.74vw, 10px);
+}
+
+.request-column3 { 
+    /* 148px -> 25.69vw */
+    width: clamp(74px, 25.69vw, 148px); 
+    display: flex; 
+    justify-content: flex-end; 
+    align-items: center; 
+    flex-shrink: 0;
+}
+
+/* --- SECTION 1: MY REQUESTS (Wide Version) --- */
+.my-request-column2 { 
+    /* 410px -> 71.18vw */
+    width: clamp(200px, 71.18vw, 410px); 
+    margin: 0 clamp(5px, 1.74vw, 10px);
+}
+
+.my-request-column3 { 
+    /* 70px -> 12.15vw */
+    width: clamp(35px, 12.15vw, 70px); 
+    /* 8px -> 1.39vw */
+    margin-left: clamp(4px, 1.39vw, 8px);
+    flex-shrink: 0;
+}
+
+/* --- BUTTON INTERNALS --- */
+.select-button-static {
+    /* 35px -> 6.08vw */
+    border-radius: clamp(17px, 6.08vw, 35px);
+    background-color: var(--selectbutton);
+    width: 100%;
+    /* 70px -> 12.15vw */
+    height: clamp(35px, 12.15vw, 70px);
+    display: grid !important;
+    grid-template-rows: 1fr 1fr; 
+    align-items: center;
+    justify-content: center;
+    color: var(--button);
+    text-align: center;
+    /* 4px -> 0.69vw */
+    padding: clamp(2px, 0.69vw, 4px) 0;
+    box-sizing: border-box;
+    transition: filter 0.3s ease;
+}
+
+.select-button-static:hover {
+    cursor: pointer;
+    filter: brightness(1.5) !important;
+}
+
+.amount-line {
+    font-family: roboto_bold, sans-serif;
+    /* 22px -> 3.82vw */
+    font-size: clamp(12px, 3.82vw, 22px);
+    line-height: 1;
+}
+
+.desc-line {
+    font-family: raleway_bold, sans-serif;
+    font-size: clamp(12px, 3.82vw, 22px); 
+    opacity: 1;
+    line-height: 1;
+    white-space: nowrap;
+}    
+
+.action-form-dual { 
+    display: flex; 
+    gap: clamp(4px, 1.39vw, 8px); 
+    justify-content: flex-end; 
+}
+
+.action-icon { 
+    width: clamp(35px, 12.15vw, 70px); 
+    height: clamp(35px, 12.15vw, 70px); 
+    display: block; 
+    transition: filter 0.3s ease;
+}
+
+.action-icon:hover {
+    cursor: pointer;
+    filter: brightness(1.5) !important;
+}
+
+.action-icon-btn { 
+    background: none; 
+    border: none; 
+    padding: 0; 
+    cursor: pointer; 
+    display: flex;
+}
+
+/*======================== SHARED ROW STYLES ============================*/
+.button1-row, .button2-row, .button3-row, .button4-row {
+    background-color: var(--background);
+    font-family: raleway_bold, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(18px, 5.21vw, 30px);
+    color: var(--text);    
+    /* 550px -> 95.49vw */
+    width: clamp(300px, 95.49vw, 550px); 
+    display: flex;
+    align-items: center;
+    margin: 0 auto;
+}
+
+/*======================== BUTTON1 ROW (3 Columns) ============================*/
+.button1-row { justify-content: center; }
+
+.button1-column1 { width: clamp(70px, 24.31vw, 140px); }
+.button1-column2 { width: clamp(80px, 27.78vw, 160px); }
+.button1-column3 { width: clamp(130px, 43.4vw, 250px); }
+
+/*======================== BUTTON2 ROW (2 Columns) ============================*/
+.button2-row { justify-content: center; }
+
+.button2-column1, .button2-column2 {
+    /* 270px -> 46.88vw */
+    width: clamp(140px, 46.88vw, 270px);
+}
+
+/*======================== BUTTON3 ROW (Edge Alignment) ============================*/
+.button3-row {
+    justify-content: space-between;
+    max-width: 95%;
+}
+
+.button3-column1 {
+    display: flex;
+    justify-content: flex-start;
+    flex: 1;
+}
+
+.button3-column2 {
+    display: flex;
+    justify-content: flex-end;
+    flex: 1;
+}
+
+.button3-row button {
+    margin: 0;
+    white-space: nowrap;
+}
+
+/*======================== BUTTON4 ROW (Profile/Title Layout) ============================*/
+.button4-row {
+    justify-content: space-between;
+}
+
+.button4-column1, .button4-column3 {
+    /* 155px -> 26.91vw */
+    width: clamp(80px, 26.91vw, 155px);
+    display: flex;
+}
+
+.button4-column1 { justify-content: flex-start; }
+.button4-column3 { justify-content: flex-end; }
+
+.button4-column2 {
+    /* 240px -> 41.67vw */
+    width: clamp(120px, 41.67vw, 240px);
+    display: flex;
+    justify-content: center;
+}
+
+.button4-column2 .title {
+    margin: 0;
+    white-space: nowrap;
+}
+
+/*======================== SHARED ROW STYLES (5-8) ============================*/
+.button5-row, .button6-row, .button7-row, .button8-row {
+    background-color: var(--background);
+    font-family: raleway_bold, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(18px, 5.21vw, 30px);
+    color: var(--text);    
+    /* 550px -> 95.49vw */
+    width: clamp(300px, 95.49vw, 550px); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+/*======================== BUTTON5 ROW (Split) ============================*/
+.button5-column1, .button5-column3 { 
+    /* 274px -> 47.57vw */
+    width: clamp(140px, 47.57vw, 274px); 
+}
+.button5-column2 { width: 2px; }
+
+/*======================== BUTTON6 ROW (Request Header) ============================*/
+.button6-column1 { width: clamp(150px, 52.08vw, 300px); }
+.button6-column2 { width: clamp(90px, 30.38vw, 175px); }
+.button6-column3 { width: clamp(50px, 17.36vw, 100px); }
+
+/*======================== BUTTON7 ROW (To Pay Header) ============================*/
+.button7-column1 {
+    width: auto;
+    /* 15px -> 2.6vw | 10px -> 1.74vw */
+    padding-left: clamp(8px, 2.6vw, 15px);
+    padding-right: clamp(5px, 1.74vw, 10px);
+    text-align: left !important;
+}
+.button7-column1 p {
+    margin: 0;
+    white-space: nowrap;
+}
+
+/*======================== BUTTON8 ROW (List Item) ============================*/
+.button8-column1 { 
+    /* 70px -> 12.15vw */
+    width: clamp(35px, 12.15vw, 70px); 
+}
+.button8-column2 { width: 4px; }
+.button8-column3 { 
+    /* 500px -> 86.81vw */
+    width: clamp(250px, 86.81vw, 500px); 
+}
+
+/*======================== BUTTON9 ROW (Centering Row) ============================*/
+.button9-row {
+    background-color: var(--background);
+    font-family: raleway_bold, sans-serif;
+    font-size: clamp(18px, 5.21vw, 30px);
+    color: var(--text);    
+    /* 570px -> 98.96vw */
+    width: clamp(300px, 98.96vw, 570px);
+    max-width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.button9-column1 {
+    width: auto;
+    display: flex;
+    justify-content: center;
+}
+
+.button9-column1 button {
+    width: auto;
+    max-width: clamp(300px, 98.96vw, 570px);
+    white-space: nowrap;
+}
+
+/*======================== BUTTON10 ROW ============================*/
+
+.button10-row {
+    background-color: var(--background);
+    font-family: raleway_bold, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(18px, 5.21vw, 30px); 
+    color: var(--text);    
+    /* 550px -> 95.49vw */
+    width: clamp(300px, 95.49vw, 550px); 
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;            
+    margin: 0 auto;
+}
+
+.button10-column1, .button10-column3 {
+    /* 150px -> 26.04vw */
+    width: clamp(80px, 26.04vw, 150px);
+    display: flex;
+}
+
+.button10-column1 { justify-content: flex-start; }
+.button10-column3 { justify-content: flex-end; }
+
+.button10-column2 {
+    /* 250px -> 43.4vw */
+    width: clamp(130px, 43.4vw, 250px);       
+    display: flex;      
+    justify-content: center; 
+}
+
+.button10-column2 .title {
+    margin: 0;
+    white-space: nowrap;
+}
+
+/*======================== GLOBAL TITLES (Combined) ============================*/
+
+.title, .title2 {
+    font-family: raleway_bold, sans-serif;
+    /* 40px -> 6.94vw */
+    font-size: clamp(22px, 6.94vw, 40px);
+    color: var(--text);
+    white-space: nowrap;      
+    margin: 0;                
+    display: inline-block;    
+    text-align: left;         
+    transition: filter 0.3s ease;
+}
+
+.title2:hover {
+    cursor: pointer;
+    filter: brightness(1.5);
+}
+
+.title-link {
+    text-decoration: none;
+    transition: filter 0.3s ease;
+    cursor: pointer;
+}
+
+.title-link:hover {
+    filter: brightness(1.5);
+    cursor: pointer;
+}
+
+
+/*======================== FEEDBACK & ERROR (Shared) ============================*/
+
+.feedback, .feedback2, .error {
+    font-family: raleway_regular, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(18px, 5.21vw, 30px);
+    text-align: center;
     display: block;
-    
-    /* Hardware acceleration layer fixes to prevent squaring bugs */
-    clip-path: circle(50%); 
-    -webkit-mask-image: -webkit-radial-gradient(white, black); 
-    transform: translate3d(0, 0, 0);
-    will-change: transform;
-    
-    /* Smooth scaling transition applied directly to the container */
-    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), filter 0.3s ease;
 }
 
-/* 3. Scale the container wrapper on hover, NOT the image directly */
-.header-lang .lang-icon:hover .flag-crop-container,
-.header-flag-icon:hover .flag-crop-container {
-    transform: scale(1.1) translate3d(0, 0, 0);
+.feedback, .feedback2 {
+    color: var(--text);
+}
+
+.error {
+    color: var(--error);
+}
+
+/* Specific display override for Feedback 2 */
+.feedback2 {
+    white-space: nowrap; 
+    overflow: visible;    
+}
+
+/*======================== FEEDBACK 3 & 4 (Specialty) ============================*/
+
+.feedback3 {
+    font-family: roboto_bold, sans-serif;
+    /* 40px -> 6.94vw */
+    font-size: clamp(18px, 5.21vw, 30px);
+    text-align: center;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: visible;
+    display: block;
+}
+
+.feedback3:hover {
+    filter: brightness(1.5);
+    cursor: pointer;
+}
+
+.feedback4 {
+    font-family: roboto_regular, sans-serif;
+    /* 20px -> 3.47vw */
+    font-size: clamp(14px, 3.47vw, 20px);
+    text-align: center;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: visible;
+    display: block;
+}
+
+.feedback5 {
+    font-family: raleway_regular, sans-serif;
+    /* 20px -> 3.47vw */
+    font-size: clamp(12px, 4.1vw, 24px);
+    text-align: center;
+    color: var(--white);
+    white-space: nowrap;
+    overflow: visible;
+    display: block;
+}
+
+/*======================== ACCOUNT ============================*/
+
+.account {
+    font-family: roboto_bold, sans-serif;
+    font-weight: 400; /* Kept your specific weight preference */
+    /* 22px -> 3.82vw */
+    font-size: clamp(14px, 3.82vw, 22px);
+    text-align: center;
+    color: var(--text);
+}
+
+/*======================== IMAGE (STATIC PX) ============================*/
+
+.parent-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 20px 0;
+}
+
+.tableclass1 {
+    width: 350px;
+    background-color: #162042;
+    border: 0px solid #aaa;
+    padding: 5px;
+    box-shadow: inset 0px 2px 2px 2px rgba(120, 120, 120, 0.05);
+}
+
+.canvasclass {
+    width: 350px; 
+    height: 250px; 
+    display: block; 
+}
+
+#maintable {  
+    border-collapse: collapse;
+    table-layout: fixed;
+}  
+
+#maintable td.dark {
+     border: 0px solid red;  
+     background: var(--background);  
+}  
+
+#maintable td.white {
+     border: 0px solid red;  
+     background: var(--white);  
+     position: relative;
+}
+
+/* Base style for image action buttons */
+.image-button, .image-button2 {
+    border: none;
+    outline: none;
+    border-radius: 6px;
+    background-color: var(--button);
+    font-family: raleway_bold, sans-serif; /* Note: ensure this is defined or use raleway_bold */
+    font-size: 22px;
+    color: black;    
+    margin-left: 3px;
+    margin-top: 3px;
+    height: 46px;
+    align-items: center;
+    display: flex;
+    padding: 3px;
+    justify-content: center;
+    cursor: pointer;
+    transition: filter 0.3s ease;
+}
+
+.image-button {
+    width: 165px;
+}
+
+.image-button2 {
+    width: 75px;
+}
+
+.image-button:hover:enabled, 
+.image-button2:hover:enabled {
+    filter: brightness(1.5) !important;
+}
+
+.iconclass35 {
+    width: 35px; 
+    height: 35px;
+}
+
+.image-text {
+    background-color: var(--button);
+    font-family: raleway_bold, sans-serif;
+    font-size: 22px;
+    width: 125px;
+    color: black;    
+    text-align: right;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+/* ===========================  USER ICONS  =============================== */
+
+/* Apply the margin to the container (like an anchor <a> or <div>) */
+.user-icon-link {
+    margin-left: auto; /* Keeps it on the right */
+    margin-right: clamp(4px, 1.5vw, 10px); /* THE FIX: Moves the margin to the container */
+    display: flex;
+    align-items: center;
+}
+
+/* Icon stays exactly as you had it */
+.mainusericon {
+    height: clamp(35px, 12.15vw, 70px); 
+    width: clamp(35px, 12.15vw, 70px); 
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    transition: filter 0.3s ease;
+}
+
+.mainusericon:hover {
+    cursor: pointer;
+    filter: brightness(1.5);
+}
+
+.humanicon, .humanicon2 {
+    /* 140px -> 24.31vw */
+    height: clamp(70px, 24.31vw, 140px); 
+    width: clamp(70px, 24.31vw, 140px); 
+    /* 35px -> 6.08vw */
+    border-radius: clamp(17px, 6.08vw, 35px);
+    object-fit: cover;
+    overflow: hidden;
+    transition: filter 0.3s ease;
+}
+
+.humanicon2:hover {
+    cursor: pointer;
+    filter: brightness(1.5);
+}
+
+.transactionicon {
+    /* Set specific dimensions */
+    height: clamp(30px, 10.42vw, 60px); 
+    width: clamp(30px, 10.42vw, 60px); 
+    
+    /* THE FIX: Force aspect ratio and prevent flex-squeezing */
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0; 
+    
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    transition: filter 0.3s ease;
+}
+
+.transactionicon:hover {
+    cursor: pointer;
+    filter: brightness(1.5);
+}
+
+
+.transactionicon2, .transactionicon2-placeholder {
+    width: clamp(35px, 10vw, 55px);
+    height: clamp(35px, 10vw, 55px);
+    border-radius: 50%;
+    margin-right: clamp(10px, 2.5vw, 15px);
+    object-fit: cover;
+    flex-shrink: 0;
+
+    /* THE FIX: This forces the highlight to be smooth (0.3s) */
+    transition: filter 0.3s ease !important;
+}
+
+
+/* ===========================  CALENDAR  =============================== */
+
+[type="date"] {
+    font-family: roboto_regular, sans-serif;
+    color: var(--disabled);
+    /* 30px -> 5.21vw */
+    font-size: clamp(16px, 5.21vw, 30px);
+    /* 20px -> 3.47vw */
+    padding-left: clamp(10px, 3.47vw, 20px);
+    border-radius: 2rem;
+    background-color: var(--black);
+    border: none;
+    /* 271px -> 47.05vw */
+    width: clamp(135px, 47.05vw, 271px);
+    /* 60px -> 10.42vw */
+    height: clamp(35px, 10.42vw, 60px);
+
+    display: inline-flex;
+    align-items: center;
+    /* Removed fixed line-height to let flex-centering work better across browsers */
+    
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+[type="date"]:valid {
+    color: var(--white);
+}
+
+[type="date"]::-webkit-datetime-edit {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    margin: 0;
+    padding: 0 10px 0 0;
+    opacity: 0.3;
+    filter: invert(1); 
+    align-self: center; 
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* ===========================  GENDER SELECTOR  =============================== */
+
+.select-wrap {
+    appearance: none;
+    font-family: raleway_regular, sans-serif;
+    font-size: clamp(16px, 5.21vw, 30px);
+    padding-left: clamp(3px, 1.04vw, 6px);
+    border-radius: clamp(15px, 5.21vw, 30px);
+    width: clamp(135px, 47.05vw, 271px);
+    height: clamp(35px, 10.42vw, 60px);
+    cursor: pointer;
+    background-color: var(--black);
+    position: relative;
+    color: var(--white);
+    display: flex; /* Changed from inline-flex to flex */
+    align-items: center;
+    justify-content: flex-start;
+    overflow: hidden; /* Important for Android */
+}
+
+.gender-selector {
+    background-color: var(--black);
+    /* Match height to the wrap exactly */
+    height: clamp(35px, 10.42vw, 60px); 
+    
+    /* THE CRITICAL FIX: Set line-height equal to the height */
+    line-height: clamp(35px, 10.42vw, 60px);
+    
+    width: clamp(110px, 38.19vw, 220px);
+    margin-left: clamp(10px, 3.47vw, 20px);
+    font-family: raleway_regular, sans-serif;
+    font-size: clamp(16px, 5.21vw, 30px);
+    color: var(--white);
+    border: none;
+    outline: none;
+
+    /* Force the browser to reset internal spacing */
+    appearance: none;
+    -webkit-appearance: none;
+    padding-top: 0;
+    padding-bottom: 0;
+    vertical-align: middle;
+}
+
+
+/* ===========================  HEIGHT INPUT  =============================== */
+
+.height_input {
+    font-family: roboto_regular, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(16px, 5.21vw, 30px);
+    color: var(--white);
+    padding-left: clamp(15px, 5.21vw, 30px);
+    border-radius: clamp(15px, 5.21vw, 30px);
+    background-color: var(--black);
+    border: none;
+    /* 271px -> 47.05vw */
+    width: clamp(135px, 47.05vw, 271px);
+    height: clamp(35px, 10.42vw, 60px);
+}
+
+.height_input::placeholder {
+    color: var(--disabled);
+    opacity: 1;
+}
+
+/* ===========================  HAIR SELECTOR  =============================== */
+
+.select-wrap-hair {
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: raleway_regular, sans-serif;
+    font-size: clamp(16px, 5.21vw, 30px);
+    padding-left: clamp(3px, 1.04vw, 6px);
+    border-radius: clamp(15px, 5.21vw, 30px);
+    width: clamp(135px, 47.05vw, 271px);
+    height: clamp(35px, 10.42vw, 60px);
+    cursor: pointer;
+    background-color: var(--black);
+    position: relative;
+    color: var(--white);
+    /* Changed to flex for better mobile alignment */
+    display: flex; 
+    align-items: center;
+    overflow: hidden;
+}
+
+.hair-selector {
+    background-color: var(--black);
+    /* Match height to the wrap exactly */
+    height: clamp(35px, 10.42vw, 60px); 
+    /* THE FIX: Match line-height to height for vertical centering */
+    line-height: clamp(35px, 10.42vw, 60px);
+    
+    width: clamp(110px, 38.19vw, 220px);
+    margin-left: clamp(10px, 3.47vw, 20px);
+    padding-left: 5px;
+    font-family: raleway_regular, sans-serif;
+    font-size: clamp(16px, 5.21vw, 30px);
+    color: var(--white);
+    border: none;
+    outline: none;
+
+    /* Force mobile browsers to respect your custom styles */
+    appearance: none;
+    -webkit-appearance: none;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* ===========================  SPECIAL FEATURES  =============================== */
+
+/* Shared Base for Textareas (Standard and Editable) */
+.special-features, .special-features2 {
+    /* 546px -> 94.79vw */
+    width: clamp(280px, 94.79vw, 546px);
+    /* 153px -> 26.56vw */
+    height: clamp(100px, 26.56vw, 153px);
+    appearance: none;
+    padding-left: clamp(15px, 5.21vw, 30px);
+    /* 10px -> 1.74vw (Now Flexible) */
+    padding-top: clamp(5px, 1.74vw, 10px); 
+    background-color: var(--black);
+    color: var(--white);
+    border: none;
+    /* 30px -> 5.21vw (Already Flexible) */
+    border-radius: clamp(15px, 5.21vw, 30px);
+    font-family: raleway_regular, sans-serif;
+    /* 30px -> 5.21vw (Already Flexible) */
+    font-size: clamp(16px, 5.21vw, 30px);
+    line-height: 1.2;
+    display: block;
+    margin: 0 auto;
+    box-sizing: border-box;
+    /* Ensures linefeed \n creates a new line */
+    white-space: pre-wrap; 
+    resize: none;
+}
+
+/* ===========================  TRANSACTIONS  =============================== */
+
+/* READ-ONLY VERSION */
+.special-features {
+    pointer-events: none;    
+    user-select: none;       
+    -webkit-user-select: none;
+    cursor: default;         
+}
+
+/* EDITABLE VERSION */
+.special-features2 {
+    pointer-events: auto;     
+    user-select: text;         
+    -webkit-user-select: text; 
+    cursor: text;             
+}
+
+/* Custom Scrollbar Scaling */
+.special-features::-webkit-scrollbar,
+.special-features2::-webkit-scrollbar {
+    width: clamp(4px, 1.39vw, 8px);
+}
+
+.special-features::-webkit-scrollbar-thumb,
+.special-features2::-webkit-scrollbar-thumb {
+    background: var(--selectbutton);
+    border-radius: clamp(5px, 1.74vw, 10px); 
+}
+
+
+/*======================== YEAR/MONTH TEXT BUTTONS ============================*/
+
+.year-month-select {
+    background-color: transparent;
+    /* 70px -> 12.15vw (Based on 576px) */
+    height: clamp(40px, 12.15vw, 70px); 
+    border: none;
+    outline: none;
+
+    /* DYNAMIC PADDING */
+    /* Left: 30px -> 5.21vw | Top: 10px -> 1.74vw | Right: 45px to account for arrow */
+    padding-left: clamp(15px, 5.21vw, 30px);
+    padding-top: clamp(5px, 1.74vw, 10px);
+    padding-right: clamp(25px, 7.81vw, 45px);
+    padding-bottom: 0;
+    
+    font-family: roboto_bold, sans-serif;
+    font-size: clamp(18px, 4.51vw, 26px);
+    color: var(--button); 
+    
+    appearance: none; 
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: filter 0.3s ease;
+
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://w3.org' width='12' height='12' fill='%23916B01' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    /* Keeps arrow 5px from the right edge regardless of width */
+    background-position: right 5px center;
+    
+    margin: 0;
+    vertical-align: middle;
+}
+
+
+.year-month-select:hover {
+    filter: brightness(1.5);
+}
+
+/* Ensure options don't look weird on mobile browsers */
+.year-month-select option {
+    background-color: var(--headerback);
+    color: var(--white);
+}
+
+/*======================== TRANSACTIONS LISTBOX ============================*/
+
+.listbox-container {
+    width: 100%;
+    /* Max height scales from 150px to 350px */
+    max-height: clamp(150px, 48.61vw, 350px); 
+    overflow-y: scroll !important;
+    background-color: var(--black);
+    border-radius: clamp(10px, 2.78vw, 16px);
+    padding: clamp(5px, 1.74vw, 10px);
+    box-sizing: border-box;
+    scrollbar-gutter: stable both-edges; 
+    scrollbar-color: var(--button) rgba(255, 255, 255, 0.05);
+    scrollbar-width: auto;
+}
+
+.list-row, .list-row-selected {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(6px, 2vw, 12px) clamp(10px, 3.47vw, 20px);
+    cursor: pointer;
+    font-family: roboto_regular, sans-serif;
+    font-size: clamp(11px, 3.1vw, 18px); 
+    border-bottom: 1px solid #222;
+    /* THE FIX: Added filter and transition speed to match transaction rows */
+    transition: background-color 0.2s ease, border-radius 0.2s ease, filter 0.3s ease-in-out !important;
+    user-select: none;
+}
+
+.list-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
     filter: brightness(1.3) !important;
 }
+
+/* Subtle highlight boost for the selected row on hover */
+.list-row-selected:hover {
+    filter: brightness(1.2) !important;
+}
+
+.list-row-selected {
+    background-color: var(--listhighlight) !important;
+    color: var(--white) !important;
+    border-radius: clamp(6px, 1.39vw, 10px);
+    border-bottom: none;
+}
+
+.list-date { 
+    width: 35%; 
+    text-align: left; 
+    white-space: nowrap;
+}
+
+.list-amt { 
+    width: 32%; 
+    text-align: right; 
+    font-family: roboto_bold, sans-serif; 
+    font-size: clamp(11px, 3.1vw, 18px);
+    white-space: nowrap;
+}
+
+.list-bal { 
+    width: 33%; 
+    text-align: right; 
+    font-family: roboto_regular, sans-serif;
+    white-space: nowrap;
+}
+
+/* Scrollbar Clamping */
+.listbox-container::-webkit-scrollbar {
+    width: clamp(6px, 1.5vw, 12px);
+}
+
+.listbox-container::-webkit-scrollbar-thumb {
+    background-color: var(--button) !important;
+    border-radius: clamp(8px, 2.6vw, 15px);
+    border: clamp(1px, 0.3vw, 3px) solid var(--black);
+    background-clip: padding-box;
+    min-height: clamp(30px, 10vw, 60px);
+}
+
+/* Mobile Safari Adjustment */
+@media (max-width: 576px) {
+    .listbox-container {
+        -webkit-overflow-scrolling: touch;
+        padding-right: clamp(5px, 2.5vw, 15px); 
+    }
+}
+
+/*======================== CALCULATION DISPLAY ============================*/
+
+.download-link {
+    font-family: raleway_regular, sans-serif;
+    font-size: clamp(14px, 3.12vw, 18px);
+    color: var(--disabled); /* Subtle gray color */
+    text-decoration: none;
+    transition: filter 0.3s ease, color 0.3s ease;
+}
+
+.download-link:hover {
+    filter: brightness(1.5);
+    color: var(--white); /* Lights up to gold on hover */
+    cursor: pointer;
+}
+
+/*======================== WHITELIST TOGGLE SWITCH ============================*/
+
+/* New row type for left-aligned, full-width elements */
+.button-full-row {
+    background-color: var(--background);
+    font-family: raleway_bold, sans-serif;
+    font-size: clamp(18px, 5.21vw, 30px);
+    color: var(--text);
+    width: clamp(300px, 95.49vw, 550px); 
+    margin: 0 auto;
+    display: flex;
+    justify-content: flex-start; /* Aligns content to the left */
+    align-items: center;
+}
+
+.switch-container {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 3.47vw, 20px); /* Doubled from 10px to 20px */
+    margin-top: clamp(5px, 1.73vw, 10px);
+    margin-left: clamp(10px, 3.47vw, 20px); /* Extra 20px margin on the left */
+    width: 100%;
+}
+
+/* Ensure the second row label also aligns with the switch */
+.left-label {
+    display: block;
+    text-align: left;
+    width: 100%;
+    margin-bottom: clamp(2.4px, 0.87vw, 5px);
+    margin-left: clamp(10px, 3.47vw, 20px); /* Matching the switch offset */
+}
+
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input { opacity: 0; width: 0; height: 0; }
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #333;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px; width: 26px;
+  left: 4px; bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider { background-color: var(--button); }
+input:checked + .slider:before { transform: translateX(26px); }
+
+/*===================== BLACK-WGITE-LIST MANAGEMENT ============================*/
+
+/* Special row for management that doesn't need the "click" highlight */
+.manage-row {
+    display: flex;
+    justify-content: flex-start; /* Align to left for checkbox/image/name */
+    align-items: center;
+    padding: clamp(8px, 2.6vw, 15px) clamp(10px, 3.47vw, 20px);
+    border-bottom: 1px solid #222;
+    gap: 15px; /* Space between checkbox, image, and name */
+}
+
+.manage-row:last-child {
+    border-bottom: none;
+}
+
+/* Column sizing for management */
+.col-check { width: 40px; display: flex; justify-content: center; }
+.col-img   { width: 50px; }
+.col-name  { flex-grow: 1; font-family: raleway_regular, sans-serif; color: var(--text); }
+
+/* The actual checkbox style */
+.manage-row input[type="checkbox"] {
+    accent-color: var(--button); /* Green checkmark */
+    transform: scale(1.5);
+    cursor: pointer;
+}
+
+/* Management Buttons */
+.error-btn { background-color: var(--error) !important; color: white !important; }
+.success-btn { background-color: var(--button) !important; color: var(--black) !important; font-family: roboto_bold; }
+
+/* Management List Rows */
+.manage-row {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #222;
+    gap: 15px;
+}
+
+.col-check { width: 40px; display: flex; justify-content: center; }
+.col-img   { width: 50px; }
+.col-name {
+    flex-grow: 1;
+    font-family: raleway_regular, sans-serif;
+    color: var(--text);
+    /* 18px * 1.5 = 27px. Using clamp for responsiveness */
+    font-size: clamp(20px, 5.5vw, 27px); 
+    font-weight: 500; /* Optional: adds a bit of weight to match the larger size */
+    display: flex;
+    align-items: center;
+}
+
+.manage-row input[type="checkbox"] {
+    accent-color: var(--button);
+    transform: scale(1.6);
+    cursor: pointer;
+}
+
+.manage-checkbox {
+    /* Forces modern browsers to show the checkbox in your theme color */
+    accent-color: var(--button) !important;
+    
+    /* Ensures the checkbox isn't hidden by accidental 'appearance: none' rules */
+    appearance: checkbox !important;
+    -webkit-appearance: checkbox !important;
+    
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    border: 1px solid var(--white); /* Adds a faint border for visibility */
+}
+
+/* Management-specific row setup */
+.management-button-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* Ensure the column expands to fit the 'Deselect all' text */
+.manage-btn-col {
+    flex: 0 1 auto; 
+    min-width: max-content; /* This prevents the button from being too narrow */
+}
+
+#toggleSelect {
+    white-space: nowrap; /* Prevents text from wrapping to a second line */
+    padding: 0 10px;
+}
+
+/* Ensure the listbox doesn't overlap the buttons on mobile */
+@media (max-width: 600px) {
+    #toggleSelect {
+        font-size: 14px; /* Slightly smaller for small screens */
+    }
+}
+
+/*===================== SCREEN LOADER (FOR WAITING) ============================*/
+
+/* Full-screen overlay */
+.loader-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--background); /* Matches your website background */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Keeps it above everything */
+}
+
+/* The spinning icon */
+.loader {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.1);
+    border-top: 5px solid var(--button); /* Uses your green button color */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loader-text {
+    margin-top: 15px;
+    color: var(--text);
+    font-family: raleway_regular, sans-serif;
+    letter-spacing: 1px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Class to hide the loader */
+.loader-hidden {
+    display: none !important;
+}
+
+
+/*========================== TRANSACTION DETAILS ===============================*/
+
+/* Base style shared by both textareas to match your special-features look */
+.descriptiontextarea, 
+.amounttextarea {
+    /* 546px -> 94.79vw */
+    width: clamp(280px, 94.79vw, 546px);
+    appearance: none;
+    padding-left: clamp(15px, 5.21vw, 30px);
+    padding-right: clamp(15px, 5.21vw, 30px);
+    padding-top: clamp(5px, 1.74vw, 10px); 
+    background-color: var(--black);
+    color: var(--white);
+    border: none;
+    /* 30px -> 5.21vw */
+    border-radius: clamp(15px, 5.21vw, 30px);
+    line-height: 1.2;
+    display: block;
+    margin: 0 auto;
+    box-sizing: border-box;
+    white-space: pre-wrap; 
+    resize: none;
+    outline: none;
+}
+
+/* Multi-line Description version */
+.descriptiontextarea {
+    /* 153px -> 26.56vw */
+    height: clamp(44px, 15.28vw, 88px);
+    font-family: raleway_regular, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(16px, 5.21vw, 30px);
+}
+
+/* Single-line Amount and Date version */
+.amounttextarea {
+    /* Height adjusted for 1 line: ~70px -> 12.15vw */
+    height: clamp(30px, 10.42vw, 60px);
+    font-family: roboto_regular, sans-serif;
+    /* 30px -> 5.21vw */
+    font-size: clamp(15px, 5.21vw, 30px);
+    /* Centers text vertically in the 1-line box */
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/*========================== Flags ===============================*/
 
 /* 4. The raw image inside stays completely static and matches container size */
 .flag-crop-container .flag-img-round {
@@ -305,13 +1917,19 @@ a {
     height: 100% !important;
     object-fit: cover;
     display: block;
-    border-radius: 50%; /* Double layer protection */
+    border-radius: 50%;
 }
 
-/* 5. Sizing rule for your language selection page list icons (40x40) */
-.flag-container .page-list-flag {
-    width: 40px;
-    height: 40px;
+/* 5. Sizing rule for your language selection profile layouts (STRICTLY 40x40) */
+.flag-crop-container.page-list-flag {
+    width: 40px !important;
+    height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important; /* Forces layout engine to preserve 40x40 sizing */
 }
 
 /*========================== LANGUAGE PAGE ===============================*/
@@ -434,2419 +2052,7 @@ a {
     border-bottom: none;
 }
 
-/*======================== SHARED ROW STYLES ============================*/
-.button1-row, .button2-row, .button3-row, .button4-row {
-    background-color: var(--background);
-    font-family: raleway_bold, sans-serif;
-    /* 30px -> 5.21vw */
-    font-size: clamp(15px, 5.21vw, 30px);
-    color: var(--text);    
-    /* 550px -> 95.49vw */
-    width: clamp(300px, 95.49vw, 550px); 
-    display: flex;
-    align-items: center;
-    margin: 0 auto;
-}
 
-/*======================== BUTTON1 ROW (3 Columns) ============================*/
-.button1-row { justify-content: center; }
-
-.button1-column1 { width: clamp(70px, 24.31vw, 140px); }
-.button1-column2 { width: clamp(80px, 27.78vw, 160px); }
-.button1-column3 { width: clamp(130px, 43.4vw, 250px); }
-
-/*======================== BUTTON2 ROW (2 Columns) ============================*/
-.button2-row { justify-content: center; }
-
-.button2-column1, .button2-column2 {
-    /* 270px -> 46.88vw */
-    width: clamp(140px, 46.88vw, 270px);
-}
-
-/*======================== BUTTON3 ROW (Edge Alignment) ============================*/
-.button3-row {
-    justify-content: space-between;
-    max-width: 95%;
-}
-
-.button3-column1 {
-    display: flex;
-    justify-content: flex-start;
-    flex: 1;
-}
-
-.button3-column2 {
-    display: flex;
-    justify-content: flex-end;
-    flex: 1;
-}
-
-.button3-row button {
-    margin: 0;
-    white-space: nowrap;
-}
-
-/*======================== BUTTON4 ROW (Profile/Title Layout) ============================*/
-.button4-row {
-    justify-content: space-between;
-}
-
-.button4-column1, .button4-column3 {
-    /* 155px -> 26.91vw */
-    width: clamp(80px, 26.91vw, 155px);
-    display: flex;
-}
-
-.button4-column1 { justify-content: flex-start; }
-.button4-column3 { justify-content: flex-end; }
-
-.button4-column2 {
-    /* 240px -> 41.67vw */
-    width: clamp(120px, 41.67vw, 240px);
-    display: flex;
-    justify-content: center;
-}
-
-.button4-column2 .title {
-    margin: 0;
-    white-space: nowrap;
-}
-
-/*======================== SHARED ROW STYLES (5-8) ============================*/
-.button5-row, .button6-row, .button7-row, .button8-row {
-    background-color: var(--background);
-    font-family: raleway_bold, sans-serif;
-    /* 30px -> 5.21vw */
-    font-size: clamp(15px, 5.21vw, 30px);
-    color: var(--text);    
-    /* 550px -> 95.49vw */
-    width: clamp(300px, 95.49vw, 550px); 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto;
-}
-
-/*======================== BUTTON5 ROW (Split) ============================*/
-.button5-column1, .button5-column3 { 
-    /* 274px -> 47.57vw */
-    width: clamp(140px, 47.57vw, 274px); 
-}
-.button5-column2 { width: 2px; }
-
-/*======================== BUTTON6 ROW (Request Header) ============================*/
-.button6-column1 { width: clamp(150px, 52.08vw, 300px); }
-.button6-column2 { width: clamp(90px, 30.38vw, 175px); }
-.button6-column3 { width: clamp(50px, 17.36vw, 100px); }
-
-/*======================== BUTTON7 ROW (To Pay Header) ============================*/
-.button7-column1 {
-    width: auto;
-    /* 15px -> 2.6vw | 10px -> 1.74vw */
-    padding-left: clamp(8px, 2.6vw, 15px);
-    padding-right: clamp(5px, 1.74vw, 10px);
-    text-align: left !important;
-}
-.button7-column1 p {
-    margin: 0;
-    white-space: nowrap;
-}
-
-/*======================== BUTTON8 ROW (List Item) ============================*/
-.button8-column1 { 
-    /* 70px -> 12.15vw */
-    width: clamp(35px, 12.15vw, 70px); 
-}
-.button8-column2 { width: 4px; }
-.button8-column3 { 
-    /* 500px -> 86.81vw */
-    width: clamp(250px, 86.81vw, 500px); 
-}
-
-/*======================== BUTTON9 ROW (Centering Row) ============================*/
-.button9-row {
-    background-color: var(--background);
-    font-family: raleway_bold, sans-serif;
-    font-size: clamp(15px, 5.21vw, 30px);
-    color: var(--text);    
-    /* 570px -> 98.96vw */
-    width: clamp(300px, 98.96vw, 570px);
-    max-width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto;
-}
-
-.button9-column1 {
-    width: auto;
-    display: flex;
-    justify-content: center;
-}
-
-.button9-column1 button {
-    width: auto;
-    max-width: clamp(300px, 98.96vw, 570px);
-    white-space: nowrap;
-}
-
-/*======================== BUTTON10 ROW ============================*/
-
-.button10-row {
-    background-color: var(--background);
-    font-family: raleway_bold, sans-serif;
-    /* 30px -> 5.21vw */
-    font-size: clamp(15px, 5.21vw, 30px); 
-    color: var(--text);    
-    /* 550px -> 95.49vw */
-    width: clamp(300px, 95.49vw, 550px); 
-    display: flex;
-    justify-content: space-between; 
-    align-items: center;            
-    margin: 0 auto;
-}
-
-.button10-column1, .button10-column3 {
-    /* 150px -> 26.04vw */
-    width: clamp(80px, 26.04vw, 150px);
-    display: flex;
-}
-
-.button10-column1 { justify-content: flex-start; }
-.button10-column3 { justify-content: flex-end; }
-
-.button10-column2 {
-    /* 250px -> 43.4vw */
-    width: clamp(130px, 43.4vw, 250px);       
-    display: flex;      
-    justify-content: center; 
-}
-
-.button10-column2 .title {
-    margin: 0;
-    white-space: nowrap;
-}
-
-/*======================== GLOBAL TITLES (Combined) ============================*/
-
-.title, .title2 {
-    font-family: 'raleway_bold', sans-serif;
-    font-size: clamp(15px, 5.21vw, 30px);
-    color: var(--text);
-    
-    /* THE FIX: Allow wrapping and ensure it stays inside 576px */
-    white-space: normal;
-    overflow-wrap: break-word;
-    display: block; 
-    width: 100%;
-    box-sizing: border-box; /* IMPORTANT: Keeps padding inside the 100% width */
-    
-    /* THE PADDING FIX: 50px clamp on the "end" side */
-    /* This creates the buffer you requested for LTR (right) and RTL (left) */
-    padding-inline-end: clamp(25px, 8.68vw, 50px);
-    
-    
-    text-align: center; 
-    line-height: 1.1;
-    margin: 0 auto;                
-    transition: filter 0.3s ease;
-}
-
-
-.title2:hover {
-    cursor: pointer;
-    filter: brightness(1.5);
-}
-
-.title-link {
-    display: block; /* Ensures the whole area is clickable and follows wrapping */
-    text-decoration: none;
-    transition: filter 0.3s ease;
-    cursor: pointer;
-}
-
-.title-link:hover {
-    filter: brightness(1.5);
-}
-
-/*======================== FEEDBACK & ERROR (Shared) ============================*/
-
-.feedback, .feedback2, .error {
-    font-family: raleway_regular, sans-serif;
-    /* 30px -> 5.21vw */
-    font-size: clamp(15px, 5.21vw, 30px);
-    text-align: center;
-    display: block;
-}
-
-.feedback, .feedback2 {
-    color: var(--text);
-}
-
-.error {
-    color: var(--error);
-}
-
-/* Specific display override for Feedback 2 */
-.feedback2 {
-    white-space: nowrap; 
-    overflow: visible;    
-}
-
-/*======================== FEEDBACK 3 & 4 (Specialty) ============================*/
-
-.feedback3 {
-    font-family: raleway_bold, sans-serif;
-    font-size: clamp(15px, 5.21vw, 30px);
-    text-align: center;
-    color: var(--button);
-    white-space: nowrap;
-    overflow: visible;
-    display: block;
-}
-
-.feedback3:hover {
-    filter: brightness(1.5);
-    cursor: pointer;
-}
-
-.feedback4 {
-    font-family: raleway_bold, sans-serif;
-    /* Reduced the max-size slightly and the VW to ensure it fits 576px */
-    font-size: clamp(15px, 5.21vw, 30px); 
-    text-align: center;
-    color: var(--text);
-    
-    /* THE FIX: Allow wrapping but keep it tight */
-    white-space: normal; 
-    overflow-wrap: break-word;
-    
-    display: block;
-    width: 100%;
-    max-width: 100%; /* Ensures it never exceeds the parent field-wrapper */
-    margin: 0 auto;
-    line-height: 1.2;
-}
-
-
-.feedback5 {
-    font-family: raleway_bold, sans-serif;
-    /* Reduced the max-size slightly and the VW to ensure it fits 576px */
-    font-size: clamp(15px, 5.21vw, 30px); 
-    text-align: center;
-    color: var(--text);
-    
-    /* THE FIX: Allow wrapping but keep it tight */
-    white-space: normal; 
-    overflow-wrap: break-word;
-    
-    display: block;
-    width: 100%;
-    max-width: 100%; /* Ensures it never exceeds the parent field-wrapper */
-    margin: 0 auto;
-    line-height: 1.2;
-}
-
-
-/* 1. Base Button Styles */
-.login-button, 
-.login-button-small, 
-.action-button, 
-.error-button {
-    cursor: pointer;
-    background: none;
-    border: none;
-    transition: filter 0.3s ease, transform 0.1s ease, color 0.3s ease, text-shadow 0.3s ease;
-    /* THE FIX: Changed to flex and added width constraints */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    width: 100%;
-    max-width: 100%;
-    white-space: normal; /* Allows text to wrap instead of overflowing */
-    overflow-wrap: break-word;
-    outline: none;
-    /* Vertical padding ensures the button looks good if text wraps */
-    padding: clamp(5px, 1.74vw, 10px) 0;
-}
-
-/* 2. Sizes and Fonts */
-.login-button, 
-.action-button, 
-.error-button {
-    font-family: raleway_bold, sans-serif;
-    /* Reduced max font-size slightly to fit the 576px threshold better */
-    font-size: clamp(15px, 5.21vw, 30px);
-}
-
-.login-button-small {
-    font-family: raleway_regular, sans-serif;
-    font-size: clamp(12.5px, 4.34vw, 25px);
-}
-
-/* 3. Colors */
-.login-button, 
-.login-button-small, 
-.action-button {
-    color: var(--button); /* Green */
-}
-
-.error-button {
-    color: var(--error); /* Red */
-}
-
-/* 4. Unified Hover Effect */
-.login-button:hover, 
-.login-button-small:hover, 
-.action-button:hover {
-    filter: brightness(1.5);
-}
-
-/* 5. Optional: Active state for better feedback */
-.login-button:active, 
-.error-button:active {
-    transform: scale(0.98);
-}
-
-.button-wrapper {
-    display: flex;
-    justify-content: flex-end;
-    width: 100%;
-}
-/* ===========================  DISABLED-BUTTON  ===============================*/
-
-.disabled-button {
-    color: var(--disabled);
-    cursor: default;
-}
-
-/* ===========================  FORM__INPUT  ===============================*/
-
-.field-wrapper {
-    display: flex;
-    flex-direction: column;
-    /* 550px -> 95.49vw */
-    width: clamp(300px, 95.49vw, 550px);
-    text-align: left;
-    margin: 0 auto;
-}
-
-.form__input {
-    font-family: raleway_regular, sans-serif;
-    color: var(--white);
-    font-size: clamp(15px, 5.21vw, 30px);
-    padding-left: clamp(15px, 5.21vw, 30px);
-    border-radius: 2rem;
-    background-color: var(--black);
-    border: none;
-    width: 100%; /* Respects field-wrapper width */
-    height: clamp(40px, 10.42vw, 60px);
-}
-
-.form__label, .form__label2, .form__label_amount {
-    font-family: raleway_bold, sans-serif;
-    /* 22px -> 3.82vw */
-    font-size: clamp(12.5px, 4.34vw, 25px);
-    /* 30px -> 5.21vw */
-    margin-left: clamp(15px, 5.21vw, 30px);
-    margin-top: clamp(2px, 0.87vw, 5px);
-    color: var(--text);
-}
-
-/*======================== SPACERS (FLUID) ============================*/
-
-.small_line {
-    /* 3px -> 0.52vw */
-    height: clamp(2px, 0.52vw, 3px);
-}
-
-.medium_line {
-    /* 12px -> 2.08vw */
-    height: clamp(6px, 2.08vw, 12px);
-}
-
-.full_line {
-    /* 24px -> 4.17vw */
-    height: clamp(12px, 4.17vw, 24px);
-}
-
-.large_line {
-    /* 50px -> 8.68vw */
-    height: clamp(25px, 8.68vw, 50px);
-}
-
-/*======================== BOOK-IMAGE ============================*/
-
-.book-image {
-    /* Base: 300px -> 52.08vw at 576px. Height follows the 1.41 aspect ratio */
-    width: clamp(150px, 52.08vw, 300px);
-    height: clamp(212px, 73.61vw, 424px);
-    
-    /* Centering logic */
-    display: block;
-    margin: clamp(5px, 1.74vw, 10px) auto;
-    
-    /* Professional finish */
-    object-fit: contain;
-    border-radius: clamp(4px, 1vw, 8px);
-    box-shadow: 0 0 8px 3px rgba(0, 0, 0, 0.5);
-    transition: transform 0.3s ease;
-}
-
-.book-image:hover {
-    transform: scale(1.02);
-}
-
-/* Ensure the wrapper also centers the image */
-.image-wrap {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/*======================== SOCIAL HEADER ============================*/
-
-.social-header {
-    display: flex;
-    flex-direction: column; 
-    align-items: center;    
-    justify-content: center;
-    width: 100%;
-    margin-top: clamp(15px, 5.21vw, 30px);
-    gap: clamp(5px, 1.74vw, 10px); 
-}
-
-/* Specific sizing for the 70x70 Whatsapp/Telegram icons */
-.social-header .WT-image {
-    width: clamp(40px, 12.15vw, 70px);
-    height: clamp(40px, 12.15vw, 70px);
-    display: block;
-    object-fit: contain;
-    margin: 0 auto; /* Removed the 250px margin/shadow logic from here */
-    box-shadow: none; 
-}
-
-.social-header p.downloads {
-    margin: 0;
-    text-align: center;
-    font-family: 'raleway_regular', sans-serif;
-    color: var(--text);
-    font-size: clamp(15px, 5.21vw, 30px); 
-}
-
-/*======================== LARGE MEDIA IMAGES ============================*/
-
-/* Use this for the Weltschmerz 450x250 image */
-.Weltschmerz-image {
-    width: clamp(225px, 78.13vw, 450px);
-    height: clamp(125px, 43.4vw, 250px);
-    display: block;
-    margin: clamp(15px, 5.21vw, 30px) auto;
-    object-fit: contain;
-    border-radius: clamp(4px, 1vw, 8px);
-    box-shadow: 0 0 8px 3px rgba(0, 0, 0, 0.5);
-    transition: transform 0.3s ease;
-}
-
-.Weltschmerz-image:hover {
-    transform: scale(1.02);
-}
-
-/*======================== SOCIAL BUTTONS ============================*/
-
-.social-buttons-list {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: clamp(10px, 3.47vw, 15px);
-    margin-bottom: clamp(8px, 3.47vw, 16px);
-}
-
-
-/*======================== COFFEE BUTTON ============================*/
-
-.coffee-image {
-    /* 250px at 576px screen = 43.4vw */
-    /* This makes it start shrinking IMMEDIATELY below 576px */
-    width: clamp(125px, 43.4vw, 250px);
-    
-    /* Let the browser handle the height to keep the 499x140 ratio */
-    height: auto; 
-    max-width: 90%; /* Safety margin for very small screens */
-
-    display: block;
-    object-fit: contain;
-    border-radius: clamp(4px, 1vw, 8px);
-    
-    /* Fluid Shadow */
-    box-shadow: 0 0 clamp(4px, 1.39vw, 8px) clamp(1px, 0.52vw, 3px) rgba(0, 0, 0, 0.5);
-    
-    transition: transform 0.3s ease;
-}
-
-.coffee-image:hover {
-    transform: scale(1.02);
-}
-
-
-/*======================== FOOTER ICONS ============================*/
-
-.footer-icons {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: clamp(20px, 6.94vw, 40px);
-    margin-bottom: clamp(20px, 6.94vw, 40px);
-}
-
-.footer-icons p.tight {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    /* 100px -> 17.36vw at 576px */
-    gap: clamp(25px, 8.68vw, 50px);
-}
-
-.footer-icons .WT-image {
-    width: clamp(40px, 12.15vw, 70px);
-    height: clamp(40px, 12.15vw, 70px);
-    display: block;
-    object-fit: contain;
-    
-    /* 0.3s Transition for the hover effect */
-    transition: filter 0.3s ease, transform 0.3s ease;
-    
-    /* Ensure they start as "pure" white (optional if already white) */
-    filter: brightness(1);
-}
-
-.footer-icons a:hover .WT-image {
-    /* This filter approximates your gold color --text (#916B01) from white */
-    /*filter: sepia(1) saturate(5) hue-rotate(10deg) brightness(0.7);*/
-    transform: scale(1.1);
-}
-
-
-/*======================== OTHER WEBSITE ============================*/
-
-
-.reli {
-    padding-top: clamp(10px, 2.04vw, 20px);
-}
-
-
-/* Ensure no horizontal scroll appears */
-body {
-    overflow-x: hidden;
-}
-
-
-/* --- LTR VERSION (English, etc.) --- */
-.norm-image {
-    width: 100vw !important;
-    max-width: none !important;
-    height: 62.5vw;
-    max-height: 600px;
-    display: block;
-    object-fit: cover;
-    
-    position: relative;
-    /* Pulls to the left glass edge in LTR */
-    left: 50%;
-    right: auto;
-    margin-left: -50vw;
-    margin-right: 0;
-}
-
-/* --- RTL VERSION (Arabic, Hebrew, etc.) --- */
-.rtl-mode .norm-image {
-    /* Pulls to the right glass edge in RTL */
-    right: 50% !important;
-    left: auto !important;
-    margin-right: -50vw !important;
-    margin-left: 0 !important;
-}
-
-
-/* --- LTR VERSION (English, etc.) --- */
-.wide-image {
-    width: 100vw !important;
-    max-width: none !important;
-    height: 62.5vw;
-    max-height: 1000px;
-    display: block;
-    object-fit: cover;
-    
-    position: relative;
-    /* Pulls to the left glass edge in LTR */
-    left: 50%;
-    right: auto;
-    margin-left: -50vw;
-    margin-right: 0;
-}
-
-/* --- RTL VERSION (Arabic, Hebrew, etc.) --- */
-.rtl-mode .wide-image {
-    /* Pulls to the right glass edge in RTL */
-    right: 50% !important;
-    left: auto !important;
-    margin-right: -50vw !important;
-    margin-left: 0 !important;
-}
-
-.small-image {
-   /*Doing Nothing works best*/
-}
-
-.number-box {
-    width: clamp(12.5px, 4.34vw, 25px);
-    border: 0px solid;
-    padding-left: clamp(5px, 1.74vw, 10px);
-    font-family: raleway_light, sans-serif;
-    font-size: clamp(50px, 17.36vw, 100px);
-    color: var(--text);
-}
-
-.paragraph {
-    font-family: raleway_light, sans-serif;
-    font-size: clamp(12.5px, 4.34vw, 25px);
-    color: var(--white);
-    padding-left: clamp(40px, 13.89vw, 80px);
-    padding-right: clamp(10px, 3.47vw, 20px);
-}
-
-.list-title {
-    font-family: 'raleway_bold', sans-serif;
-    font-size: clamp(10px, 3.47vw, 20px);
-    color: var(--text-color);
-    margin-top: clamp(10px, 3.47vw, 20px);
-    
-    /* THE RTL FIX: Use logical padding */
-    /* This automatically puts the 'start' padding on the left in LTR and right in RTL */
-    padding-inline-start: clamp(10px, 3.47vw, 20px);
-    padding-inline-end: clamp(25px, 8.68vw, 50px); /* Match your .par gutter */
-
-    /* Ensure it respects the parent container */
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-
-    /* Text direction handling */
-    text-align: left; 
-    text-transform: capitalize;
-}
-
-/* RTL OVERRIDE */
-.rtl-mode .list-title {
-    text-align: right !important;
-    /* Remove capitalization for non-Latin scripts to avoid rendering bugs */
-    text-transform: none !important;
-}
-
-
-.unordered-list {
-    font-family: 'raleway_regular', sans-serif;
-    font-style: italic;
-    font-size: clamp(10px, 3.47vw, 20px);
-    color: var(--white);
-    list-style-position: outside;
-    list-style-type: disc;
-    box-sizing: border-box;
-    width: 100%;
-    display: block;
-
-    /* LTR DEFAULT SETTINGS */
-    padding-right: clamp(25px, 8.68vw, 50px); /* 50px Gutter on Right */
-    padding-left: clamp(20px, 6.94vw, 40px);  /* Bullet Indent on Left */
-}
-
-/* RTL OVERRIDE: Flip the paddings exactly */
-.rtl-mode .unordered-list {
-    /* 1. Bullet indent moves to the RIGHT */
-    padding-right: clamp(20px, 6.94vw, 40px) !important;
-    
-    /* 2. The 50px gutter moves to the LEFT */
-    padding-left: clamp(25px, 8.68vw, 50px) !important;
-    
-    /* 3. Ensure the bullet renders on the correct side of the text */
-    text-align: right;
-}
-
-.list-item {
-    font-size: inherit;
-    padding-bottom: clamp(5px, 1.74vw, 10px);
-}
-
-
-
-.mail-button {
-    border: none;
-    outline: none;
-    border-radius: clamp(40px, 13.89vw, 80px);
-    background-color: var(--accent-color);
-    font-family: ralewayextrabold, sans-serif;
-    color: var(--text-color);
-    width: clamp(200px, 69.4vw, 400px);
-    height: clamp(50px, 17.36vw, 100px);
-    font-size: clamp(12.5px, 4.34vw, 25px);
-    align-items: center;
-    margin-left: clamp(40px, 13.89vw, 80px);
-    display: flex;
-    padding: clamp(2.5px, 0.87vw, 15px);
-    justify-content: center;
-    cursor: pointer;
-}
-
-
-.mail-button:hover:enabled {
-  background-color: var(--accent-highlight) !important;
-}
-
-.iconclass {
-    width: clamp(40px, 13.89vw, 70px);
-    height: clamp(40px, 13.89vw, 70px);
-}
-
-/*==============================  ARTICLES  ===================================*/
-
-
-/* --- 1. TABLE RESET --- */
-/* Use your site variables instead of hardcoded black */
-table, th, td { 
-    border: none; 
-    border-collapse: collapse; 
-    color: var(--white); 
-}
-
-/* --- 2. THE MAIN CONTAINER --- */
-/* This replaces your #capture-section with your site's logic */
-#capture-section { 
-    /* Use the same background as your body */
-    background-color: var(--background); 
-    
-    /* Use your clamp ratio for padding */
-    /*padding: clamp(15px, 5.21vw, 30px);*/
-
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-    
-    /* Center it like your form and centerContainer */
-    margin: 0 auto;
-    
-    /* Use your 576px threshold exactly */
-    width: clamp(288px, 100vw, 576px); 
-    
-    /* Keep left alignment for reading but allow Abundomy fonts */
-    text-align: left; 
-    line-height: 1;
-    
-    /* Remove the Substack shadow to match your clean UI */
-    box-shadow: none; 
-}
-
-
-/* --- 1. ARTICLE CONTAINER --- */
-#capture-section { 
-    background-color: var(--background); /* Dark blue from your root */
-    padding: clamp(15px, 5.21vw, 30px);
-    margin: 0 auto; 
-    /* Matches your 576px threshold exactly */
-    width: clamp(288px, 100vw, 576px); 
-    text-align: left; 
-    line-height: 1.5;
-    color: var(--white); /* White text for readability on dark blue */
-}
-
-/* --- 2. TITLES (Using your site's Title logic) --- */
-.title1 { 
-    font-family: 'raleway_bold', sans-serif;
-    font-size: clamp(20px, 8.68vw, 40px); /* Scaled title */
-    color: var(--text); /* Gold */
-    line-height: 1;
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-    display: block;
-    text-transform: uppercase;
-}
-
-/* Update title3 to remove bottom margin when a paragraph follows */
-.title3 { 
-    font-family: 'raleway_bold', sans-serif;
-    font-size: clamp(13px, 4.51vw, 26px);
-    color: var(--text);
-    margin-top: 1.5em;
-    margin-bottom: 0px; /* Removed bottom margin */
-    text-transform: capitalize;
-    display: block;
-}
-
-.title4 { 
-    font-family: 'raleway_regular', sans-serif;
-    font-size: clamp(11px, 3.82vw, 22px);
-    color: var(--disabled); /* Gray */
-    /* THE FIX: Force the element to span the full width of the container */
-    display: block;
-    width: 100%;
-    text-align: right; 
-    margin-bottom: 1.5em;
-}
-
-.top-title-container {
-    max-width: 576px;
-    width: clamp(288px, 100vw, 576px); 
-    margin: 0 auto !important;
-    display: block;
-    box-sizing: border-box;
-}
-
-.top-title { 
-    font-family: 'raleway_regular', sans-serif;
-    font-size: clamp(11px, 3.82vw, 22px);
-    color: var(--disabled);
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-
-    /* LTR: Text on the RIGHT, gap on the RIGHT */
-    text-align: right;
-    padding-right: clamp(5px, 1.74vw, 10px);
-    padding-left: 0;
-}
-
-/* RTL: Text on the LEFT, gap on the LEFT */
-/* We target the container having the class, or the title inside it */
-.top-title-container.rtl-mode .top-title,
-.rtl-mode .top-title {
-    text-align: left !important;
-    padding-left: clamp(5px, 1.74vw, 10px) !important;
-    padding-right: 0 !important;
-}
-
-
-/* --- TIGHTEN GAP AFTER TITLES --- */
-/* This removes any remaining space when a paragraph follows a title */
-.title3 + .par, 
-.title3 + .par_bold, 
-.title3 + .par_italic {
-    margin-top: -5px; /* Pulls text closer to the title */
-}
-
-/* --- TIGHTEN GAP AFTER TITLES --- */
-/* This removes any remaining space when a paragraph follows a title */
-.title4 + .par, 
-.title4 + .par_bold, 
-.title4 + .par_italic {
-    margin-top: -5px; /* Pulls text closer to the title */
-}
-
-
-/* --- 3. BODY TEXT --- */
-.par, .par_bold, .par_italic { 
-    font-size: clamp(10px, 3.47vw, 20px);
-    margin-top: 0;         /* Kill the top gap */
-    margin-bottom: 1.2em;  /* Keep space for the next paragraph */
-/* THE FIX: Logical Padding */
-    /* This creates 40-50px gap on the RIGHT for LTR and LEFT for RTL */
-    padding-inline-end: clamp(25px, 8.68vw, 50px);
-    padding-inline-start: 0; /* Ensures no gap on the starting side */
-    text-align: left;
-    display: block;
-    line-height: 1.5;
-}
-
-/* --- Specific Variants --- */
-.par { 
-    font-family: 'raleway_regular', sans-serif;
-    color: var(--white);
-}
-
-.par_bold {
-    font-family: 'raleway_bold', sans-serif;
-    color: var(--white);
-}
-
-
-.par_italic { 
-    font-family: 'raleway_regular', sans-serif; /* Standard font, styled via CSS */
-    color: var(--text); /* Your Gold variable */
-    font-size: clamp(10px, 3.47vw, 20px);
-    font-weight: bold; 
-    font-style: italic; /* Forces the slant */
-    
-    /* THE INDENT FIX */
-    /* Matches your paragraph padding logic for a consistent "block" feel */
-    margin-inline-start: clamp(20px, 6.94vw, 40px); 
-    
-    /* Ensure it behaves like a block to respect margins */
-    display: block;
-    margin-top: -5px; /* Keeps it tight to the element above */
-    margin-bottom: 1.2em;
-    
-    /* Maintain your gutter on the end side */
-    padding-inline-end: clamp(25px, 8.68vw, 50px);
-}
-
-
-
-
-/* If a .par follows a .par_bold, keep them tightly related */
-.par_bold + .par {
-    margin-top: 0; 
-}
-
-/* Halfway adjustment for the perfect visual gap */
-.par_bold {
-    margin-bottom: 0.2em !important; 
-}
-
-
-/* --- 4. BLOCKunordered-listS (Abundomy Style) --- */
-/* --- BLOCKQUOTES (Abundomy Style - 70% Font / 40% Padding) --- */
-.blockquote { 
-    width: 95%; 
-    margin: 20px auto; 
-    
-    /* Internal Padding: Top/Bottom set to 40% of original ratio */
-    /* Recalculated: clamp(5.2px, 1.74vw, 10px) */
-    padding: clamp(5.2px, 1.74vw, 10px) clamp(13px, 4.34vw, 25px); 
-    
-    background: var(--headerback); 
-    border-left: clamp(5px, 1.73vw, 10px) solid var(--text); 
-    box-sizing: border-box; 
-}
-
-.rtl-mode .blockquote {
-    border-left: none;
-    border-right: clamp(5px, 1.73vw, 10px) solid var(--text);
-}
-
-.blockquote__text { 
-    font-family: 'raleway_regular', sans-serif;
-    font-style: italic;
-    
-    /* Font Size: kept at 70% of body */
-    font-size: clamp(7.7px, 2.67vw, 15.4px); 
-    
-    line-height: 1.4;
-    color: var(--white);
-    margin: 0;
-}
-
-
-/* --- 5. IMAGES & CAPTIONS --- */
-.article-img { 
-    width: 100%; 
-    height: auto; 
-    border-radius: 4px;
-    margin: 20px 0;
-}
-
-.photo { 
-    font-family: 'raleway_light', sans-serif;
-    font-style: italic;
-    font-size: clamp(7px, 2.43vw, 14px);
-    color: var(--disabled);
-}
-
-/* --- 6. LINKS & TABLES --- */
-.link { 
-    font-family: 'raleway_regular', sans-serif;
-    font-size: clamp(13px, 4.34vw, 25px);
-    color: var(--button); /* Green links */
-    transition: filter 0.3s ease;
-}
-
-.link:hover {
-    filter: brightness(1.5);
-}
-
-.name-table {
-    width: 100%;
-    margin-bottom: 20px;
-}
-
-.name-table td {
-    padding-left: 15px;
-    vertical-align: middle;
-}
-
-.imgtext {
-     font-family:roboto_regular;
-     font-size: clamp(7px, 2.43vw, 14px);
-     text-transform: uppercase;
-     color: var(--text);
-}
-
-/* Container for the table and button */
-.article-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: clamp(10px, 3.47vw, 20px);
-    gap: 15px; /* Ensures space between text and button */
-}
-
-/* Fix for the table and name cropping */
-.author-table {
-    width: auto; /* Let it be as wide as the content needs */
-    border-collapse: collapse;
-}
-
-.author-table td {
-    padding-left: clamp(10px, 2.6vw, 15px); /* Give the name breathing room */
-    text-align: left;
-    white-space: nowrap; /* Prevents the name from wrapping/cropping */
-}
-
-.author-photo {
-    width: clamp(25px, 8.68vw, 50px);
-    height: clamp(25px, 8.68vw, 50px);
-    border-radius: 50%;
-    display: block;
-}
-
-/* Specific override for the PDF button in this row */
-.pdf-button {
-    width: auto !important; /* Override the 100% width from login-button */
-    padding-left: clamp(10px, 3.47vw, 20px) !important;
-    padding-right: clamp(10px, 3.47vw, 20px) !important;
-    flex-shrink: 0; /* Prevents the button from squishing */
-}
-/*===================== SCREEN LOADER (FOR WAITING) ============================*/
-
-
-/* Show content when ready */
-.content-ready {
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Force the overlay to be Dark Blue and cover the entire screen */
-.loader-wrapper {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    background-color: #162042 !important; /* Dark Blue Background */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 999999 !important; 
-}
-
-/* Spinner visible against dark blue */
-.loader {
-    width: 60px;
-    height: 60px;
-    border: 6px solid rgba(255, 255, 255, 0.1); /* Subtle ring */
-    border-top: 6px solid #ffffff; /* Bright white spinning part */
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-.loader-text {
-    margin-top: 15px;
-    color: #ffffff; /* White text for contrast */
-    font-family: 'raleway_regular', sans-serif;
-    letter-spacing: 1px;
-}
-
-/* Hide the messy HTML by default */
-#capture-section {
-    display: none;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Class to hide the loader */
-.loader-hidden {
-    display: none !important;
-}
-
-/*=========================  Hide Blinking Cursor  =============================*/
-
-/* 1. Global caret reset - ensures no caret can be seen unless it's a real input */
-:root {
-    caret-color: transparent !important;
-}
-
-/* 2. Target the specific header elements to kill the 'Golden' caret */
-.header-main, 
-.header-main *, 
-.top-title, 
-.top-title-container {
-    caret-color: transparent !important;
-    /* Force the caret width to zero for modern browsers */
-    -webkit-caret-color: transparent !important;
-}
-
-/* 3. Re-enable the caret ONLY for your search and inputs */
-input:focus, 
-textarea:focus, 
-[contenteditable="true"]:focus {
-    caret-color: var(--text) !important;
-}
-
-
-/*=========================  Youtube Shorts Container  ============================*/
-
-
-/* 5. Responsive Fluid YouTube Shorts Container */
-.short-video-wrapper {
-    width: clamp(280px, 70vw, 400px);
-    aspect-ratio: 9 / 16;
-    margin: clamp(15px, 4vw, 25px) auto;
-    display: block;
-}
-
-.short-video-wrapper iframe {
-    width: 100%;
-    height: 100%;
-    border-radius: 8px;
-}
-
-/* 6. Centered Download Section Container */
-.download-section-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    margin: 20px auto;
-    gap: 10px;
-}
-
-/*================================================================================*/
-
-/* ============================================================================
-   MONEY-APP PARITEIT — geport uit abundomy-money-git/css/main.css (read-only).
-   Header (logo/saldo/avatar), transactielijst + berekening, transactie-detail,
-   profiel/peer. Tokens (--text --button --white --black --error --disabled
-   --listhighlight --selectbutton --headerback) bestaan al in :root hierboven.
-   ============================================================================ */
-
-/* --- Header kolommen + logo --- */
-.menu-column1 {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  margin-left: clamp(4px, 1.5vw, 10px);
-}
-.menu-column3 {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-right: clamp(4px, 1.5vw, 10px);
-  margin-left: auto;
-}
-.menu-column1, .menu-column3 { width: auto; height: auto; }
-.menu-column2 {
-  width: clamp(0px, 73.96vw, 426px);
-  height: clamp(35px, 12.15vw, 70px);
-  text-align: center;
-}
-.header-main-index-logo {
-  /* Huisje site-wiid i.p.v. coin (besluit 24-07): zelfde icoon + sizing als #topNav-huisje. */
-  width: clamp(40px, 13.89vw, 70px) !important;
-  height: clamp(40px, 13.89vw, 70px) !important;
-  background-image: url(../img/Home_70x70.png);
-  background-repeat: no-repeat;
-  background-size: cover;
-  transition: filter 0.3s ease;
-  margin-left: clamp(4px, 1.5vw, 8px);
-}
-.header-main-index-logo:hover { cursor: pointer; filter: brightness(1.5); }
-
-/* --- Saldo + display-num (header) --- */
-.amount-container2 {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-decoration: none;
-  height: 100%;
-  line-height: 1.1;
-  transition: filter 0.3s ease;
-}
-.amount-container2:hover { cursor: pointer; filter: brightness(1.5); }
-.amount {
-  border: none;
-  outline: none;
-  font-family: roboto_bold, sans-serif;
-  font-weight: 600;
-  font-size: clamp(20px, 6.94vw, 40px);
-  color: var(--button);
-}
-.display-num, .display-num2 {
-  font-family: roboto_bold, sans-serif;
-  font-weight: 400;
-  font-size: clamp(12px, 3.82vw, 22px);
-  text-align: center;
-}
-.display-num { color: var(--button); }
-.display-num2 { color: var(--text); }
-
-/* --- Avatars --- */
-.mainusericon {
-  height: clamp(35px, 12.15vw, 70px);
-  width: clamp(35px, 12.15vw, 70px);
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-  transition: filter 0.3s ease;
-}
-.mainusericon:hover { cursor: pointer; filter: brightness(1.5); }
-.humanicon, .humanicon2 {
-  height: clamp(70px, 24.31vw, 140px);
-  width: clamp(70px, 24.31vw, 140px);
-  border-radius: clamp(17px, 6.08vw, 35px);
-  object-fit: cover;
-  overflow: hidden;
-  transition: filter 0.3s ease;
-}
-.humanicon2:hover { cursor: pointer; filter: brightness(1.5); }
-.transactionicon {
-  height: clamp(30px, 10.42vw, 60px);
-  width: clamp(30px, 10.42vw, 60px);
-  aspect-ratio: 1 / 1;
-  flex-shrink: 0;
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-  transition: filter 0.3s ease;
-}
-.transactionicon:hover { cursor: pointer; filter: brightness(1.5); }
-
-/* --- Transactielijst (maand) --- */
-.listbox-container {
-  width: 100%;
-  max-height: clamp(150px, 48.61vw, 350px);
-  overflow-y: scroll !important;
-  background-color: var(--black);
-  border-radius: clamp(10px, 2.78vw, 16px);
-  padding: clamp(5px, 1.74vw, 10px);
-  box-sizing: border-box;
-  scrollbar-gutter: stable both-edges;
-  scrollbar-color: var(--button) rgba(255, 255, 255, 0.05);
-  scrollbar-width: auto;
-}
-.list-row, .list-row-selected {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: clamp(6px, 2vw, 12px) clamp(10px, 3.47vw, 20px);
-  cursor: pointer;
-  font-family: roboto_regular, sans-serif;
-  font-size: clamp(11px, 3.1vw, 18px);
-  border-bottom: 1px solid #222;
-  transition: background-color 0.2s ease, border-radius 0.2s ease, filter 0.3s ease-in-out !important;
-  user-select: none;
-}
-.list-row:hover { background-color: rgba(255, 255, 255, 0.05); filter: brightness(1.3) !important; }
-.list-row-selected:hover { filter: brightness(1.2) !important; }
-.list-row-selected {
-  background-color: var(--listhighlight) !important;
-  color: var(--white) !important;
-  border-radius: clamp(6px, 1.39vw, 10px);
-  border-bottom: none;
-}
-.list-date { width: 35%; text-align: left; white-space: nowrap; }
-.list-amt { width: 32%; text-align: right; font-family: roboto_bold, sans-serif; font-size: clamp(11px, 3.1vw, 18px); white-space: nowrap; }
-.list-bal { width: 33%; text-align: right; font-family: roboto_regular, sans-serif; white-space: nowrap; }
-.listbox-container::-webkit-scrollbar { width: clamp(6px, 1.5vw, 12px); }
-.listbox-container::-webkit-scrollbar-thumb {
-  background-color: var(--button) !important;
-  border-radius: clamp(8px, 2.6vw, 15px);
-  border: clamp(1px, 0.3vw, 3px) solid var(--black);
-  background-clip: padding-box;
-  min-height: clamp(30px, 10vw, 60px);
-}
-@media (max-width: 576px) {
-  .listbox-container { -webkit-overflow-scrolling: touch; padding-right: clamp(5px, 2.5vw, 15px); }
-}
-
-/* --- Maand/jaar navigatie --- */
-.nav-filter-wrapper {
-  width: 100%;
-  padding: clamp(5px, 1.74vw, 10px);
-  box-sizing: border-box;
-}
-.button_t-row { display: flex; align-items: center; width: 100%; gap: 0; }
-.t-col-year, .t-col-prev, .t-col-month { flex: none; margin-right: clamp(4px, 1.25vw, 8px); }
-.year-month-pill, .time-nav-button {
-  background-color: var(--black) !important;
-  color: var(--button) !important;
-  font-family: 'roboto_bold', sans-serif;
-  font-weight: bold !important;
-  font-size: clamp(14px, 4vw, 23px);
-  height: clamp(35px, 9vw, 55px);
-  border-radius: 50px;
-  padding: 0 clamp(12px, 3vw, 20px);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: none;
-  appearance: none;
-  -webkit-appearance: none;
-  outline: none;
-}
-.year-month-pill:hover { filter: brightness(1.5); cursor: pointer; }
-select.year-month-pill[name="year"]  { width: clamp(75px, 20vw, 110px); }
-select.year-month-pill[name="month"] { width: clamp(100px, 28vw, 150px); }
-.t-col-image { margin-left: auto; flex: none; transform: translateY(clamp(-3px, -0.8vw, -1px)); }
-.t-col-spacer { margin-left: auto; flex: none; height: clamp(30px, 10.42vw, 60px); width: 1px; }
-.time-nav-button.nav-disabled {
-  background-color: var(--black) !important;
-  color: var(--disabled) !important;
-  border-radius: 50px;
-  cursor: default;
-  opacity: 0.5;
-  pointer-events: none;
-  border: 1px solid #222;
-}
-.time-nav-button.nav-disabled:hover { filter: none !important; cursor: default; }
-
-/* --- Berekening-paneel --- */
-.calc-table { width: 100%; padding: 0 clamp(5px, 2vw, 15px); }
-.calc-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: clamp(4px, 1.5vw, 10px);
-  font-family: raleway_regular, sans-serif;
-  font-size: clamp(14px, 4vw, 22px);
-  color: var(--text);
-}
-.calc-val { font-family: roboto_regular, sans-serif; text-align: right; }
-.calc-row strong { font-family: roboto_bold, sans-serif; font-size: clamp(16px, 4.5vw, 26px); font-weight: 800; }
-.full-screen-line {
-  height: 1px;
-  background-color: var(--white);
-  width: 100vw;
-  position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
-  margin-top: clamp(8px, 2vw, 15px);
-  margin-bottom: clamp(8px, 2vw, 15px);
-  opacity: 0.8;
-}
-.transaction-detail-link { text-decoration: none; display: block; width: 100%; }
-.transaction-detail-link:hover { filter: none !important; }
-.transaction-hover-row {
-  transition: background-color 0.3s ease;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: clamp(5px, 1.74vw, 10px);
-  border-radius: clamp(4px, 1.39vw, 8px);
-  margin-left: clamp(-10px, -1.74vw, -5px);
-  margin-right: clamp(-10px, -1.74vw, -5px);
-}
-.transaction-hover-row:hover { background-color: rgba(255, 255, 255, 0.05); cursor: pointer; }
-.transactionicon2, .transactionicon2-placeholder {
-  width: clamp(35px, 10vw, 55px);
-  height: clamp(35px, 10vw, 55px);
-  border-radius: 50%;
-  margin-right: clamp(10px, 2.5vw, 15px);
-  object-fit: cover;
-  flex-shrink: 0;
-  transition: filter 0.3s ease-in-out !important;
-}
-.transactionicon2-placeholder { background-color: var(--listhighlight); }
-.transaction-hover-row:hover .transactionicon2,
-.transaction-hover-row:hover .transactionicon2-placeholder { filter: brightness(1.3) !important; }
-.expanded-desc, .transaction-hover-row .calc-val {
-  font-size: clamp(16px, 4.5vw, 26px);
-  font-family: raleway_bold, sans-serif;
-  transition: filter 0.3s ease-in-out !important;
-}
-.transaction-hover-row:hover .expanded-desc { filter: brightness(1.3) !important; }
-.expanded-desc { color: var(--button); display: inline-block; margin-right: 10px; }
-.transaction-hover-row .calc-val { background: transparent !important; white-space: nowrap; }
-
-/* --- Transactie-detail textareas --- */
-.descriptiontextarea, .amounttextarea {
-  width: clamp(280px, 94.79vw, 546px);
-  appearance: none;
-  padding-left: clamp(15px, 5.21vw, 30px);
-  padding-right: clamp(15px, 5.21vw, 30px);
-  padding-top: clamp(5px, 1.74vw, 10px);
-  background-color: var(--black);
-  color: var(--white);
-  border: none;
-  border-radius: clamp(15px, 5.21vw, 30px);
-  line-height: 1.2;
-  display: block;
-  margin: 0 auto;
-  box-sizing: border-box;
-  white-space: pre-wrap;
-  resize: none;
-  outline: none;
-}
-.descriptiontextarea { height: clamp(44px, 15.28vw, 88px); font-family: raleway_regular, sans-serif; font-size: clamp(16px, 5.21vw, 30px); }
-.amounttextarea {
-  height: clamp(30px, 10.42vw, 60px);
-  font-family: roboto_regular, sans-serif;
-  font-size: clamp(15px, 5.21vw, 30px);
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-/* --- Profiel / peer (kenmerken read-only weergave) --- */
-.special-features {
-  width: clamp(280px, 94.79vw, 546px);
-  min-height: clamp(60px, 18vw, 110px);
-  appearance: none;
-  padding-left: clamp(15px, 5.21vw, 30px);
-  padding-top: clamp(5px, 1.74vw, 10px);
-  background-color: var(--black);
-  color: var(--white);
-  border: none;
-  border-radius: clamp(15px, 5.21vw, 30px);
-  font-family: raleway_regular, sans-serif;
-  font-size: clamp(15px, 4.5vw, 24px);
-  line-height: 1.4;
-  display: block;
-  margin: 0 auto;
-  box-sizing: border-box;
-  white-space: pre-wrap;
-}
-
-/* --- humandetails footer --- */
-.hd-footer-row { display: flex; align-items: center; width: 100%; padding-bottom: 40px; }
-.hd-download-group { display: flex; align-items: center; }
-
-/* --- Home: openstaande verzoeken (index.php getProposalsHTML) --- */
-.button5-row, .button6-row, .button7-row, .button8-row {
-  background-color: var(--background);
-  font-family: raleway_bold, sans-serif;
-  font-size: clamp(18px, 5.21vw, 30px);
-  color: var(--text);
-  width: clamp(300px, 95.49vw, 550px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0 auto;
-}
-.button6-column1 { width: clamp(150px, 52.08vw, 300px); }
-.button6-column2 { width: clamp(90px, 30.38vw, 175px); }
-.button6-column3 { width: clamp(50px, 17.36vw, 100px); }
-
-.request-row, .my-request-row {
-  width: clamp(280px, 97.22vw, 560px);
-  display: flex;
-  align-items: center;
-  margin: 0 auto;
-}
-.request-column1 { width: clamp(35px, 12.15vw, 70px); flex-shrink: 0; }
-.request-column2 { width: clamp(160px, 57.64vw, 332px); margin: 0 clamp(5px, 1.74vw, 10px); }
-.request-column3 { width: clamp(74px, 25.69vw, 148px); display: flex; justify-content: flex-end; align-items: center; flex-shrink: 0; }
-.my-request-column2 { width: clamp(200px, 71.18vw, 410px); margin: 0 clamp(5px, 1.74vw, 10px); }
-.my-request-column3 { width: clamp(35px, 12.15vw, 70px); margin-left: clamp(4px, 1.39vw, 8px); flex-shrink: 0; }
-
-.select-button-static {
-  border-radius: clamp(17px, 6.08vw, 35px);
-  background-color: var(--selectbutton);
-  width: 100%;
-  height: clamp(35px, 12.15vw, 70px);
-  display: grid !important;
-  grid-template-rows: 1fr 1fr;
-  align-items: center;
-  justify-content: center;
-  color: var(--button);
-  text-align: center;
-  padding: clamp(2px, 0.69vw, 4px) 0;
-  box-sizing: border-box;
-  transition: filter 0.3s ease;
-}
-.select-button-static:hover { cursor: pointer; filter: brightness(1.5) !important; }
-.amount-line { font-family: roboto_bold, sans-serif; font-size: clamp(12px, 3.82vw, 22px); line-height: 1; }
-.desc-line { font-family: raleway_bold, sans-serif; font-size: clamp(12px, 3.82vw, 22px); opacity: 1; line-height: 1; white-space: nowrap; }
-.action-form-dual { display: flex; gap: clamp(4px, 1.39vw, 8px); justify-content: flex-end; }
-.action-icon { width: clamp(35px, 12.15vw, 70px); height: clamp(35px, 12.15vw, 70px); display: block; transition: filter 0.3s ease; cursor: pointer; }
-.action-icon:hover { cursor: pointer; filter: brightness(1.5) !important; }
-
-/* --- Klikbaar saldo (humandetails balance-link) --- */
-.balance-link { text-decoration: none; display: inline-block; transition: filter 0.3s ease; cursor: pointer; }
-.balance-link:hover { filter: brightness(1.5); }
-
-
-
-/* ============================================================================
-   APP-KLASSEN UIT HET ORIGINEEL (1coinh main.css)
-   Deze regels ontbraken in onze main.css: bij de LAMP-migratie is alleen de
-   content-helft van de stylesheet overgenomen, de app-helft niet. Daardoor viel
-   o.a. de titelrij van het startscherm terug op browser-defaults.
-   1-op-1 overgenomen; geen van deze selectors bestond al in dit bestand.
-   ============================================================================ */
-
-
-
-/*=================================================================
-  APP-KLASSEN uit 1coinh.com/css/main.css — 12 juli 2026.
-  Onze main.css was een samenvoeging van de contentsite-CSS met een
-  ONVOLLEDIG deel van de app-CSS: ~70 klassen die de dapp wel gebruikt
-  (index-title-row, switch/slider, form__input, select-button, ...)
-  ontbraken, waardoor die elementen als kale blokken renderden.
-  Hieronder staan alleen de ONTBREKENDE regels, letterlijk uit het
-  origineel. Bestaande selectors zijn NIET aangeraakt.
-=================================================================*/
-
-
-
-/* Specific class for the Service page to allow interaction */
-.selectable-text {
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    user-select: text !important;
-    
-    /* THE FIX: Re-enable mouse interaction for scrolling and dragging */
-    pointer-events: auto !important; 
-    cursor: text !important;
-}
-
-
-.header-main-logo {
-    width: 50%;
-    height: 100%;
-    display: inline-flex;
-    background-color: var(--headerback);
-}
-
-
-.header-main-index {
-    width: clamp(40px, 13.89vw, 80px) !important;
-    height: 100%;
-    /* THE FIX: Restores the 5px gap at the top */
-    padding-top: clamp(2px, 0.87vw, 5px); 
-    padding-left: clamp(8px, 2.6vw, 15px);
-    display: flex;
-    align-items: flex-start; /* Keeps the logo itself near the top but respects padding */
-}
-
-
-.animate-explode {
-    animation: explode-white 0.8s ease-in-out;
-    display: inline-block;
-}
-
-
-/*======================== MENU ROW ============================*/
-
-.menu-row {
-    border: none;
-    outline: none;
-    background-color: var(--background);
-    font-family: roboto_bold, sans-serif;
-    font-weight: 600;
-    /* 40px -> 6.94vw */
-    font-size: clamp(20px, 6.94vw, 40px);
-    color: var(--text);    
-    width: clamp(0px, 100vw, 576px);
-    height: clamp(40px, 13.89vw, 80px);
-    display: flex;
-    justify-content: center;
-    align-items: center; /* Replaces manual padding/margins */
-}
-
-
-/*======================== AMOUNT & DISPLAY NUM ============================*/
-
-.amount-container {
-    display: inline-block;
-    text-decoration: none;
-    background-color: var(--headerback);
-    /* 10px -> 1.74vw */
-    padding: clamp(5px, 1.74vw, 10px);
-}
-
-
-.form__label, .form__label2, .form__label_amount {
-    font-family: raleway_bold, sans-serif;
-    /* 22px -> 3.82vw */
-    font-size: clamp(14px, 3.82vw, 22px);
-    /* 30px -> 5.21vw */
-    margin-left: clamp(15px, 5.21vw, 30px);
-    margin-top: clamp(2px, 0.87vw, 5px);
-}
-
-
-.form__label2 {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    /* 270px -> 46.88vw */
-    max-width: clamp(150px, 46.88vw, 270px); 
-}
-
-
-.form__input2 {
-    font-family: raleway_regular, sans-serif;
-    color: var(--white);
-    font-size: clamp(18px, 5.21vw, 30px);
-    padding-left: clamp(15px, 5.21vw, 30px);
-    border-radius: 2rem;
-    background-color: var(--black);
-    border: none;
-    /* 272px -> 47.22vw */
-    width: clamp(140px, 47.22vw, 272px);
-    height: clamp(40px, 10.42vw, 60px);
-}
-
-
-/*======================== FORM-INPUT-AMOUNT ============================*/
-
-.amount-outer-container {
-    /* 350px -> 60.76vw */
-    width: clamp(250px, 60.76vw, 350px);
-    margin: 0 auto;
-    text-align: left;
-}
-
-
-.form__label_amount {
-    display: inline-block;
-    color: var(--text);
-}
-
-
-.input-container {
-    position: relative;
-    width: 100%;
-}
-
-
-.input-container::after {
-    content: "ᕫ";
-    position: absolute;
-    /* 20px -> 3.47vw */
-    right: clamp(10px, 3.47vw, 20px);
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text); 
-    font-size: clamp(18px, 5.21vw, 30px);
-    pointer-events: none;
-}
-
-
-.form__input_amount {
-    font-family: roboto_bold, sans-serif;
-    color: var(--white);
-    font-size: clamp(18px, 5.21vw, 30px);
-    text-align: right;
-    padding-left: clamp(10px, 3.47vw, 20px);
-    /* 55px -> 9.55vw */
-    padding-right: clamp(30px, 9.55vw, 55px);
-    border-radius: 2rem;
-    background-color: var(--black);
-    border: none;
-    width: 100%;
-    height: clamp(35px, 8.68vw, 50px);
-    box-sizing: border-box;
-}
-
-
-.amount-error {
-    color: var(--error) !important;
-}
-
-
-/*======================== FORM-INPUT OTHER ============================*/
-
-.form__text, .form__numbers {
-    font-family: raleway_regular, sans-serif;
-    color: var(--white);
-    /* 30px -> 5.21vw */
-    font-size: clamp(18px, 5.21vw, 30px);
-    padding-left: clamp(15px, 5.21vw, 30px);
-    border-radius: 2rem;
-    background-color: var(--black);
-    border: none;
-    /* Scales with field-wrapper */
-    width: clamp(300px, 95.49vw, 550px);
-    height: clamp(40px, 10.42vw, 60px);
-    display: flex;
-    align-items: center;
-    box-sizing: border-box; 
-}
-
-
-.form__numbers {
-    /* Kept your specific font preference for numbers */
-    font-family: roboto_regular, sans-serif;
-}
-
-
-.form__text2, .form__numbers2 {
-    font-family: raleway_regular, sans-serif;
-    color: var(--white);
-    font-size: clamp(18px, 5.21vw, 30px);
-    padding-left: clamp(15px, 5.21vw, 30px);
-    border-radius: 2rem;
-    background-color: var(--black);
-    border: none;
-    /* 272px -> 47.22vw */
-    width: clamp(140px, 47.22vw, 272px);
-    height: clamp(40px, 10.42vw, 60px);
-    display: flex;
-    align-items: center;
-    box-sizing: border-box; 
-}
-
-
-.form__numbers2 {
-    font-family: roboto_regular, sans-serif;
-}
-
-
-/* ===========================  PHOTO-BUTTON  ===============================*/
-
-.photo-button {
-    border: none;
-    outline: none;
-    /* 30px -> 5.21vw */
-    border-radius: clamp(15px, 5.21vw, 30px);
-    background-color: var(--button);
-    font-family: raleway_bold, sans-serif;
-    /* 22px -> 3.82vw */
-    font-size: clamp(14px, 3.82vw, 22px);
-    color: var(--black);    
-    /* 546px -> 94.79vw */
-    width: clamp(280px, 94.79vw, 546px);
-    /* 60px -> 10.42vw */
-    height: clamp(40px, 10.42vw, 60px);
-    align-items: center;
-    display: flex;
-    justify-content: center;
-    cursor: pointer;
-    transition: filter 0.3s ease;
-}
-
-
-.photo-button:hover:enabled {
-    filter: brightness(1.5) !important;
-}
-
-
-/* ===========================  SELECT-BUTTON  ===============================*/
-
-.select-button {
-    border: none;
-    outline: none;
-    /* 35px -> 6.08vw */
-    border-radius: clamp(18px, 6.08vw, 35px);
-    background-color: var(--selectbutton);
-    font-family: raleway_bold, sans-serif;
-    font-size: clamp(14px, 3.82vw, 22px);
-    color: var(--button);    
-    /* 470px -> 81.6vw */
-    width: clamp(250px, 81.6vw, 470px);
-    /* 70px -> 12.15vw */
-    height: clamp(45px, 12.15vw, 70px);
-    cursor: pointer;
-    gap: clamp(2px, 0.69vw, 4px);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    line-height: 1.2;
-    transition: filter 0.3s ease;
-}
-
-
-.select-button:hover:enabled {
-    filter: brightness(1.5) !important;
-}
-
-
-.select-button span:first-child {
-    font-family: roboto_regular, sans-serif; /* Updated from robotomono-light */
-    font-size: clamp(14px, 3.82vw, 22px);
-    font-weight: 400;
-    color: var(--button);
-    text-align: center;
-}
-
-
-/*======================== INDEX-TITLE ROW ============================*/
-
-.index-title-row {
-    background-color: var(--background);
-    font-family: raleway_bold, sans-serif;
-    /* 30px -> 5.21vw */
-    font-size: clamp(18px, 5.21vw, 30px); 
-    color: var(--text);    
-    /* 576px -> 100vw */
-    width: clamp(300px, 100vw, 576px);
-    max-width: 100%;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between; 
-    align-items: center;
-}
-
-
-.index-title-column {
-    display: flex;
-    flex: 1;
-}
-
-
-.index-title-column1 { justify-content: flex-start; }
-
-.index-title-column2 { justify-content: flex-end; }
-
-
-.index-title-row button {
-    width: auto;
-    white-space: nowrap;
-}
-
-
-.action-icon-btn { 
-    background: none; 
-    border: none; 
-    padding: 0; 
-    cursor: pointer; 
-    display: flex;
-}
-
-
-/*======================== ACCOUNT ============================*/
-
-.account {
-    font-family: roboto_bold, sans-serif;
-    font-weight: 400; /* Kept your specific weight preference */
-    /* 22px -> 3.82vw */
-    font-size: clamp(14px, 3.82vw, 22px);
-    text-align: center;
-    color: var(--text);
-}
-
-
-/*======================== IMAGE (STATIC PX) ============================*/
-
-.parent-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    padding: 20px 0;
-}
-
-
-.tableclass1 {
-    width: 350px;
-    background-color: #162042;
-    border: 0px solid #aaa;
-    padding: 5px;
-    box-shadow: inset 0px 2px 2px 2px rgba(120, 120, 120, 0.05);
-}
-
-
-.canvasclass {
-    width: 350px; 
-    height: 250px; 
-    display: block; 
-}
-
-
-/* Base style for image action buttons */
-.image-button, .image-button2 {
-    border: none;
-    outline: none;
-    border-radius: 6px;
-    background-color: var(--button);
-    font-family: raleway_bold, sans-serif; /* Note: ensure this is defined or use raleway_bold */
-    font-size: 22px;
-    color: black;    
-    margin-left: 3px;
-    margin-top: 3px;
-    height: 46px;
-    align-items: center;
-    display: flex;
-    padding: 3px;
-    justify-content: center;
-    cursor: pointer;
-    transition: filter 0.3s ease;
-}
-
-
-.image-button {
-    width: 165px;
-}
-
-
-.image-button2 {
-    width: 75px;
-}
-
-
-.image-button:hover:enabled, 
-.image-button2:hover:enabled {
-    filter: brightness(1.5) !important;
-}
-
-
-.iconclass35 {
-    width: 35px; 
-    height: 35px;
-}
-
-
-.image-text {
-    background-color: var(--button);
-    font-family: raleway_bold, sans-serif;
-    font-size: 22px;
-    width: 125px;
-    color: black;    
-    text-align: right;
-}
-
-
-/* ===========================  USER ICONS  =============================== */
-
-/* Apply the margin to the container (like an anchor <a> or <div>) */
-.user-icon-link {
-    margin-left: auto; /* Keeps it on the right */
-    margin-right: clamp(4px, 1.5vw, 10px); /* THE FIX: Moves the margin to the container */
-    display: flex;
-    align-items: center;
-}
-
-
-/* ===========================  GENDER SELECTOR  =============================== */
-
-.select-wrap {
-    appearance: none;
-    font-family: raleway_regular, sans-serif;
-    font-size: clamp(16px, 5.21vw, 30px);
-    padding-left: clamp(3px, 1.04vw, 6px);
-    border-radius: clamp(15px, 5.21vw, 30px);
-    width: clamp(135px, 47.05vw, 271px);
-    height: clamp(35px, 10.42vw, 60px);
-    cursor: pointer;
-    background-color: var(--black);
-    position: relative;
-    color: var(--white);
-    display: flex; /* Changed from inline-flex to flex */
-    align-items: center;
-    justify-content: flex-start;
-    overflow: hidden; /* Important for Android */
-}
-
-
-.gender-selector {
-    background-color: var(--black);
-    /* Match height to the wrap exactly */
-    height: clamp(35px, 10.42vw, 60px); 
-    
-    /* THE CRITICAL FIX: Set line-height equal to the height */
-    line-height: clamp(35px, 10.42vw, 60px);
-    
-    width: clamp(110px, 38.19vw, 220px);
-    margin-left: clamp(10px, 3.47vw, 20px);
-    font-family: raleway_regular, sans-serif;
-    font-size: clamp(16px, 5.21vw, 30px);
-    color: var(--white);
-    border: none;
-    outline: none;
-
-    /* Force the browser to reset internal spacing */
-    appearance: none;
-    -webkit-appearance: none;
-    padding-top: 0;
-    padding-bottom: 0;
-    vertical-align: middle;
-}
-
-
-
-/* ===========================  HEIGHT INPUT  =============================== */
-
-.height_input {
-    font-family: roboto_regular, sans-serif;
-    /* 30px -> 5.21vw */
-    font-size: clamp(16px, 5.21vw, 30px);
-    color: var(--white);
-    padding-left: clamp(15px, 5.21vw, 30px);
-    border-radius: clamp(15px, 5.21vw, 30px);
-    background-color: var(--black);
-    border: none;
-    /* 271px -> 47.05vw */
-    width: clamp(135px, 47.05vw, 271px);
-    height: clamp(35px, 10.42vw, 60px);
-}
-
-
-.height_input::placeholder {
-    color: var(--disabled);
-    opacity: 1;
-}
-
-
-/* ===========================  HAIR SELECTOR  =============================== */
-
-.select-wrap-hair {
-    appearance: none;
-    -webkit-appearance: none;
-    font-family: raleway_regular, sans-serif;
-    font-size: clamp(16px, 5.21vw, 30px);
-    padding-left: clamp(3px, 1.04vw, 6px);
-    border-radius: clamp(15px, 5.21vw, 30px);
-    width: clamp(135px, 47.05vw, 271px);
-    height: clamp(35px, 10.42vw, 60px);
-    cursor: pointer;
-    background-color: var(--black);
-    position: relative;
-    color: var(--white);
-    /* Changed to flex for better mobile alignment */
-    display: flex; 
-    align-items: center;
-    overflow: hidden;
-}
-
-
-.hair-selector {
-    background-color: var(--black);
-    /* Match height to the wrap exactly */
-    height: clamp(35px, 10.42vw, 60px); 
-    /* THE FIX: Match line-height to height for vertical centering */
-    line-height: clamp(35px, 10.42vw, 60px);
-    
-    width: clamp(110px, 38.19vw, 220px);
-    margin-left: clamp(10px, 3.47vw, 20px);
-    padding-left: 5px;
-    font-family: raleway_regular, sans-serif;
-    font-size: clamp(16px, 5.21vw, 30px);
-    color: var(--white);
-    border: none;
-    outline: none;
-
-    /* Force mobile browsers to respect your custom styles */
-    appearance: none;
-    -webkit-appearance: none;
-    padding-top: 0;
-    padding-bottom: 0;
-}
-
-
-/* ===========================  SPECIAL FEATURES  =============================== */
-
-/* Shared Base for Textareas (Standard and Editable) */
-.special-features, .special-features2 {
-    /* 546px -> 94.79vw */
-    width: clamp(280px, 94.79vw, 546px);
-    /* 153px -> 26.56vw */
-    height: clamp(100px, 26.56vw, 153px);
-    appearance: none;
-    padding-left: clamp(15px, 5.21vw, 30px);
-    /* 10px -> 1.74vw (Now Flexible) */
-    padding-top: clamp(5px, 1.74vw, 10px); 
-    background-color: var(--black);
-    color: var(--white);
-    border: none;
-    /* 30px -> 5.21vw (Already Flexible) */
-    border-radius: clamp(15px, 5.21vw, 30px);
-    font-family: raleway_regular, sans-serif;
-    /* 30px -> 5.21vw (Already Flexible) */
-    font-size: clamp(16px, 5.21vw, 30px);
-    line-height: 1.2;
-    display: block;
-    margin: 0 auto;
-    box-sizing: border-box;
-    /* Ensures linefeed \n creates a new line */
-    white-space: pre-wrap; 
-    resize: none;
-}
-
-
-/* EDITABLE VERSION */
-.special-features2 {
-    pointer-events: auto;     
-    user-select: text;         
-    -webkit-user-select: text; 
-    cursor: text;             
-}
-
-
-/* Custom Scrollbar Scaling */
-.special-features::-webkit-scrollbar,
-.special-features2::-webkit-scrollbar {
-    width: clamp(4px, 1.39vw, 8px);
-}
-
-
-.special-features::-webkit-scrollbar-thumb,
-.special-features2::-webkit-scrollbar-thumb {
-    background: var(--selectbutton);
-    border-radius: clamp(5px, 1.74vw, 10px); 
-}
-
-
-
-/*======================== YEAR/MONTH TEXT BUTTONS ============================*/
-
-.year-month-select {
-    background-color: transparent;
-    /* 70px -> 12.15vw (Based on 576px) */
-    height: clamp(40px, 12.15vw, 70px); 
-    border: none;
-    outline: none;
-
-    /* DYNAMIC PADDING */
-    /* Left: 30px -> 5.21vw | Top: 10px -> 1.74vw | Right: 45px to account for arrow */
-    padding-left: clamp(15px, 5.21vw, 30px);
-    padding-top: clamp(5px, 1.74vw, 10px);
-    padding-right: clamp(25px, 7.81vw, 45px);
-    padding-bottom: 0;
-    
-    font-family: roboto_bold, sans-serif;
-    font-size: clamp(18px, 4.51vw, 26px);
-    color: var(--button); 
-    
-    appearance: none; 
-    -webkit-appearance: none;
-    cursor: pointer;
-    transition: filter 0.3s ease;
-
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://w3.org' width='12' height='12' fill='%23916B01' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    /* Keeps arrow 5px from the right edge regardless of width */
-    background-position: right 5px center;
-    
-    margin: 0;
-    vertical-align: middle;
-}
-
-
-
-.year-month-select:hover {
-    filter: brightness(1.5);
-}
-
-
-/* Ensure options don't look weird on mobile browsers */
-.year-month-select option {
-    background-color: var(--headerback);
-    color: var(--white);
-}
-
-
-/*======================== CALCULATION DISPLAY ============================*/
-
-.download-link {
-    font-family: raleway_regular, sans-serif;
-    font-size: clamp(14px, 3.12vw, 18px);
-    color: var(--disabled); /* Subtle gray color */
-    text-decoration: none;
-    transition: filter 0.3s ease, color 0.3s ease;
-}
-
-
-.download-link:hover {
-    filter: brightness(1.5);
-    color: var(--white); /* Lights up to gold on hover */
-    cursor: pointer;
-}
-
-
-/*======================== WHITELIST TOGGLE SWITCH ============================*/
-
-/* New row type for left-aligned, full-width elements */
-.button-full-row {
-    background-color: var(--background);
-    font-family: raleway_bold, sans-serif;
-    font-size: clamp(18px, 5.21vw, 30px);
-    color: var(--text);
-    width: clamp(300px, 95.49vw, 550px); 
-    margin: 0 auto;
-    display: flex;
-    justify-content: flex-start; /* Aligns content to the left */
-    align-items: center;
-}
-
-
-.switch-container {
-    display: flex;
-    align-items: center;
-    gap: clamp(10px, 3.47vw, 20px); /* Doubled from 10px to 20px */
-    margin-top: clamp(5px, 1.73vw, 10px);
-    margin-left: clamp(10px, 3.47vw, 20px); /* Extra 20px margin on the left */
-    width: 100%;
-}
-
-
-/* Ensure the second row label also aligns with the switch */
-.left-label {
-    display: block;
-    text-align: left;
-    width: 100%;
-    margin-bottom: clamp(2.4px, 0.87vw, 5px);
-    margin-left: clamp(10px, 3.47vw, 20px); /* Matching the switch offset */
-}
-
-
-/* The switch - the box around the slider */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 60px;
-  height: 34px;
-}
-
-
-/* Hide default HTML checkbox */
-.switch input { opacity: 0; width: 0; height: 0; }
-
-
-/* The slider */
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #333;
-  transition: .4s;
-  border-radius: 34px;
-}
-
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 26px; width: 26px;
-  left: 4px; bottom: 4px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
-}
-
-
-input:checked + .slider { background-color: var(--button); }
-
-input:checked + .slider:before { transform: translateX(26px); }
-
-
-/*===================== BLACK-WGITE-LIST MANAGEMENT ============================*/
-
-/* Special row for management that doesn't need the "click" highlight */
-.manage-row {
-    display: flex;
-    justify-content: flex-start; /* Align to left for checkbox/image/name */
-    align-items: center;
-    padding: clamp(8px, 2.6vw, 15px) clamp(10px, 3.47vw, 20px);
-    border-bottom: 1px solid #222;
-    gap: 15px; /* Space between checkbox, image, and name */
-}
-
-
-.manage-row:last-child {
-    border-bottom: none;
-}
-
-
-/* Column sizing for management */
-.col-check { width: 40px; display: flex; justify-content: center; }
-
-.col-img   { width: 50px; }
-
-.col-name  { flex-grow: 1; font-family: raleway_regular, sans-serif; color: var(--text); }
-
-
-/* The actual checkbox style */
-.manage-row input[type="checkbox"] {
-    accent-color: var(--button); /* Green checkmark */
-    transform: scale(1.5);
-    cursor: pointer;
-}
-
-
-/* Management Buttons */
-.error-btn { background-color: var(--error) !important; color: white !important; }
-
-.success-btn { background-color: var(--button) !important; color: var(--black) !important; font-family: roboto_bold; }
-
-
-/* Management List Rows */
-.manage-row {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    padding: 10px 15px;
-    border-bottom: 1px solid #222;
-    gap: 15px;
-}
-
-
-.col-check { width: 40px; display: flex; justify-content: center; }
-
-.col-img   { width: 50px; }
-
-.col-name {
-    flex-grow: 1;
-    font-family: raleway_regular, sans-serif;
-    color: var(--text);
-    /* 18px * 1.5 = 27px. Using clamp for responsiveness */
-    font-size: clamp(20px, 5.5vw, 27px); 
-    font-weight: 500; /* Optional: adds a bit of weight to match the larger size */
-    display: flex;
-    align-items: center;
-}
-
-
-.manage-row input[type="checkbox"] {
-    accent-color: var(--button);
-    transform: scale(1.6);
-    cursor: pointer;
-}
-
-
-.manage-checkbox {
-    /* Forces modern browsers to show the checkbox in your theme color */
-    accent-color: var(--button) !important;
-    
-    /* Ensures the checkbox isn't hidden by accidental 'appearance: none' rules */
-    appearance: checkbox !important;
-    -webkit-appearance: checkbox !important;
-    
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    border: 1px solid var(--white); /* Adds a faint border for visibility */
-}
-
-
-/* Management-specific row setup */
-.management-button-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-}
-
-
-/* Ensure the column expands to fit the 'Deselect all' text */
-.manage-btn-col {
-    flex: 0 1 auto; 
-    min-width: max-content; /* This prevents the button from being too narrow */
-}
-
-
-/* 7. Green Language Button (Profile Page) */
 .profile-lang-button {
     display: flex;
     align-items: center;
@@ -2854,40 +2060,30 @@ input:checked + .slider:before { transform: translateX(26px); }
     gap: clamp(7.5px, 2.6vw, 15px);
     background-color: var(--button);
     border: none;
-    
-    /* Matches .photo-button height exactly */
     height: clamp(40px, 10.42vw, 60px);
-    
-    /* Matches .photo-button corner roundness */
     border-radius: clamp(15px, 5.21vw, 30px); 
-    
-    /* Horizontal padding kept, vertical padding set to 0 as height is fixed */
     padding: 0 clamp(12.5px, 4.34vw, 25px);
     margin-top: clamp(1px, 0.35vw, 2px);
     width: 100%;
-    
     box-sizing: border-box;
     transition: filter 0.2s, transform 0.1s;
     cursor: pointer;
 }
 
-
 .profile-lang-button:hover {
     filter: brightness(1.2) !important;
 }
-
 
 .profile-lang-button:active {
     transform: scale(0.98);
 }
 
-
-.profile-lang-flag svg {
-    width: clamp(20px, 6.94vw, 40px) !important;
-    height: clamp(20px, 6.94vw, 40px) !important;
-    display: block;
+/* Target the image wrapper class used in your PHP rather than the missing SVG selector */
+.profile-lang-flag .flag-crop-container {
+    width: 40px !important;
+    height: 40px !important;
+    display: block !important;
 }
-
 
 .profile-lang-text {
     font-family: raleway_bold, sans-serif;
@@ -2907,11 +2103,9 @@ input:checked + .slider:before { transform: translateX(26px); }
     /* pointer-events is no longer needed since it's not fixed */
 }
 
-
 .help-button-container a {
     pointer-events: auto; /* Re-enables clicks for the button itself */
 }
-
 
 /*========================== GITLAB LINK INDEX PAGE ===============================*/
 
@@ -2921,7 +2115,6 @@ input:checked + .slider:before { transform: translateX(26px); }
     align-items: center;
     margin-top: clamp(5px, 1.74vw, 10px);
 }
-
 
 .dev-link-icon {
     /* Changed min from 24px to 12px to allow shrinking on tiny screens */
@@ -2935,7 +2128,6 @@ input:checked + .slider:before { transform: translateX(26px); }
     flex-shrink: 0; 
 }
 
-
 /*========================== PROFILE FOOTER ===============================*/
 
 .profile-footer-row {
@@ -2946,14 +2138,12 @@ input:checked + .slider:before { transform: translateX(26px); }
     /* Remove justify-content: space-between; we will handle spacing via flex-grow */
 }
 
-
 .footer-item {
     /* This makes the middle items (PDF/CSV) take up equal empty space */
     flex: 1; 
     display: flex;
     justify-content: center;
 }
-
 
 .footer-item:first-child {
     /* Date: Align to far left, do not grow, keep your specific gap */
@@ -2962,13 +2152,11 @@ input:checked + .slider:before { transform: translateX(26px); }
     margin-right: clamp(25px, 8.5vw, 50px); 
 }
 
-
 .footer-item:last-child {
     /* History: Align to far right, do not grow */
     flex: 0 1 auto;
     justify-content: flex-end;
 }
-
 
 .footer-date {
     font-family: raleway_regular, sans-serif;
@@ -2977,7 +2165,6 @@ input:checked + .slider:before { transform: translateX(26px); }
     white-space: nowrap;
 }
 
-
 .profile-footer-row .login-button {
     margin: 0;
     width: auto;
@@ -2985,6 +2172,48 @@ input:checked + .slider:before { transform: translateX(26px); }
     white-space: nowrap; /* Prevents long words like Geschiedenis from breaking */
 }
 
+/*========================== TIME-NAV-BUTTON ===============================*/
+
+/* REMOVED THE DOT BEFORE button */
+button.time-nav-button {
+    background-color: var(--button) !important; 
+    color: var(--white) !important;  
+    border: none;
+    cursor: pointer;
+    height: clamp(30px, 8vw, 45px);
+    padding: 0 clamp(10px, 2vw, 15px);
+    border-radius: 50px; /* Force full round */
+    display: inline-flex; /* Use inline-flex for better alignment */
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: clamp(16px, 5vw, 24px);
+    transition: filter 0.2s; /* Transition the filter for the hover */
+}
+
+/* REMOVED THE DOT BEFORE button here too */
+button.time-nav-button:hover:not(.nav-disabled) {
+    filter: brightness(1.5) !important;
+}
+
+/* Disabled State */
+button.time-nav-button.nav-disabled {
+    background-color: var(--black) !important;
+    color: var(--disabled) !important;
+    opacity: 0.5;
+    pointer-events: none;
+    filter: none !important;
+}
+
+
+
+/* Layout for humandetails footer */
+.hd-footer-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding-bottom: 40px;
+}
 
 .hd-date-group {
     display: flex;
@@ -2993,7 +2222,6 @@ input:checked + .slider:before { transform: translateX(26px); }
     margin-right: auto; /* Pushes download group to the far right */
 }
 
-
 .hd-date-display {
     font-family: raleway_regular, sans-serif;
     color: var(--text);
@@ -3001,22 +2229,40 @@ input:checked + .slider:before { transform: translateX(26px); }
     white-space: nowrap;
 }
 
+.hd-download-group {
+    display: flex;
+    align-items: center;
+}
 
 /* THE FIX: Gap between PDF and CSV is 3x bigger than standard button gaps */
 .btn-gap-wide {
     margin-right: clamp(30px, 9vw, 60px); 
 }
 
-
 .csv-edge-margin {
     margin-right: clamp(5px, 1.73vw, 10px);
 }
 
 
+/*========================== Change highlighting ===============================*/
+
+/* Animation for the Input Box Background (Black -> Red -> Black) */
+@keyframes flash-box-red {
+    0% { background-color: #550000; }
+    50% { background-color: #550000; } /* Hold red for 0.3s */
+    100% { background-color: var(--black); } /* Fade back to black in 0.3s */
+}
+
+/* Animation for the Photo Button (Green -> Red -> Green) */
+@keyframes flash-button-red {
+    0% { background-color: #550000; border-color: #550000; }
+    50% { background-color: #550000; border-color: #550000; }
+    100% { background-color: var(--button); border-color: var(--button); }
+}
+
 .highlight-change-btn {
     animation: flash-button-red 3s ease-out forwards !important;
 }
-
 
 /* NEW CLASS: Specifically for the select inside a flashing wrap */
 .dropdown-selector-animated {
@@ -3041,7 +2287,6 @@ input:checked + .slider:before { transform: translateX(26px); }
     vertical-align: middle;
 }
 
-
 /* 2. Unified Highlight Class for all Inputs and Select Wraps */
 .highlight-change {
     animation: flash-box-red 3s ease-out forwards !important;
@@ -3050,6 +2295,20 @@ input:checked + .slider:before { transform: translateX(26px); }
     overflow: hidden !important;
 }
 
+/* Animation for the Pass Photo Contour in History */
+@keyframes flash-contour-red {
+    0% { border-color: #550000; box-shadow: 0 0 20px #550000; }
+    50% { border-color: #550000; box-shadow: 0 0 20px #550000; } 
+    100% { border-color: transparent; box-shadow: 0 0 0 transparent; }
+}
+
+.humanicon {
+    /* Set a base transparent border so it doesn't jump when flashing */
+    border: 10px solid transparent; 
+    border-radius: 50%;
+    box-sizing: border-box; /* Keeps the image from shrinking */
+    transition: border-color 0.3s;
+}
 
 .highlight-image-contour {
     /* TWICE AS THICK: 10px */
@@ -3057,11 +2316,127 @@ input:checked + .slider:before { transform: translateX(26px); }
     animation: flash-contour-red 3s ease-out forwards !important;
 }
 
+/* Animation for Plain Text (Red -> --text) */
+@keyframes flash-text-red {
+    0% { color: #880000; }
+    50% { color: #880000; } /* Hold for visibility */
+    100% { color: var(--text); } /* Fade back to standard text color */
+}
 
 .highlight-text {
     animation: flash-text-red 3s ease-out forwards !important;
 }
 
+
+/*========================================*/
+/*      YEAR MONTH TRANSACTION DROPDOWN   */
+/*========================================*/
+
+/* Wrapper that mimics the listbox-container geometry */
+.nav-filter-wrapper {
+    width: 100%;
+    padding: clamp(5px, 1.74vw, 10px);
+    box-sizing: border-box;
+    /* Reduced margin from 10px/20px to 2px/8px */
+    /*margin-bottom: clamp(2px, 1vw, 8px); */
+}
+
+.button_t-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+}
+
+/* Spacing between elements scales with viewport */
+.t-col-year, .t-col-prev, .t-col-month { 
+    flex: none; 
+    margin-right: clamp(4px, 1.25vw, 8px);
+}
+
+/* Pills and buttons now use the "24% smaller" listbox font scale */
+.year-month-pill, .time-nav-button {
+    background-color: var(--black) !important;
+    color: var(--button) !important;
+    font-family: 'roboto_bold', sans-serif;
+    font-weight: bold !important; 
+    
+    /* THE FIX: Font size increased by 25% */
+    font-size: clamp(14px, 4vw, 23px); 
+    height: clamp(35px, 9vw, 55px); /* Slightly taller to accommodate larger text */
+    
+    /* THE FIX: Fully rounded sides */
+    border-radius: 50px; 
+    
+    padding: 0 clamp(12px, 3vw, 20px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+}
+
+/* --- Year/Month Pills Hover (Text Brightness) --- */
+.year-month-pill:hover {
+    filter: brightness(1.5);
+    cursor: pointer;
+}
+
+/* Fluid Widths */
+select.year-month-pill[name="year"]  { width: clamp(75px, 20vw, 110px); }
+select.year-month-pill[name="month"] { width: clamp(100px, 28vw, 150px); }
+
+/* Ensure icon lifting stays proportional */
+.t-col-image {
+    margin-left: auto;
+    flex: none;
+    transform: translateY(clamp(-3px, -0.8vw, -1px));
+}
+
+.t-col-spacer {
+    margin-left: auto;
+    flex: none;
+    height: clamp(30px, 10.42vw, 60px);
+    width: 1px;
+}
+
+.time-nav-button.nav-disabled {
+    background-color: var(--black) !important;
+    color: var(--disabled) !important;
+    border-radius: 50px;
+    cursor: default;
+    opacity: 0.5;
+    pointer-events: none;
+    border: 1px solid #222;
+}
+
+/*======================== CALCULATION DISPLAY ============================*/
+
+.calc-table {
+    width: 100%;
+    /* Fluid padding matching your container style */
+    padding: 0 clamp(5px, 2vw, 15px);
+}
+
+.calc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    /* Fluid vertical margin */
+    margin-bottom: clamp(4px, 1.5vw, 10px);
+    font-family: raleway_regular, sans-serif;
+    /* Scaled text: 14px to 22px */
+    font-size: clamp(14px, 4vw, 22px);
+    color: var(--text);
+}
+
+.calc-val {
+    font-family: roboto_regular, sans-serif;
+    text-align: right;
+}
 
 .white-line-short {
     /* Line width scales with screen size */
@@ -3072,33 +2447,158 @@ input:checked + .slider:before { transform: translateX(26px); }
     margin: clamp(5px, 1.5vw, 10px) 0 clamp(5px, 1.5vw, 10px) auto;
 }
 
-
-
-/* De app-schermen (<section class="view">) krijgen de originele titelstijl terug:
-   nowrap + inline-block + de grotere clamp. De content-site houdt de wrappende
-   .title hierboven — die is bewust aangepast en wordt hier niet geraakt. */
-.view .title,
-.view .title2 {
-  font-family: 'raleway_bold', sans-serif;
-  font-size: clamp(22px, 6.94vw, 40px);
-  color: var(--text);
-  white-space: nowrap;
-  overflow-wrap: normal;
-  margin: 0;
-  display: inline-block;
-  text-align: left;
+.full-screen-line {
+    height: 1px;
+    background-color: var(--white);
+    width: 100vw; 
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    margin-top: clamp(8px, 2vw, 15px);
+    margin-bottom: clamp(8px, 2vw, 15px);
+    opacity: 0.8;
 }
 
-/* Groene bevestiging naast de rode .error (origineel: $msgClass in receiver.php). */
-.success {
-  font-family: 'raleway_bold', sans-serif;
-  font-size: clamp(14px, 3.5vw, 18px);
-  color: var(--button);
-  text-align: center;
-  margin: 0.4rem 0;
+.calc-row strong {
+    font-family: roboto_bold, sans-serif;
+    /* Bold items scale slightly larger: 16px to 26px */
+    font-size: clamp(16px, 4.5vw, 26px);
+    font-weight: 800;
 }
-/* Zoekknop blijft zichtbaar maar dood onder de 3 tekens (origineel: inline style). */
-.photo-button.is-disabled { background-color: var(--disabled); opacity: 0.5; pointer-events: none; }
 
-/* Kale knop om een avatar heen (origineel: <button> zonder class in request.php). */
-.avatar-button { background: none; border: none; padding: 0; cursor: pointer; line-height: 0; }
+.balance-link {
+    text-decoration: none;
+    display: inline-block;
+    transition: filter 0.3s ease;
+}
+
+.balance-link:hover {
+    filter: brightness(1.5);
+}
+
+
+/* Link wrapper */
+.transaction-detail-link {
+    text-decoration: none;
+    display: block;
+    width: 100%;
+}
+
+/* Ensure the link itself doesn't force a brightness jump */
+.transaction-detail-link:hover {
+    filter: none !important; 
+}
+
+.transaction-hover-row {
+    transition: background-color 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(5px, 1.74vw, 10px); 
+    border-radius: clamp(4px, 1.39vw, 8px);
+    /* Keeps alignment within the field-wrapper */
+    margin-left: clamp(-10px, -1.74vw, -5px); 
+    margin-right: clamp(-10px, -1.74vw, -5px); 
+}
+
+/* THE FIX: Remove filter: brightness(1.5) from here to stop the "flash" */
+.transaction-hover-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+}
+
+/* Icon and Placeholder styling */
+.transactionicon2, .transactionicon2-placeholder {
+    width: clamp(35px, 10vw, 55px);
+    height: clamp(35px, 10vw, 55px);
+    border-radius: 50%;
+    margin-right: clamp(10px, 2.5vw, 15px);
+    object-fit: cover;
+    flex-shrink: 0;
+    /* Smooth transition for the brightness effect */
+    transition: filter 0.3s ease-in-out !important;
+}
+
+/* Specific brightness for the Icon when the ROW is hovered */
+.transaction-hover-row:hover .transactionicon2,
+.transaction-hover-row:hover .transactionicon2-placeholder {
+    filter: brightness(1.3) !important;
+}
+
+/* Unified Text Styles */
+.expanded-desc, 
+.transaction-hover-row .calc-val {
+    font-size: clamp(16px, 4.5vw, 26px); 
+    font-family: raleway_bold, sans-serif;
+    /* Ensure the text also fades in/out smoothly */
+    transition: filter 0.3s ease-in-out !important;
+}
+
+/* Description text trigger */
+.transaction-hover-row:hover .expanded-desc {
+    filter: brightness(1.3) !important;
+}
+
+/* Description base color */
+.expanded-desc {
+    color: var(--button);
+    display: inline-block;
+    margin-right: 10px; 
+}
+
+/* Amount logic */
+.transaction-hover-row .calc-val {
+    background: transparent !important;
+    white-space: nowrap;
+}
+
+/* Ensure disabled buttons stay clean */
+.time-nav-button.nav-disabled:hover {
+    filter: none !important;
+    cursor: default;
+}
+
+/*==============================  ARTICLES  ===================================*/
+
+table, th, td { border: 0px solid black; border-collapse: collapse; }
+#capture-section { 
+    background-color: #ffffff; 
+    padding: 30px; 
+    margin: 40px auto; 
+    max-width: 900px; 
+    text-align: left; 
+    border-radius: 4px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    line-height: 1.6; /* Improved readability */
+}
+.par { font-family: "Times New Roman", Times, serif; font-size: 20px; font-weight: normal; color: #000000; margin-bottom: 1em; }
+.title1 { font-family: arial; font-size: 40px; font-weight: bold; line-height: 1.4; text-transform: capitalize; color: #000000; display: block; }
+.title2 { font-family: arial; font-size: 16px; font-weight: normal; color: #777777; display: block; }
+.title3 { font-family: arial; text-transform: capitalize; font-size: 24px; font-weight: bold; color: #000000; margin: 1.5em 0 0.5em; display: block; }
+.photo { font-family: "Times New Roman", Times, serif; font-style: italic; font-size: 14px; color: #777777; display: flex; justify-content: center; }
+.link { font-family: arial; font-size: 14px; font-weight: bold; text-decoration: underline; color: #444444; }
+
+.blockquote { max-width: 600px; margin: 30px auto; padding: 25px; background: #ffffff; border: 1px solid #f27429; color: #000000; box-sizing: border-box; }
+.blockquote--bordered { border-left: 10px solid #f27429; }  
+.blockquote__text { font-family: "Times New Roman", Times, serif; font-style: italic; font-size: 1.15em; line-height: 1.5; margin: 0; }
+.blockquote__text:not(:last-child) { margin-bottom: 1em; }
+
+/* Updated Image Paths: Step out to root /img/ */
+.article-img { width: 100%; height: auto; max-width: 685px; display: block; margin: 20px auto; }
+
+.name-table td { padding-left: 10px; text-align: left; }
+
+/*==============================================================================*/
+
+#capture-section2 { 
+    background-color: var(--background); /* Dark blue from your root */
+    padding: clamp(15px, 5.21vw, 30px);
+    margin: 0 auto; 
+    /* Matches your 576px threshold exactly */
+    width: clamp(288px, 100vw, 576px); 
+    text-align: left; 
+    line-height: 1.5;
+    color: var(--white); /* White text for readability on dark blue */
+}

@@ -235,6 +235,9 @@ function renderPhp(src, { title = 'Abundomy', desc = 'Abundomy - Realizing Resou
   // $baseHref → absolute root "/" (zoals de bron in productie): werkt op élke diepte,
   // dus ook voor /articles/-pagina's (assets, nav-links, json blijven correct).
   s = s.replace(/<\?php\s+echo\s+\$baseHref\s*;?\s*\?>/g, '/')
+  // CSS-links: absoluut /css/... → relatief ./css/... + voeg content.css + dapp-custom.css toe (3-laags architectuur)
+  s = s.replace(/<link rel="stylesheet" type="text\/css" href="\/css\/reset\.css"\s*\/?>/g, '<link rel="stylesheet" type="text/css" href="./css/reset.css" />')
+  s = s.replace(/<link rel="stylesheet" type="text\/css" href="\/css\/main\.css"\s*\/?>/g, '<link rel="stylesheet" type="text/css" href="./css/main.css" />')
   s = s.replace(/<\?php\s+echo\s+\$currentLang(\s*\?\?\s*'en')?\s*;?\s*\?>/g, 'en')
   s = s.replace(/<\?php\s+echo\s+getFlagSVG\([^)]*\)\s*;?\s*\?>/g, '🌐')
   // non-greedy t/m de eerste ?> (de ternary bevat zelf ook een '?')
