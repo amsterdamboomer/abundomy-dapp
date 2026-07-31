@@ -166,24 +166,6 @@
       #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select { border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); }
       /* Punt 02-24-07: #signup foto-knop = V1 .photo-button (groen, volledige breedte, pill). */
       #signup .photo-button { border: none; border-radius: clamp(15px, 5.21vw, 30px); background-color: var(--button); color: var(--black); font-family: raleway_bold, sans-serif; font-size: clamp(14px, 3.82vw, 22px); width: 100%; height: clamp(40px, 10.42vw, 60px); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-top: clamp(8px, 1.5vw, 12px); }
-      /* Punt 10-25-07: #profEdit = V1 profiel-bewerken — labels blok/goud, velden zwart/wit (V1 .form__input), pill. */
-      #profEdit.dapp-card { width: clamp(300px, 95.49vw, 600px); }
-      #profEdit label { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.5rem; }
-      #profEdit label > span { color: var(--text); font-family: raleway_bold, sans-serif; font-size: clamp(13px, 4vw, 20px); }
-      #profEdit input[type="text"], #profEdit input[type="email"], #profEdit input[type="password"], #profEdit input[type="date"], #profEdit select, #profEdit textarea { width: 100%; box-sizing: border-box; font-size: clamp(15px, 5.21vw, 30px); background-color: var(--black); border: none; color: var(--white); border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); font-family: raleway_regular, sans-serif; }
-      #profEdit input[readonly] { opacity: 0.7; }
-      /* Punt 10-25-07: privacy-box (#profView) select ook zwart/wit (V1 .form__input). */
-      #profView select, #profView input[type="text"] { background-color: var(--black); border: none; color: var(--white); border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); font-family: raleway_regular, sans-serif; font-size: clamp(15px, 5.21vw, 30px); }
-      /* Punt 02-30-07: profiel-header break-out naar viewport-breedte, zelfde centering+padding+margins als #app-header (576 content) — JIJ exact center, Opslaan onder huisje, Terug onder avatar. Row zit normaal in .field-wrapper (550px); break-out (margin-left calc(50% - 50vw) + width 100vw) ontsnapt daaruit. body{overflow-x:hidden} voorkomt scroll. */
-      #view-profile .button4-row { width: 100vw; margin-left: calc(50% - 50vw); box-sizing: border-box; padding: 0 calc(max(0px, 50vw - 288px) + clamp(5px, 1.74vw, 15px)); }
-      #view-profile .button4-column1 { justify-content: flex-start; margin-left: clamp(4px, 1.5vw, 10px); }
-      #view-profile .button4-column3 { justify-content: flex-end; margin-right: clamp(4px, 1.5vw, 10px); }
-      #view-profile .button4-column2 { flex: 1 1 auto; width: auto; }
-      /* Punt 02-30-07 vervolg: #profEdit = 1coinh profile.php layout — groene foto-knop volledige breedte + button5-row 2-koloms paren. */
-      #profEdit .photo-button { border: none; border-radius: clamp(15px, 5.21vw, 30px); background-color: var(--button); color: var(--black); font-family: raleway_bold, sans-serif; font-size: clamp(14px, 3.82vw, 22px); width: 100%; height: clamp(40px, 10.42vw, 60px); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-      #profEdit .button5-row { width: 100%; margin: 0; justify-content: space-between; }
-      #profEdit .button5-column1, #profEdit .button5-column3 { width: 48%; max-width: none; }
-      #profEdit .button5-column2 { width: 4%; }
       /* Punt 04-foto stap 1: #view-image = V1 image.php-layout (scaffolding + upload). */
       #view-image .parent-container { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 20px 0; }
       #view-image .tableclass1 { width: 350px; background-color: #162042; border: 0; padding: 5px; box-shadow: inset 0 2px 2px 2px rgba(120,120,120,0.05); }
@@ -677,7 +659,7 @@
           <div class="button4-row">
             <div class="button4-column1"><button type="button" class="login-button" id="profHeaderSave" data-i18n="PR_SAVE">Opslaan</button></div>
             <div class="button4-column2"><p class="title" id="profHeaderTitle" data-i18n="APP_YOU">JIJ</p></div>
-            <div class="button4-column3"><button type="button" class="login-button" id="profHeaderBack" data-i18n="PR_BACK">Terug</button></div>
+            <div class="button4-column3"><a href="#/"><button type="button" class="login-button" data-i18n="PR_BACK">Terug</button></a></div>
           </div>
           <div class="full_line"></div>
 
@@ -730,40 +712,43 @@
             </details>
           </div>
 
-          <!-- BEWERKEN (alleen eigen profiel) — 1coinh profile.php layout: Naam → groene foto-knop → E-mail → Gebruikersnaam → button5-row paren (BD/GN, HT/HR, LE/RE) → Special textarea; dapp-extra's (e-mail/wachtwoord wijzigen) onderaan als details. -->
+          <!-- BEWERKEN (eigen profiel) — 1:1 naar 1coinh profile.php (zelfde form-klassen: form__label/form__input/select-wrap/photo-button/special-features2/button5-row). Alleen huisje<>coin in header wijkt af. -->
           <div class="dapp-card hidden" id="profEdit" style="border:none; background:none; padding:0;">
-            <label><span data-i18n="SU_FN">Naam</span> <input id="peName" type="text" autocomplete="name" /></label>
-            <div style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin:0.4rem 0 0.6rem;">
-              <img id="peImgPreview" class="humanicon2" alt="foto" />
-              <label class="photo-button" style="cursor:pointer;"><span data-i18n="APP_CHOOSE_PHOTO">Pasfoto wijzigen</span>
-                <input id="peImgFile" type="file" accept="image/*" style="display:none;" />
-              </label>
+            <div class="full_line"></div>
+            <div class="small_line"></div>
+            <div>
+              <label class="form__label" for="peName">Naam</label><br>
+              <input type="text" class="form__input" id="peName" autocomplete="name" />
+              <div class="full_line"></div>
+              <button type="button" class="photo-button" id="profPhotoBtn" data-i18n="APP_CHOOSE_PHOTO">Pasfoto wijzigen</button>
+              <img id="peImgPreview" class="humanicon2" alt="foto" style="display:block; margin:0.5rem auto 0;" />
               <button type="button" class="btn-secondary" id="peImgClear" style="display:none;" data-i18n="APP_REMOVE_PHOTO">Foto verwijderen</button>
+              <label class="form__label" for="peEmail">E-mail</label><br>
+              <input type="email" class="form__input" id="peEmail" readonly title="Huidig e-mailadres — wijzigen kan hieronder met verificatie" />
+              <label class="form__label" for="peUid">Gebruikersnaam</label><br>
+              <input type="text" class="form__input" id="peUid" autocomplete="username" />
+              <div class="button5-row">
+                <div class="button5-column1"><label class="form__label2" for="peBirthday">Geboortedatum</label><br><input type="date" id="peBirthday" min="1900-01-01" max="2050-01-01" /></div>
+                <div class="button5-column2"></div>
+                <div class="button5-column3"><label class="form__label" for="peGender">Geslacht</label><br><div class="select-wrap"><select class="gender-selector" id="peGender"><option value="0">Man</option><option value="1">Vrouw</option><option value="2">Anders</option></select></div></div>
+              </div>
+              <div class="button5-row">
+                <div class="button5-column1"><label class="form__label" for="peHeight">Lengte</label><br><input type="text" class="form__input" id="peHeight" placeholder="1.78m" /></div>
+                <div class="button5-column2"></div>
+                <div class="button5-column3"><label class="form__label" for="peHair">Haarkleur</label><br><div class="select-wrap-hair"><select class="hair-selector" id="peHair"></select></div></div>
+              </div>
+              <div class="button5-row">
+                <div class="button5-column1"><label class="form__label2" for="peLeftEye">Linkeroog</label><br><div class="select-wrap-hair"><select class="hair-selector" id="peLeftEye"></select></div></div>
+                <div class="button5-column2"></div>
+                <div class="button5-column3"><label class="form__label2" for="peRightEye">Rechteroog</label><br><div class="select-wrap-hair"><select class="hair-selector" id="peRightEye"></select></div></div>
+              </div>
+              <label class="form__label" for="peSpecial">Bijzondere kenmerken</label><br>
+              <textarea class="special-features2" id="peSpecial" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken"></textarea>
             </div>
-            <label><span data-i18n="SU_EM">E-mail</span> <input id="peEmail" type="email" readonly title="Huidig e-mailadres — wijzigen kan hieronder met verificatie" /></label>
-            <label><span data-i18n="SU_UN">Gebruikersnaam</span> <input id="peUid" type="text" autocomplete="username" /></label>
-            <div class="button5-row">
-              <div class="button5-column1"><label class="form__label"><span data-i18n="SU_BD">Geboortedatum</span></label><input id="peBirthday" type="date" min="1900-01-01" max="2050-01-01" /></div>
-              <div class="button5-column2"></div>
-              <div class="button5-column3"><label class="form__label"><span data-i18n="SU_GN">Geslacht</span></label><select id="peGender">
-                <option value="0">Man</option><option value="1">Vrouw</option><option value="2">Anders</option>
-              </select></div>
-            </div>
-            <div class="button5-row">
-              <div class="button5-column1"><label class="form__label"><span data-i18n="SU_HT">Lengte</span></label><input id="peHeight" type="text" placeholder="1.78m" /></div>
-              <div class="button5-column2"></div>
-              <div class="button5-column3"><label class="form__label"><span data-i18n="SU_HR">Haarkleur</span></label><select id="peHair"></select></div>
-            </div>
-            <div class="button5-row">
-              <div class="button5-column1"><label class="form__label2"><span data-i18n="SU_LE">Linkeroog</span></label><select id="peLeftEye"></select></div>
-              <div class="button5-column2"></div>
-              <div class="button5-column3"><label class="form__label2"><span data-i18n="SU_RE">Rechteroog</span></label><select id="peRightEye"></select></div>
-            </div>
-            <label class="form__label" for="peSpecial"><span data-i18n="SU_SF">Bijzondere kenmerken</span></label>
-            <textarea id="peSpecial" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken" class="special-features2"></textarea>
             <details id="emailChangeBox">
               <summary class="muted" data-i18n="APP_EMAIL_CHANGE">E-mailadres wijzigen (met verificatie)</summary>
-              <label><span data-i18n="APP_NEW_EMAIL">Nieuw e-mailadres</span> <input id="peNewEmail" type="email" autocomplete="email" placeholder="nieuw@voorbeeld.nl" /></label>
+              <label class="form__label" for="peNewEmail">Nieuw e-mailadres</label><br>
+              <input type="email" class="form__input" id="peNewEmail" autocomplete="email" placeholder="nieuw@voorbeeld.nl" />
               <div class="actions">
                 <button type="button" class="login-button-small" id="peEmailVerifyBtn" data-i18n="APP_SEND_VERIFY">Verstuur verificatie</button>
               </div>
@@ -772,9 +757,12 @@
             <details class="dapp-card" id="changePwdCard" style="border:none; background:none; padding:0;">
               <summary class="muted" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</summary>
               <p class="muted" data-i18n="APP_CHANGE_PWD_HINT">Alleen jij kunt dit — het vereist je huidige wachtwoord. Je identiteit en saldo blijven ongewijzigd.</p>
-              <label><span data-i18n="APP_CUR_PWD">Huidig wachtwoord</span> <input id="cpCurrent" type="password" autocomplete="current-password" /></label>
-              <label><span data-i18n="APP_NEW_PWD">Nieuw wachtwoord</span> <input id="cpNew" type="password" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></label>
-              <label><span data-i18n="APP_REPEAT_NEW">Herhaal nieuw</span> <input id="cpNew2" type="password" autocomplete="new-password" /></label>
+              <label class="form__label" for="cpCurrent">Huidig wachtwoord</label><br>
+              <input type="password" class="form__input" id="cpCurrent" autocomplete="current-password" />
+              <label class="form__label" for="cpNew">Nieuw wachtwoord</label><br>
+              <input type="password" class="form__input" id="cpNew" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" />
+              <label class="form__label" for="cpNew2">Herhaal nieuw</label><br>
+              <input type="password" class="form__input" id="cpNew2" autocomplete="new-password" />
               <div class="actions">
                 <button id="changePwdBtn" type="button" class="login-button-small" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</button>
               </div>

@@ -1830,13 +1830,8 @@ $('profEditBtn').onclick = () => enterProfileEdit()
 $('profRevPrev').onclick = () => { if (revIdx < revVersions.length - 1) { revIdx++; renderProfileVersion() } } // ouder
 $('profRevNext').onclick = () => { if (revIdx > 0) { revIdx--; renderProfileVersion() } } // nieuwer
 $('profHeaderSave').onclick = () => saveProfile().catch((e) => log('FOUT: ' + e.message))
-$('profHeaderBack').onclick = () => history.back()
-$('peImgFile').onchange = async (e) => {
-  const file = e.target.files?.[0]; if (!file) return
-  try { pendingImage = await fileToAvatarDataURL(file); refreshImagePreview() }
-  catch (err) { $('profEditInfo').textContent = 'FOUT: ' + err.message }
-  e.target.value = '' // zelfde bestand opnieuw kiezen blijft mogelijk
-}
+// profHeaderBack = <a href="#/"> (dashboard, 1coinh Cancel->index.php) — geen onclick nodig.
+$('profPhotoBtn').onclick = () => showViewImage('profile')  // 1coinh: photo-button opent editor
 $('peImgClear').onclick = () => { pendingImage = ''; refreshImagePreview() }
 $('peEmailVerifyBtn').onclick = () => changeEmail().catch((e) => log('FOUT: ' + e.message))
 
@@ -2018,7 +2013,11 @@ function closeViewImage() {
   webcamOff()  // webcam stoppen bij sluiten (geen live stream laten hangen)
   $('view-image').classList.remove('edit-mode')
   $('view-image').classList.add('hidden')
-  showCard(imageViewReturnTo === 'profile' ? 'login' : 'signup')  // 'profile' later: echte profile-integratie (stap 3+)
+  if (imageViewReturnTo === 'profile') {
+    $('view-profile').classList.remove('hidden')  // terug naar profiel-bewerken
+  } else {
+    showCard('signup')
+  }
 }
 // Punt 04-foto stap 3: avatar (topNav, ipv vlag) klikbaar → foto wijzigen.
 // imgUploadBtn dubbelrol: choose → file picker; edit (Ready) → save (canvas→signupImage→close).
@@ -2030,12 +2029,17 @@ $('imgUploadBtn').onclick = () => {
     drawBack(); drawImg()
     const tmp = document.createElement('canvas'); tmp.width = 140; tmp.height = 140
     tmp.getContext('2d').drawImage($('imgCanvas'), IE_PORT.x1, IE_PORT.y1, 140, 140, 0, 0, 140, 140)
-    signupImage = tmp.toDataURL('image/png')
+    const dataUrl = tmp.toDataURL('image/png')
     drawPaspartout()  // weergave herstellen (rode selector terug voor gebruiker)
     if (imageViewReturnTo === 'signup') {
+      signupImage = dataUrl
       saveSignupForm()
       closeViewImage()
       refreshSignupImagePreview()
+    } else if (imageViewReturnTo === 'profile') {
+      pendingImage = dataUrl
+      refreshImagePreview()
+      closeViewImage()
     }
   } else {
     $('loadpicture').click()
