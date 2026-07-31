@@ -656,97 +656,45 @@
 
         <!-- ===================== PROFIEL ===================== -->
         <section class="view hidden" id="view-profile">
-          <div class="medium_line"></div>
-          <div class="button4-row">
-            <div class="button4-column1"><button type="button" class="login-button" id="profHeaderSave" data-i18n="PR_SAVE">Opslaan</button></div>
-            <div class="button4-column2"><p class="title" id="profHeaderTitle" data-i18n="APP_YOU">JIJ</p></div>
-            <div class="button4-column3"><a href="#/"><button type="button" class="login-button" data-i18n="PR_BACK">Terug</button></a></div>
-          </div>
-          <div class="full_line"></div>
-
-          <!-- BEKIJKEN -->
-          <div id="profView">
-            <div style="display:flex; flex-direction:column; align-items:center; gap:0.6rem;">
-              <img id="profImg" class="humanicon2" alt="profiel" />
-              <p class="title" id="profName" style="margin:0;"></p>
-              <a id="profBalanceLink" class="balance-link" title="Bekijk transacties">
-                <p class="display-num" style="color:var(--text); margin:0;" id="profBalance"></p>
-              </a>
+        <div id="centerContainer"><div class="field-wrapper">
+          <form id="profileForm" action="javascript:void(0)" method="post" onsubmit="return false">
+            <div class="medium_line"></div>
+            <div class="button4-row">
+              <div class="button4-column1"><button type="submit" class="login-button" id="profHeaderSave" data-i18n="PR_SAVE">Opslaan</button></div>
+              <div class="button4-column2"><p class="title" data-i18n="APP_YOU">JIJ</p></div>
+              <div class="button4-column3"><a href="#/"><button type="button" class="login-button" data-i18n="PR_BACK">Terug</button></a></div>
             </div>
-            <div class="small_line"></div>
-            <!-- Profielhistorie-navigatie (gat C): blader door eerdere profielversies (users_old) -->
-            <div id="profRevNav" style="display:none; align-items:center; justify-content:center; gap:0.6rem; margin:0 0 0.5rem;">
-              <button type="button" class="btn-secondary" id="profRevPrev" data-i18n="REQ_PREV">Vorige</button>
-              <span class="muted" id="profRevLabel" style="font-size:0.85rem; min-width:10rem; text-align:center;"></span>
-              <button type="button" class="btn-secondary" id="profRevNext" data-i18n="REQ_NEXT">Volgende</button>
-            </div>
-            <div class="calc-table" id="profFields"></div>
-            <!-- Statistieken (alleen op andermans profiel) — uit 1coinh humandetails.php -->
-            <div id="profStatsBox" style="display:none;">
-              <div class="small_line"></div>
-              <p class="muted" id="profStatsTitle" data-i18n="HD_STATS" style="margin-bottom:0.4rem;">Statistieken</p>
-              <div class="calc-table" id="profStats"></div>
-            </div>
-            <div class="actions" id="profEditActions" style="justify-content:center; display:none;">
-              <button type="button" class="login-button" id="profEditBtn" data-i18n="APP_EDIT">Gegevens aanpassen</button>
-            </div>
-            <!-- Peer: blokkeren/toestaan -->
-            <div class="actions" id="profPeerActions" style="justify-content:center; display:none;">
-              <button type="button" class="login-button" id="profBlockBtn"></button>
-            </div>
-            <!-- Eigen: privacy-modus + beheerlijst -->
-            <details class="dapp-card" id="privacyBox" style="display:none;">
-              <summary class="muted" data-i18n="APP_PRIV_TITLE">Privacy &amp; lijsten</summary>
-              <p class="muted" id="privacyModeText" style="margin-top:0.6rem;"></p>
-              <div class="actions">
-                <button type="button" class="btn-secondary" id="privacyToggleBtn"></button>
-              </div>
-              <label id="listAddLabel"><span data-i18n="APP_ADD">Toevoegen</span> <select id="listAddSelect"></select></label>
-              <div class="actions">
-                <button type="button" class="btn-secondary" id="listAddBtn">Aan lijst toevoegen</button>
-              </div>
-              <div id="listManage" style="margin-top:0.6rem;"></div>
-              <div class="full_line"></div>
-              <p class="muted" data-i18n="APP_EMAIL_PREFS">E-mailvoorkeuren</p>
-              <label><input type="checkbox" id="prefPaymentEmails" /> <span data-i18n="PR_LBL_PAY_EM">Betalingsmails ontvangen</span></label>
-              <label><input type="checkbox" id="prefNewsletter" /> <span data-i18n="PR_LBL_NEWS">Nieuwsbrief ontvangen</span></label>
-            </details>
-          </div>
-
-          <!-- BEWERKEN (eigen profiel) — 1:1 naar statische profile.html (repo-klassen; pe*-IDs behouden voor dapp-OrbitDB). Foto in #app-header (geen inline preview). Taal/whitelist/newsletter/paymentEmails/footer = static-elementen (no-op in dapp). emailChange/passwordChange weg (niet in static). -->
-          <div class="dapp-card hidden" id="profEdit" style="border:none; background:none; padding:0;">
-            <div class="full_line"></div>
-            <div class="small_line"></div>
             <div>
-              <label class="form__label" for="peName">Naam</label><br>
-              <input type="text" class="form__input" id="peName" autocomplete="name" />
+              <label class="form__label" data-i18n="SU_FN">Naam</label><br>
+              <input type="text" class="form__input" id="name" autocomplete="name" />
               <div class="full_line"></div>
               <button type="button" class="photo-button" id="profPhotoBtn" data-i18n="APP_CHOOSE_PHOTO">Pasfoto wijzigen</button>
-              <label class="form__label" for="peEmail">E-mail</label><br>
-              <input type="email" class="form__input" id="peEmail" readonly />
-              <label class="form__label" for="peUid">Gebruikersnaam</label><br>
-              <input type="text" class="form__input" id="peUid" autocomplete="username" />
+              <input type="hidden" name="image_source" id="image_source_input" value="" />
+              <label class="form__label" data-i18n="SU_EM">E-mail</label><br>
+              <input type="email" class="form__input" id="email" readonly />
+              <label class="form__label" data-i18n="SU_UN">Gebruikersnaam</label><br>
+              <input type="text" class="form__input" id="uid" autocomplete="username" />
               <div class="button5-row">
-                <div class="button5-column1"><label class="form__label2" for="peBirthday">Geboortedatum</label><br><input type="date" id="peBirthday" min="1900-01-01" max="2050-01-01" /></div>
+                <div class="button5-column1"><label class="form__label2" data-i18n="SU_BD">Geboortedatum</label><br><input type="date" id="birthday" min="1900-01-01" max="2050-01-01" /></div>
                 <div class="button5-column2"></div>
-                <div class="button5-column3"><label class="form__label" for="peGender">Geslacht</label><br><div class="select-wrap"><select class="gender-selector" id="peGender"><option value="0">Man</option><option value="1">Vrouw</option><option value="2">Anders</option></select></div></div>
+                <div class="button5-column3"><label class="form__label" data-i18n="SU_GN">Geslacht</label><br><div class="select-wrap"><select class="gender-selector" id="gender"><option value="0">Man</option><option value="1">Vrouw</option><option value="2">Anders</option></select></div></div>
               </div>
               <div class="button5-row">
-                <div class="button5-column1"><label class="form__label" for="peHeight">Lengte</label><br><input type="text" class="form__input" id="peHeight" placeholder="1.78m" /></div>
+                <div class="button5-column1"><label class="form__label" data-i18n="SU_HT">Lengte</label><br><input type="text" class="form__input" id="height" placeholder="1.78m" /></div>
                 <div class="button5-column2"></div>
-                <div class="button5-column3"><label class="form__label" for="peHair">Haarkleur</label><br><div class="select-wrap-hair"><select class="hair-selector" id="peHair"></select></div></div>
+                <div class="button5-column3"><label class="form__label" data-i18n="SU_HR">Haarkleur</label><br><div class="select-wrap-hair"><select class="hair-selector" id="hair"></select></div></div>
               </div>
               <div class="button5-row">
-                <div class="button5-column1"><label class="form__label2" for="peLeftEye">Linkeroog</label><br><div class="select-wrap-hair"><select class="hair-selector" id="peLeftEye"></select></div></div>
+                <div class="button5-column1"><label class="form__label2" data-i18n="SU_LE">Linkeroog</label><br><div class="select-wrap-hair"><select class="hair-selector" id="lefteye"></select></div></div>
                 <div class="button5-column2"></div>
-                <div class="button5-column3"><label class="form__label2" for="peRightEye">Rechteroog</label><br><div class="select-wrap-hair"><select class="hair-selector" id="peRightEye"></select></div></div>
+                <div class="button5-column3"><label class="form__label2" data-i18n="SU_RE">Rechteroog</label><br><div class="select-wrap-hair"><select class="hair-selector" id="righteye"></select></div></div>
               </div>
-              <label class="form__label" for="peSpecial">Bijzondere kenmerken</label><br>
-              <textarea class="special-features2" id="peSpecial" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken"></textarea>
+              <label class="form__label" data-i18n="SU_SF">Bijzondere kenmerken</label><br>
+              <textarea class="special-features2" id="specialfeatures" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken"></textarea>
             </div>
             <label class="form__label" style="display:block">Taal</label>
-            <button type="button" onclick="alert('Taal wijzigen via de home-vlag (pre-login)')" style="text-decoration:none;background:none;border:none;width:100%;padding:0;cursor:pointer;">
-              <div class="profile-lang-button"><div class="profile-lang-flag"><span class="flag-crop-container page-list-flag" style="display:inline-block;"><img src="img/flags/flag_ne.jpg" alt="Taal" class="flag-img-round"></span></div><span class="profile-lang-text">Nederlands</span></div>
+            <button type="button" class="profile-lang-button" onclick="alert('Taal wijzigen via de home-vlag (pre-login)')" style="text-decoration:none;background:none;border:none;width:100%;padding:0;cursor:pointer;">
+              <div class="profile-lang-flag"><span class="flag-crop-container page-list-flag" style="display:inline-block;"><img src="img/flags/flag_ne.jpg" alt="Taal" class="flag-img-round"></span></div><span class="profile-lang-text">Nederlands</span>
             </button>
             <div class="small_line"></div>
             <label class="form__label2">Spam voorkomen</label><br><div class="small_line"></div>
@@ -766,8 +714,8 @@
               <div class="footer-item"><button type="button" class="login-button" onclick="alert('CSV niet in dapp-profiel')">CSV</button></div>
               <div class="footer-item"><button type="button" class="login-button" onclick="alert('Geschiedenis niet in dapp-profiel')">Geschiedenis</button></div>
             </div>
-            <p class="dapp-relay-info" id="profEditInfo"></p>
-          </div>
+          </form>
+        </div></div>
         </section>
 
       </div>

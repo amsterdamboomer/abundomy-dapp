@@ -1345,16 +1345,16 @@ function enterProfileEdit() {
   pendingImage = myProfile.image || ''
   refreshImagePreview()
   if (myProfile.start) $('profFooterDate').textContent = formatDateNL(myProfile.start)
-  $('peName').value = myProfile.usersName || ''
-  $('peUid').value = myProfile.usersUid || ''
-  $('peEmail').value = myProfile.usersEmail || ''
-  $('peBirthday').value = (myProfile.birthday || '').slice(0, 10)
-  $('peHeight').value = myProfile.height || ''
-  fillSelect('peGender', genderLabels(), Number(myProfile.gender) || 0)
-  fillSelect('peHair', hairLabels(), Number(myProfile.hair) || 0)
-  fillSelect('peLeftEye', eyeLabels(), Number(myProfile.leftEye) || 0)
-  fillSelect('peRightEye', eyeLabels(), Number(myProfile.rightEye) || 0)
-  $('peSpecial').value = myProfile.specialFeatures || ''
+  $('name').value = myProfile.usersName || ''
+  $('uid').value = myProfile.usersUid || ''
+  $('email').value = myProfile.usersEmail || ''
+  $('birthday').value = (myProfile.birthday || '').slice(0, 10)
+  $('height').value = myProfile.height || ''
+  fillSelect('gender', genderLabels(), Number(myProfile.gender) || 0)
+  fillSelect('hair', hairLabels(), Number(myProfile.hair) || 0)
+  fillSelect('lefteye', eyeLabels(), Number(myProfile.leftEye) || 0)
+  fillSelect('righteye', eyeLabels(), Number(myProfile.rightEye) || 0)
+  $('specialfeatures').value = myProfile.specialFeatures || ''
   $('profView').classList.add('hidden')
   $('profEdit').classList.remove('hidden')
 }
@@ -1395,7 +1395,7 @@ async function changeEmail() {
     info('Bevestigd ✓ — e-mailadres bijwerken…')
     await updateProfile({ stores, usersId: me, communityKey, updates: { usersEmail: newEmail } })
     myProfile = { ...myProfile, usersEmail: newEmail }
-    $('peEmail').value = newEmail
+    $('email').value = newEmail
     $('peNewEmail').value = ''
     info('E-mailadres gewijzigd ✓ — log voortaan in met je nieuwe e-mail.')
     log('E-mailadres gewijzigd naar ' + newEmail)
@@ -1411,18 +1411,18 @@ async function saveProfile() {
   const info = (m) => { $('profEditInfo').textContent = m }
   const btn = $('profHeaderSave'); btn.disabled = true
   try {
-    const uid = $('peUid').value.trim()
+    const uid = $('uid').value.trim()
     if (uid.length <= 3) throw new Error('gebruikersnaam moet langer dan 3 tekens zijn')
     const updates = {
-      usersName: $('peName').value.trim(),
+      usersName: $('name').value.trim(),
       usersUid: uid,
-      birthday: $('peBirthday').value, // '' of 'JJJJ-MM-DD'
-      height: $('peHeight').value.trim(),
-      gender: Number($('peGender').value) || 0,
-      hair: Number($('peHair').value) || 0,
-      leftEye: Number($('peLeftEye').value) || 0,
-      rightEye: Number($('peRightEye').value) || 0,
-      specialFeatures: $('peSpecial').value.trim(),
+      birthday: $('birthday').value, // '' of 'JJJJ-MM-DD'
+      height: $('height').value.trim(),
+      gender: Number($('gender').value) || 0,
+      hair: Number($('hair').value) || 0,
+      leftEye: Number($('lefteye').value) || 0,
+      rightEye: Number($('righteye').value) || 0,
+      specialFeatures: $('specialfeatures').value.trim(),
       image: pendingImage, // profielfoto (data-URI) of '' om te verwijderen
       // usersEmail bewust niet: wijzigen vereist verificatie (apart)
     }
