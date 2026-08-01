@@ -1086,69 +1086,29 @@ let revIsMe = false
 let revUid = null
 
 async function renderProfile({ id } = {}) {
-  if (profileEditing) return // niet herrenderen tijdens bewerken (zou velden overschrijven)
+  if (profileEditing) return
   const uid = id != null ? Number(id) : me
   const isMe = uid === me
-  // Header (punt 02): eigen profiel = direct-edit (Opslaan/JIJ/Terug); peer = alleen-lezen.
   $('profHeaderSave').style.display = isMe ? '' : 'none'
-  if (isMe) { $('profHeaderTitle').textContent = t('APP_YOU'); enterProfileEdit(); return }
-  $('profHeaderTitle').textContent = '' // peer-naam wordt hieronder ingevuld
-  $('profEditActions').style.display = 'none'
-  $('profView').classList.remove('hidden')
-  $('profEdit').classList.add('hidden')
-  let p
+  if (isMe) { enterProfileEdit(); return }
+  // Peer: vul form#profileForm met peer's publieke data (read-only)
   const doc = (await stores.users.get(uid))?.value
-  if (!doc) { $('profName').textContent = 'Onbekende gebruiker'; $('profHeaderTitle').textContent = 'Onbekende gebruiker'; $('profFields').innerHTML = ''; $('profRevNav').style.display = 'none'; return }
-  p = await safeProfile(doc)
-  $('profHeaderTitle').textContent = p.usersName || `#${uid}`
-
-  const txs = (await stores.transactions.all()).map((e) => e.value)
-  const usersOld = (await stores.usersOld.all()).map((e) => e.value)
-  const myDoc = (await stores.users.get(uid))?.value
-  const joined = joinedDate(myDoc ?? { usersId: uid, start: txs[0]?.time_stamp }, usersOld)
-  const bal = availableCoins({ joined, transactions: txs, userId: uid, asOf: new Date() })
-
-  $('profBalance').textContent = `${formatCoins(bal)} ᕫ`
-  $('profBalanceLink').href = isMe ? '#/transactions' : `#/transactions/${uid}` // saldo → keten (humandetails)
-
-  // Profielhistorie (gat C): huidige versie + de gearchiveerde versies uit users_old
-  // (nieuwste historische eerst), doorbladerbaar met Vorige/Volgende. Alleen échte
-  // snapshots (met enc); de slank-gemigreerde join-only rijen overslaan.
-  const histSnaps = usersOld
-    .filter((o) => o.uid_old === uid && o.enc)
-    .sort((a, b) => (a.start_old < b.start_old ? 1 : a.start_old > b.start_old ? -1 : 0))
-  const hist = []
-  for (const s of histSnaps) hist.push({ profile: await safeProfile(s), start_old: s.start_old, end_old: s.end_old })
-  const today = new Date().toISOString().slice(0, 10)
-  const curStart = hist.length ? hist[0].end_old : joined
-  revUid = uid
-  revIsMe = isMe
-  revVersions = [
-    { profile: p, period: `${formatDateNL(curStart)} – ${formatDateNL(today)}` },
-    ...hist.map((h) => ({ profile: h.profile, period: `${formatDateNL(h.start_old)} – ${formatDateNL(h.end_old)}` })),
-  ]
-  revIdx = 0
-  $('profRevNav').style.display = revVersions.length > 1 ? 'flex' : 'none'
-  renderProfileVersion()
-
-  // Statistieken-blok (alleen op andermans profiel) — uit 1coinh humandetails.php.
-  const statsBox = $('profStatsBox')
-  if (!isMe) {
-    statsBox.style.display = 'block'
-    $('profStats').innerHTML = renderProfileStats(txs, uid, me, joined)
-  } else {
-    statsBox.style.display = 'none'
+  if (!doc) return
+  const p = await safeProfile(doc)
+  $('name').value = p.usersName || `#${uid}`
+  $('email').value = p.usersEmail || ''
+  $('uid').value = p.usersUid || ''
+  $('birthday').value = (p.birthday || '').slice(0, 10)
+  $('height').value = p.height || ''
+  fillSelect('gender', genderLabels(), Number(p.gender) || 0)
+  fillSelect('hair', hairLabels(), Number(p.hair) || 0)
+  fillSelect('lefteye', eyeLabels(), Number(p.leftEye) || 0)
+  fillSelect('righteye', eyeLabels(), Number(p.rightEye) || 0)
+  $('specialfeatures').value = p.specialFeatures || ''
+  for (const fid of ['name','email','uid','birthday','height','gender','hair','lefteye','righteye','specialfeatures']) {
+    const el = $(fid); if (el) el.disabled = true
   }
-
-  await renderListControls(uid, isMe) // blok-/whitelijst-knoppen
 }
-
-/**
- * Toon de geselecteerde profielversie (huidig = index 0, of een gearchiveerde uit
- * users_old) in de profielweergave: avatar, naam en velden wisselen mee; saldo/statistieken
- * blijven (die horen bij de persoon, niet bij de versie). De caption toont positie +
- * geldigheidsperiode; bewerken kan alleen op de EIGEN, huidige versie.
- */
 function renderProfileVersion() {
   const v = revVersions[revIdx]
   if (!v) return
@@ -1341,7 +1301,6 @@ function refreshImagePreview() {
 /** Bewerkmodus openen (alleen eigen profiel): velden vullen uit myProfile. */
 function enterProfileEdit() {
   profileEditing = true
-  $('profEditInfo').textContent = ''
   pendingImage = myProfile.image || ''
   refreshImagePreview()
   if (myProfile.start) $('profFooterDate').textContent = formatDateNL(myProfile.start)
@@ -1355,17 +1314,11 @@ function enterProfileEdit() {
   fillSelect('lefteye', eyeLabels(), Number(myProfile.leftEye) || 0)
   fillSelect('righteye', eyeLabels(), Number(myProfile.rightEye) || 0)
   $('specialfeatures').value = myProfile.specialFeatures || ''
-  $('profView').classList.add('hidden')
-  $('profEdit').classList.remove('hidden')
 }
-
 function cancelProfileEdit() {
   profileEditing = false
-  $('profEdit').classList.add('hidden')
-  $('profView').classList.remove('hidden')
   render().catch(() => {})
 }
-
 /**
  * E-mailadres wijzigen mét verificatie (hergebruikt de signup-verificatieflow). De
  * mailer dwingt uniciteit af op de account-pubkey; pas ná bevestiging via de mail
@@ -1408,35 +1361,28 @@ async function changeEmail() {
 
 /** Profielwijzigingen opslaan (versleuteld), myProfile verversen, terug naar bekijken. */
 async function saveProfile() {
-  const info = (m) => { $('profEditInfo').textContent = m }
   const btn = $('profHeaderSave'); btn.disabled = true
   try {
-    const uid = $('uid').value.trim()
-    if (uid.length <= 3) throw new Error('gebruikersnaam moet langer dan 3 tekens zijn')
+    const uidVal = $('uid').value.trim()
+    if (uidVal.length <= 3) throw new Error('gebruikersnaam moet langer dan 3 tekens zijn')
     const updates = {
       usersName: $('name').value.trim(),
-      usersUid: uid,
-      birthday: $('birthday').value, // '' of 'JJJJ-MM-DD'
+      usersUid: uidVal,
+      birthday: $('birthday').value,
       height: $('height').value.trim(),
       gender: Number($('gender').value) || 0,
       hair: Number($('hair').value) || 0,
       leftEye: Number($('lefteye').value) || 0,
       rightEye: Number($('righteye').value) || 0,
       specialFeatures: $('specialfeatures').value.trim(),
-      image: pendingImage, // profielfoto (data-URI) of '' om te verwijderen
-      // usersEmail bewust niet: wijzigen vereist verificatie (apart)
+      image: pendingImage,
     }
-    info('Opslaan…')
     await updateProfile({ stores, usersId: me, updates, communityKey })
     myProfile = { ...myProfile, ...updates }
     profileEditing = false
-    $('profEdit').classList.add('hidden')
-    $('profView').classList.remove('hidden')
-    await render()
-    info('')
-    log('Profiel bijgewerkt ✓')
+    log('Profiel bijgewerkt \u2713')
   } catch (e) {
-    info('FOUT: ' + (e.message === 'usernametaken' ? 'die gebruikersnaam is al in gebruik' : e.message))
+    log('FOUT: ' + (e.message === 'usernametaken' ? 'die gebruikersnaam is al in gebruik' : e.message))
   } finally {
     btn.disabled = false
   }
@@ -1825,9 +1771,6 @@ $('txCsvBtn').onclick = () => exportChain(txUserId ?? me).catch((e) => log('FOUT
 $('refreshBtn').onclick = () => { log('Verversen (verse sync)…'); location.reload() }
 $('goDashboard').onclick = () => finishLogin().catch((e) => log('FOUT: ' + e.message))
 window.addEventListener('hashchange', () => route())
-$('profEditBtn').onclick = () => enterProfileEdit()
-$('profRevPrev').onclick = () => { if (revIdx < revVersions.length - 1) { revIdx++; renderProfileVersion() } } // ouder
-$('profRevNext').onclick = () => { if (revIdx > 0) { revIdx--; renderProfileVersion() } } // nieuwer
 $('profHeaderSave').onclick = () => saveProfile().catch((e) => log('FOUT: ' + e.message))
 // profHeaderBack = <a href="#/"> (dashboard) — geen onclick nodig.
 $('profPhotoBtn').onclick = () => showViewImage('profile')  // 1coinh: photo-button opent editor
