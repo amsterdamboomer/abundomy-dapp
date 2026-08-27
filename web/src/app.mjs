@@ -18,7 +18,7 @@ import { createKeystore, openKeystore, validatePassword, generateRecoveryCode, f
 import { exportUserChain } from '../../src/export.mjs'
 import { addToList, removeFromList, getList, BLACKLIST, WHITELIST } from '../../src/lists.mjs'
 import { COMMUNITY_SECRET, DECAY_RATE } from '../../src/config.mjs'
-import { t, getLang, setLang, onLangChange, loadI18n, applyStaticI18n, getFlag, hasLang, LANGUAGES } from './i18n.mjs'
+import { t, getLang, setLang, onLangChange, loadI18n, applyStaticI18n, getFlag, flagSrc, hasLang, LANGUAGES } from './i18n.mjs'
 
 const $ = (id) => document.getElementById(id)
 const log = (...a) => {
@@ -1302,6 +1302,9 @@ async function renderProfile({ id } = {}) {
   if (uid !== me) { location.hash = `#/humandetails/${uid}`; return } // peer → humandetails (copy van humandetails.php)
   $('profHeaderSave').style.display = ''
   enterProfileEdit()
+  // Geschiedenis-knop alleen tonen als je users_old-historie hebt (zoals profile.php).
+  const hasHistory = (await stores.usersOld.all()).map((e) => e.value).some((o) => o.uid_old === me)
+  $('profHistoryItem').style.display = hasHistory ? '' : 'none'
 }
 function renderProfileVersion() {
   const v = revVersions[revIdx]
@@ -1508,6 +1511,36 @@ function enterProfileEdit() {
   fillSelect('lefteye', eyeLabels(), Number(myProfile.leftEye) || 0)
   fillSelect('righteye', eyeLabels(), Number(myProfile.rightEye) || 0)
   $('specialfeatures').value = myProfile.specialFeatures || ''
+  // Onderaan (1–4): taal-pil + whitelist + nieuwsbrief/betalingsmails + footer.
+  renderProfLangBtn()
+  const wl = Number(myProfile.useWhitelist) === 1
+  const wlToggle = $('whitelist-toggle'); wlToggle.checked = wl
+  wlToggle.onchange = () => setPrivacyMode(wlToggle.checked ? 1 : 0).catch((e) => log('FOUT: ' + e.message))
+  const news = $('pref-newsletter'); news.checked = Number(myProfile.newsletter) === 1
+  news.onchange = () => setPref('newsletter', news.checked ? 1 : 0).catch((e) => log('FOUT: ' + e.message))
+  const pay = $('pref-payment'); pay.checked = Number(myProfile.paymentEmails) === 1
+  pay.onchange = () => setPref('paymentEmails', pay.checked ? 1 : 0).catch((e) => log('FOUT: ' + e.message))
+  $('profLangBtn').onclick = openLangOverlay
+  // Lijst beheren: apart scherm (volgende iteratie) — knop wijst voorlopig naar huidige plaats.
+  $('manage-list-btn').onclick = () => log('Lijst beheren: komt in volgende scherm (black-white-list)')
+  // Footer (1:1 met profile.php): PDF → selectiepagina, CSV → keten-export, Geschiedenis → eigen humandetails.
+  $('profPdfBtn').onclick = () => { location.hash = `#/pdf-select/${me}` }
+  $('profCsvBtn').onclick = async () => {
+    try {
+      const csv = await exportUserChain({ stores, userId: me, communityKey, asOf: new Date() })
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+      const a = document.createElement('a'); a.href = url; a.download = `${String(me).padStart(10,'0')}-abundomy.csv`; a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) { log('CSV-fout: ' + e.message) }
+  }
+  $('profHistoryBtn').onclick = () => { location.hash = `#/humandetails/${me}` }
+}
+
+/** Taal-pil op het profiel vullen: huidige vlag + naam (1:1 met profile.php). */
+function renderProfLangBtn() {
+  const code = getLang()
+  const flag = $('profLangFlag'); if (flag) flag.src = flagSrc(code) || 'img/flags/flag_en.jpg'
+  const txt = $('profLangText'); if (txt) txt.textContent = LANGUAGES[code] || 'Select Language'
 }
 function cancelProfileEdit() {
   profileEditing = false
@@ -2286,6 +2319,7 @@ function chooseLang(code) { setLang(code); closeLangOverlay() }
   onLangChange(() => {
     applyStaticI18n()
     renderLangFlag()
+    renderProfLangBtn()
     relabelSelect('suHair', hairLabels())
     relabelSelect('suLeftEye', eyeLabels())
     relabelSelect('suRightEye', eyeLabels())

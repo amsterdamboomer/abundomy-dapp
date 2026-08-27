@@ -213,6 +213,9 @@ export function getFlag(code, uid) {
   return `<img src="${src}" alt="${uid || code}" class="app-flag-img">`
 }
 
+/** Alleen de vlag-image-URL (geen <img>-wrapper) — voor eigen markup (bv. profiel-vlag). */
+export function flagSrc(code) { return FLAGS[code] || FLAGS.en || '' }
+
 function applyDir() {
   try {
     document.documentElement.lang = LANG

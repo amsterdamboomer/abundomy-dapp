@@ -781,27 +781,29 @@
               <label class="form__label" data-i18n="SU_SF">Bijzondere kenmerken</label><br>
               <textarea class="special-features2" id="specialfeatures" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken"></textarea>
             </div>
-            <label class="form__label" style="display:block">Taal</label>
-            <button type="button" class="profile-lang-button" onclick="alert('Taal wijzigen via de home-vlag (pre-login)')" style="text-decoration:none;background:none;border:none;width:100%;padding:0;cursor:pointer;">
-              <div class="profile-lang-flag"><span class="flag-crop-container page-list-flag" style="display:inline-block;"><img src="img/flags/flag_ne.jpg" alt="Taal" class="flag-img-round"></span></div><span class="profile-lang-text">Nederlands</span>
+            <label class="form__label" style="display:block" data-i18n="PR_LANG">Taal</label>
+            <button type="button" id="profLangBtn" style="text-decoration:none;background:none;border:none;width:100%;padding:0;cursor:pointer;">
+              <div class="profile-lang-button">
+                <div class="profile-lang-flag"><span class="flag-crop-container page-list-flag" style="display:inline-block;"><img id="profLangFlag" alt="" class="flag-img-round"></span></div><span class="profile-lang-text" id="profLangText"></span>
+              </div>
             </button>
             <div class="small_line"></div>
-            <label class="form__label2">Spam voorkomen</label><br><div class="small_line"></div>
-            <a href="#/"><button type="button" id="manage-list-btn" class="photo-button" style="width:100%;">Lijst beheren</button></a>
+            <label class="form__label2" data-i18n="PR_SPAM">Spam voorkomen</label><br><div class="small_line"></div>
+            <button type="button" id="manage-list-btn" class="photo-button" style="width:100%;" data-i18n="PR_MANAGE">Lijst beheren</button>
             <div class="medium_line"></div>
-            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="whitelist-toggle" onchange="alert('Whitelist beheer niet in dapp-profiel')"><span class="slider round"></span></label><span class="feedback5">Whitelist gebruiken</span></div></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="whitelist-toggle"><span class="slider round"></span></label><span class="feedback5" data-i18n="PR_WL_LABEL">Whitelist gebruiken</span></div></div>
             <div class="medium_line"></div>
-            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" onchange="alert('Voorkeur niet in dapp-profiel')"><span class="slider round"></span></label><span class="feedback5">Nieuwsbrief ontvangen</span></div></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="pref-newsletter"><span class="slider round"></span></label><span class="feedback5" data-i18n="PR_LBL_NEWS">Nieuwsbrief ontvangen</span></div></div>
             <div class="medium_line"></div>
-            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" onchange="alert('Voorkeur niet in dapp-profiel')"><span class="slider round"></span></label><span class="feedback5">Betalingsmails ontvangen</span></div></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="pref-payment"><span class="slider round"></span></label><span class="feedback5" data-i18n="PR_LBL_PAY_EM">Betalingsmails ontvangen</span></div></div>
             <div class="full_line"></div>
             <br><div class="signupdiv"></div>
             <div class="full-screen-line"></div>
             <div class="profile-footer-row">
               <div class="footer-item footer-date" id="profFooterDate"></div>
-              <div class="footer-item"><button type="button" class="login-button" onclick="alert('PDF niet in dapp-profiel')">PDF</button></div>
-              <div class="footer-item"><button type="button" class="login-button" onclick="alert('CSV niet in dapp-profiel')">CSV</button></div>
-              <div class="footer-item"><button type="button" class="login-button" onclick="alert('Geschiedenis niet in dapp-profiel')">Geschiedenis</button></div>
+              <div class="footer-item"><button type="button" class="login-button" id="profPdfBtn">PDF</button></div>
+              <div class="footer-item"><button type="button" class="login-button" id="profCsvBtn">CSV</button></div>
+              <div class="footer-item" id="profHistoryItem"><button type="button" class="login-button" id="profHistoryBtn" data-i18n="BTN_HISTORY">Geschiedenis</button></div>
             </div>
           </form>
         </div></div>
