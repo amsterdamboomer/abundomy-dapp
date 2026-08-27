@@ -558,7 +558,7 @@ async function renderHeader() {
   const bal = availableCoins({ joined: joinedDate(myDoc, usersOld), transactions: txs, userId: me, asOf: new Date() })
   $('header-balance').textContent = `${formatCoins(bal)} ᕫ`
   $('headerNum').textContent = formatDisplayNum(me)
-  $('headerAvatar').src = avatarFor({ ...myProfile, usersId: me })
+  $('headerAvatar').src = avatarFor({ ...myProfile, usersId: me, image: profileEditing ? (pendingImage || myProfile.image) : myProfile.image })
 }
 
 // ============================ HOME (openstaande verzoeken) ============================
