@@ -655,6 +655,69 @@
         </section>
 
         <!-- ===================== PROFIEL ===================== -->
+        <!-- humandetails: publiek persoonsdetail (copy van humandetails.php) -->
+        <section class="view hidden" id="view-humandetails">
+        <div id="centerContainer"><div class="field-wrapper">
+            <div class="medium_line"></div>
+            <div class="button4-row">
+              <div class="button4-column1"><button type="button" class="error-button" id="hdBlockBtn" data-i18n="HD_BLOCK">Block</button></div>
+              <div class="button4-column2"><p class="title" data-i18n="HD_TITLE">DETAILS</p></div>
+              <div class="button4-column3"><a id="hdBackLink" href="#/"><button type="button" class="login-button" data-i18n="PR_BACK">Back</button></a></div>
+            </div>
+            <div class="medium_line"></div>
+            <div class="button9-row"><div class="button9-column1"><p class="title"><img id="hdImg" class="humanicon" alt="" /></p></div></div>
+            <div class="small_line"></div>
+            <div class="button9-row"><div class="button9-column1"><p class="title" id="hdName"></p></div></div>
+            <div class="medium_line"></div>
+            <div class="button5-row">
+              <div class="button5-column1"><label class="form__label" data-i18n="HD_BALANCE">Balance</label><br><a id="hdBalanceLink" class="balance-link"><div class="form__numbers2" id="hdBalance" style="color:var(--button);cursor:pointer;"></div></a></div>
+              <div class="button5-column2"></div>
+              <div class="button5-column3"><label class="form__label2" data-i18n="HD_ACCOUNT">Account</label><br><div class="form__numbers2" id="hdAccount"></div></div>
+            </div>
+            <div class="small_line"></div>
+            <div class="button5-row">
+              <div class="button5-column1"><label class="form__label2" data-i18n="SU_BD">Birthday</label><br><div class="form__numbers2" id="hdBirthday"></div></div>
+              <div class="button5-column2"></div>
+              <div class="button5-column3"><label class="form__label2" data-i18n="SU_GN">Gender</label><br><div class="form__text2" id="hdGender"></div></div>
+            </div>
+            <div class="small_line"></div>
+            <div class="button5-row">
+              <div class="button5-column1"><label class="form__label2" data-i18n="SU_HT">Height</label><br><div class="form__numbers2" id="hdHeight"></div></div>
+              <div class="button5-column2"></div>
+              <div class="button5-column3"><label class="form__label2" data-i18n="SU_HR">Hair</label><br><div class="form__text2" id="hdHair"></div></div>
+            </div>
+            <div class="small_line"></div>
+            <div class="button5-row">
+              <div class="button5-column1"><label class="form__label2" data-i18n="SU_LE">Left Eye</label><br><div class="form__text2" id="hdLeftEye"></div></div>
+              <div class="button5-column2"></div>
+              <div class="button5-column3"><label class="form__label2" data-i18n="SU_RE">Right Eye</label><br><div class="form__text2" id="hdRightEye"></div></div>
+            </div>
+            <div class="small_line"></div>
+            <div id="hdSpecialWrap" class="hidden">
+              <label class="form__label" data-i18n="SU_SF">Special Features</label>
+              <textarea class="special-features" id="hdSpecial" readonly style="resize:none;"></textarea>
+              <div class="small_line"></div>
+            </div>
+            <div id="hdStatsWrap">
+              <label class="form__label" data-i18n="HD_STATS">Statistics</label>
+              <textarea class="special-features" id="hdStats" readonly style="resize:none;"></textarea>
+              <div class="small_line"></div>
+            </div>
+            <div class="full-screen-line"></div>
+            <div class="hd-footer-row">
+              <div class="hd-date-group">
+                <button type="button" class="time-nav-button" id="hdPrevBtn">&nbsp;&nbsp;&nbsp;&lt;&nbsp;&nbsp;&nbsp;</button>
+                <div class="hd-date-display" id="hdDate"></div>
+                <button type="button" class="time-nav-button" id="hdNextBtn">&nbsp;&nbsp;&nbsp;&gt;&nbsp;&nbsp;&nbsp;</button>
+              </div>
+              <div class="hd-download-group">
+                <button type="button" class="login-button" id="hdPdfBtn">PDF</button>
+                <button type="button" class="login-button" id="hdCsvBtn">CSV</button>
+              </div>
+            </div>
+        </div></div>
+        </section>
+
         <section class="view hidden" id="view-profile">
         <div id="centerContainer"><div class="field-wrapper">
           <form id="profileForm" action="javascript:void(0)" method="post" onsubmit="return false">

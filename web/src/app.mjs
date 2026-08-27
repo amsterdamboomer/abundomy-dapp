@@ -11,7 +11,7 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { startBrowserNode } from './ipfs-browser.mjs'
 import { openStores, closeStores } from '../../src/stores.mjs'
 import { deriveCommunityKey, decryptUserProfile } from '../../src/crypto.mjs'
-import { availableCoins, joinedDate, parseSqlDate } from '../../src/ledger.mjs'
+import { availableCoins, joinedDate, parseSqlDate, hoursBetween } from '../../src/ledger.mjs'
 import { createProposal, payProposal } from '../../src/payments.mjs'
 import { signup, changePassword, rekeyAuth, deriveAccountKey, updateProfile, repairIdentity } from '../../src/identity.mjs'
 import { createKeystore, openKeystore, validatePassword, generateRecoveryCode, formatRecoveryCode, normalizeRecoveryCode } from '../../src/auth.mjs'
@@ -444,21 +444,21 @@ async function resyncStores() {
 let currentView = 'home'
 let currentParams = {}
 
-const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', search: 'search', request: 'request' }
-const VIEWS = ['home', 'transactions', 'txdetail', 'profile', 'search', 'request']
+const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', humandetails: 'humandetails', search: 'search', request: 'request' }
+const VIEWS = ['home', 'transactions', 'txdetail', 'humandetails', 'profile', 'search', 'request']
 
 function parseHash() {
   const h = (location.hash || '#/').replace(/^#\/?/, '')
   const parts = h.split('/').filter(Boolean) // '#/transactions/5' → ['transactions','5']
-  return { name: parts[0] || 'home', arg: parts[1] }
+  return { name: parts[0] || 'home', arg: parts[1], rev: parts[2] }
 }
 
 function route() {
   if (me == null || !stores) return
-  const { name, arg } = parseHash()
+  const { name, arg, rev } = parseHash()
   const view = VIEW_NAMES[name] || 'home'
   currentView = view
-  currentParams = { id: arg, tid: arg }
+  currentParams = { id: arg, tid: arg, rev }
   for (const v of VIEWS) {
     $('view-' + v)?.classList.toggle('hidden', v !== view)
   }
@@ -540,6 +540,7 @@ async function render() {
     if (currentView === 'transactions') await renderTransactions(currentParams)
     else if (currentView === 'txdetail') await renderTxDetail(currentParams)
     else if (currentView === 'profile') await renderProfile(currentParams)
+    else if (currentView === 'humandetails') await renderHumanDetails(currentParams)
     else if (currentView === 'search') await renderSearch()
     else if (currentView === 'request') await renderRequest(currentParams)
     else await renderHome()
@@ -605,7 +606,7 @@ function buildProposalRow(p, prof, partnerId, kind) {
   const mine = kind === 'mine'
   const row = document.createElement('div')
   row.className = mine ? 'my-request-row' : 'request-row'
-  const profHref = partnerId === me ? '#/profile' : `#/profile/${partnerId}`
+  const profHref = partnerId === me ? '#/profile' : `#/humandetails/${partnerId}`
   const desc = (p.description || '').slice(0, mine ? 25 : 20)
   row.innerHTML =
     `<div class="request-column1"><a href="${profHref}"><img class="mainusericon" src="${avatarFor(prof)}" /></a></div>` +
@@ -748,7 +749,7 @@ async function renderSearch() {
     row.querySelector('img').src = avatarFor(p)
     row.querySelector('.select-button span:last-child').textContent = p.usersName || `#${p.usersId}`
     // Foto → persoonsdetail; brede knop → direct het verzoek (net als in het origineel).
-    row.querySelector('.avatar-button').onclick = () => { location.hash = `#/profile/${p.usersId}` }
+    row.querySelector('.avatar-button').onclick = () => { location.hash = `#/humandetails/${p.usersId}` }
     row.querySelector('.select-button').onclick = () => { location.hash = `#/request/${p.usersId}` }
     box.append(row)
     const line = document.createElement('div'); line.className = 'small_line'; box.append(line)
@@ -839,8 +840,8 @@ async function renderRequest({ id } = {}) {
   $('rcvImg').src = avatarFor(prof)
   $('rcvName').textContent = prof.usersName || `#${giver}`
   $('rcvAvail').textContent = `${t('RCV_AVAIL')}: ${formatCoins(avail)} ᕫ`
-  $('rcvDetailLink').href = `#/profile/${giver}`
-  $('rcvDetailLink2').href = `#/profile/${giver}`
+  $('rcvDetailLink').href = `#/humandetails/${giver}`
+  $('rcvDetailLink2').href = `#/humandetails/${giver}`
 
   const allowed = await mayRequestFrom(doc, giver)
   $('rcvForm').classList.toggle('hidden', !allowed)
@@ -1067,14 +1068,158 @@ async function renderTxDetail({ tid } = {}) {
   $('txdReceiverName').textContent = receiverP.usersName
   $('txdGiverImg').src = avatarFor({ usersId: t.giver, usersName: giverP.usersName, image: giverP.image })
   $('txdReceiverImg').src = avatarFor({ usersId: t.receiver, usersName: receiverP.usersName, image: receiverP.image })
-  $('txdGiverLink').href = t.giver === me ? '#/profile' : `#/profile/${t.giver}`
-  $('txdReceiverLink').href = t.receiver === me ? '#/profile' : `#/profile/${t.receiver}`
+  $('txdGiverLink').href = t.giver === me ? '#/profile' : `#/humandetails/${t.giver}`
+  $('txdReceiverLink').href = t.receiver === me ? '#/profile' : `#/humandetails/${t.receiver}`
   // Terug → de transactielijst van de eigen/peer-keten.
   $('txdBack').href = '#/transactions'
 }
 
 async function safeProfile(doc) {
   try { return await decryptUserProfile(doc, communityKey) } catch { return { usersName: `#${doc.usersId}`, usersId: doc.usersId } }
+}
+
+// ============================ HUMANDETAILS (publiek persoonsdetail — copy van humandetails.php) ============================
+let hdUid = null
+let hdRev = 0
+
+/** Trust-log-curve uit 1coinh humandetails.php ($calcCurve). */
+function hdCurve(v) { return v <= 0 ? 0 : 7.427 * Math.log(v + 0.008) + 35.85 }
+
+/** Statistieken + vertrouwen-score als platte tekst (humandetails.php → textarea). 1-op-1 met `renderProfileStats`. */
+function hdStatsText(h, m, joinedStr, txs) {
+  const cnt = (f) => txs.reduce((n, x) => n + (f(x) ? 1 : 0), 0)
+  const uniq = (pick, f) => new Set(txs.filter(f).map(pick)).size
+  const hGiver = cnt((x) => x.giver === h), hGiverU = uniq((x) => x.receiver, (x) => x.giver === h)
+  const hReceiver = cnt((x) => x.receiver === h), hReceiverU = uniq((x) => x.giver, (x) => x.receiver === h)
+  const mGiver = cnt((x) => x.giver === m && x.receiver === h)
+  const mReceiver = cnt((x) => x.receiver === m && x.giver === h)
+  const pOthers = hGiver - mReceiver, rOthers = hReceiver - mGiver
+  const hours = Math.max(0, hoursBetween(joinedStr ? parseSqlDate(joinedStr) : new Date(), new Date()))
+  const days = hours / 24, vdays = days < 10 ? days.toFixed(1) : Math.round(days).toString()
+  const trust = Math.max(0.1, Math.min(99.9, Math.round(
+    hdCurve(mGiver) * 0.37 + hdCurve(mReceiver) * 0.16 + hdCurve(hReceiver) * 0.12 +
+    hdCurve(hGiver) * 0.04 + hdCurve(hReceiverU) * 0.22 + hdCurve(hGiverU) * 0.02 + hdCurve(hours) * 0.07)))
+  return [
+    `${t('ST_PART')} ${vdays} ${t('ST_DAYS')}    ${t('ST_TRUST')} ${trust}%`,
+    `${t('ST_PAID_YOU')}: ${mReceiver}, ${t('ST_FROM_YOU')}: ${mGiver}`,
+    `${t('ST_PAID_OTHERS')} ${pOthers}, ${t('ST_RECEIVED')}: ${rOthers}`,
+    `${t('ST_UNI_PAID')}: ${hGiverU}, ${t('ST_UNI_REC')}: ${hReceiverU}`,
+  ].join('\n')
+}
+
+/** "5 Jan 2024" — geboortedatum zoals humandetails.php (j + M_ + Y). */
+function fmtHdBirthday(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '')
+  if (!m) return iso || '—'
+  return `${Number(m[3])} ${monthsShort()[Number(m[2]) - 1]} ${m[1]}`
+}
+
+/** Footer-datum "05 Jan 2024" (d + M_ + Y, UTC zoals de dapp-conventie). */
+function fmtHdDate(iso) {
+  if (!iso) return '—'
+  const d = parseSqlDate(iso)
+  if (isNaN(d.getTime())) return iso
+  return `${String(d.getUTCDate()).padStart(2, '0')} ${monthsShort()[d.getUTCMonth()]} ${d.getUTCFullYear()}`
+}
+
+async function renderHumanDetails({ id, rev } = {}) {
+  const uid = id != null ? Number(id) : me
+  hdUid = uid
+  hdRev = rev != null && rev !== '' ? rev : 0
+  const isSelf = uid === me
+
+  const usersOld = (await stores.usersOld.all()).map((e) => e.value)
+  let display, currentTime
+  if (hdRev === 0) {
+    const doc = (await stores.users.get(uid))?.value
+    if (!doc) { $('hdName').textContent = t('HD_ERR_404'); return }
+    display = await safeProfile(doc)
+    currentTime = doc.start ?? null
+  } else {
+    const snap = usersOld.find((o) => String(o.usersOldId) === String(hdRev) && o.uid_old === uid)
+    if (!snap) { location.hash = `#/humandetails/${uid}`; return } // stale rev → terug naar current
+    display = await safeProfile(snap)
+    currentTime = snap.start_old ?? null
+  }
+
+  $('hdImg').src = avatarFor({ ...display, usersId: uid })
+  $('hdName').textContent = display.usersName || `#${uid}`
+
+  const txs = (await stores.transactions.all()).map((e) => e.value)
+  const joined = hdRev === 0 ? joinedDate({ usersId: uid, start: currentTime }, usersOld) : currentTime
+  $('hdBalance').textContent = `${formatCoins(availableCoins({ joined, transactions: txs, userId: uid, asOf: new Date() }))} ᕫ`
+  $('hdAccount').textContent = formatDisplayNum(uid)
+  $('hdBalanceLink').href = `#/transactions/${uid}`
+
+  $('hdBirthday').textContent = fmtHdBirthday(display.birthday)
+  $('hdGender').textContent = genderLabels()[Number(display.gender) || 0] ?? '—'
+  $('hdHeight').textContent = display.height || '—'
+  $('hdHair').textContent = hairLabels()[Number(display.hair) || 0] ?? '—'
+  $('hdLeftEye').textContent = eyeLabels()[Number(display.leftEye) || 0] ?? '—'
+  $('hdRightEye').textContent = eyeLabels()[Number(display.rightEye) || 0] ?? '—'
+  const sf = display.specialFeatures || ''
+  $('hdSpecialWrap').classList.toggle('hidden', !sf)
+  if (sf) $('hdSpecial').value = sf
+
+  if (hdRev === 0) {
+    $('hdStatsWrap').classList.remove('hidden')
+    $('hdStats').value = hdStatsText(uid, me, joined, txs)
+  } else {
+    $('hdStatsWrap').classList.add('hidden') // humandetails.php: stats alleen bij current record
+  }
+
+  // Blokkeren-knop (verborgen voor zelf, zoals humandetails.php)
+  const blockBtn = $('hdBlockBtn')
+  if (isSelf) {
+    blockBtn.style.display = 'none'
+  } else {
+    blockBtn.style.display = ''
+    const blocked = new Set(await getList({ stores, ownerId: me, listType: BLACKLIST })).has(uid)
+    blockBtn.textContent = t(blocked ? 'HD_UNBLOCK' : 'HD_BLOCK')
+    blockBtn.className = blocked ? 'login-button' : 'error-button'
+    blockBtn.onclick = () => (blocked ? unblockUser(uid) : blockUser(uid)).catch((e) => log('FOUT: ' + e.message))
+  }
+
+  // Terug-knop = browser-back (komt van search/txdetail/proposal); fallback dashboard.
+  $('hdBackLink').onclick = (e) => { e.preventDefault(); history.length > 1 ? history.back() : (location.hash = '#/') }
+
+  // Geschiedenis-navigatie: snapshots (enc) oplopend; current = ná de nieuwste.
+  const snaps = usersOld.filter((o) => o.uid_old === uid && o.enc)
+    .sort((a, b) => (a.start_old < b.start_old ? -1 : a.start_old > b.start_old ? 1 : 0))
+  const setNav = (el, enabled, fn) => {
+    el.classList.toggle('nav-disabled', !enabled)
+    el.disabled = !enabled
+    el.onclick = enabled ? fn : null
+  }
+  if (hdRev === 0) {
+    const prev = snaps.length ? snaps[snaps.length - 1] : null
+    setNav($('hdPrevBtn'), !!prev, () => { location.hash = `#/humandetails/${uid}/${prev.usersOldId}` })
+    setNav($('hdNextBtn'), isSelf, isSelf ? () => { location.hash = '#/profile' } : null)
+  } else {
+    const idx = snaps.findIndex((s) => String(s.usersOldId) === String(hdRev))
+    const prev = idx > 0 ? snaps[idx - 1] : null
+    setNav($('hdPrevBtn'), !!prev, () => { location.hash = `#/humandetails/${uid}/${prev.usersOldId}` })
+    if (idx >= 0 && idx < snaps.length - 1) {
+      const nxt = snaps[idx + 1]
+      setNav($('hdNextBtn'), true, () => { location.hash = `#/humandetails/${uid}/${nxt.usersOldId}` })
+    } else if (isSelf) {
+      setNav($('hdNextBtn'), true, () => { location.hash = '#/profile' })
+    } else {
+      setNav($('hdNextBtn'), true, () => { location.hash = `#/humandetails/${uid}` })
+    }
+  }
+  $('hdDate').textContent = fmtHdDate(hdRev === 0 ? currentTime : currentTime)
+
+  // PDF/CSV voor de getoonde gebruiker (hergebruik transactions-view export)
+  $('hdPdfBtn').onclick = () => { txUserId = uid; printStatement().catch((e) => log('PDF-fout: ' + e.message)) }
+  $('hdCsvBtn').onclick = async () => {
+    try {
+      const csv = await exportUserChain({ stores, userId: uid, communityKey, asOf: new Date() })
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+      const a = document.createElement('a'); a.href = url; a.download = `${String(uid).padStart(10, '0')}-abundomy.csv`; a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) { log('CSV-fout: ' + e.message) }
+  }
 }
 
 // ============================ PROFIEL (eigen + peer) ============================
@@ -1088,26 +1233,9 @@ let revUid = null
 async function renderProfile({ id } = {}) {
   if (profileEditing) return
   const uid = id != null ? Number(id) : me
-  const isMe = uid === me
-  $('profHeaderSave').style.display = isMe ? '' : 'none'
-  if (isMe) { enterProfileEdit(); return }
-  // Peer: vul form#profileForm met peer's publieke data (read-only)
-  const doc = (await stores.users.get(uid))?.value
-  if (!doc) return
-  const p = await safeProfile(doc)
-  $('name').value = p.usersName || `#${uid}`
-  $('email').value = p.usersEmail || ''
-  $('uid').value = p.usersUid || ''
-  $('birthday').value = (p.birthday || '').slice(0, 10)
-  $('height').value = p.height || ''
-  fillSelect('gender', genderLabels(), Number(p.gender) || 0)
-  fillSelect('hair', hairLabels(), Number(p.hair) || 0)
-  fillSelect('lefteye', eyeLabels(), Number(p.leftEye) || 0)
-  fillSelect('righteye', eyeLabels(), Number(p.rightEye) || 0)
-  $('specialfeatures').value = p.specialFeatures || ''
-  for (const fid of ['name','email','uid','birthday','height','gender','hair','lefteye','righteye','specialfeatures']) {
-    const el = $(fid); if (el) el.disabled = true
-  }
+  if (uid !== me) { location.hash = `#/humandetails/${uid}`; return } // peer → humandetails (copy van humandetails.php)
+  $('profHeaderSave').style.display = ''
+  enterProfileEdit()
 }
 function renderProfileVersion() {
   const v = revVersions[revIdx]
@@ -1232,7 +1360,7 @@ async function renderPrivacy(wl, blocks, allows) {
   if (!ids.length) box.innerHTML = `<p class="muted">${wl ? t('APP_NONE_ALLOWED') : t('APP_NONE_BLOCKED')}</p>`
   for (const id of ids) {
     const row = document.createElement('div'); row.className = 'calc-row'
-    row.innerHTML = `<span class="calc-title"><a href="#/profile/${id}">${nameOf(id)} (#${id})</a></span>`
+    row.innerHTML = `<span class="calc-title"><a href="#/humandetails/${id}">${nameOf(id)} (#${id})</a></span>`
     const b = document.createElement('button'); b.className = 'btn-secondary'
     b.textContent = wl ? t('BW_BTN_DELETE') : t('HD_UNBLOCK')
     b.onclick = () => (wl ? removeAllow(id) : unblockUser(id)).catch((e) => log('FOUT: ' + e.message))
