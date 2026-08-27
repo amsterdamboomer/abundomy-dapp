@@ -444,8 +444,8 @@ async function resyncStores() {
 let currentView = 'home'
 let currentParams = {}
 
-const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', humandetails: 'humandetails', 'pdf-select': 'pdfselect', search: 'search', request: 'request' }
-const VIEWS = ['home', 'transactions', 'txdetail', 'humandetails', 'pdfselect', 'profile', 'search', 'request']
+const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', humandetails: 'humandetails', 'pdf-select': 'pdfselect', list: 'list', search: 'search', request: 'request' }
+const VIEWS = ['home', 'transactions', 'txdetail', 'humandetails', 'pdfselect', 'list', 'profile', 'search', 'request']
 
 function parseHash() {
   const h = (location.hash || '#/').replace(/^#\/?/, '')
@@ -459,6 +459,7 @@ function route() {
   const view = VIEW_NAMES[name] || 'home'
   currentView = view
   if (view !== 'pdfselect') pdfSelInitUid = null // pdf-select opnieuw initialiseren bij terugkomen
+  if (view !== 'list') { listViewInit = false; listMode = 'manage' } // list opnieuw initialiseren bij terugkomen
   currentParams = { id: arg, tid: arg, rev }
   for (const v of VIEWS) {
     $('view-' + v)?.classList.toggle('hidden', v !== view)
@@ -543,6 +544,7 @@ async function render() {
     else if (currentView === 'profile') await renderProfile(currentParams)
     else if (currentView === 'humandetails') await renderHumanDetails(currentParams)
     else if (currentView === 'pdfselect') await renderPdfSelect(currentParams)
+    else if (currentView === 'list') await renderList()
     else if (currentView === 'search') await renderSearch()
     else if (currentView === 'request') await renderRequest(currentParams)
     else await renderHome()
@@ -1124,6 +1126,97 @@ function fmtHdDate(iso) {
   return `${String(d.getUTCDate()).padStart(2, '0')} ${monthsShort()[d.getUTCMonth()]} ${d.getUTCFullYear()}`
 }
 
+// ============================ LIJST BEHEREN (black-white-list.php) ============================
+let listViewInit = false
+let listMode = 'manage' // 'manage' | 'confirm'
+let listSelected = new Set()
+
+async function renderList() {
+  const wl = Number(myProfile.useWhitelist) === 1
+  $('listTitle').textContent = t(wl ? 'BW_WHITE_LIST' : 'BW_BLACK_LIST')
+  if (listMode === 'confirm') { await renderListConfirm(wl); return }
+  if (listViewInit) return // al gebouwd — behoud checkbox-keuze (render() loopt elke ~2,5s)
+  listViewInit = true
+  const listType = wl ? WHITELIST : BLACKLIST
+  const targets = await getList({ stores, ownerId: me, listType })
+  const users = (await stores.users.all()).map((e) => e.value)
+  const box = $('listBox'); box.innerHTML = ''
+  const delBtn = $('listDeleteBtn'), toggleBtn = $('listToggleAll')
+  if (!targets.length) {
+    box.innerHTML = `<p class="feedback" style="padding:20px;">${t('BW_EMPTY_MSG', t(wl ? 'BW_WHITE_LIST' : 'BW_BLACK_LIST'))}</p>`
+    delBtn.disabled = true; toggleBtn.disabled = true
+    delBtn.style.opacity = '0.3'; delBtn.style.cursor = 'not-allowed'; delBtn.style.filter = 'grayscale(1)'
+  } else {
+    delBtn.disabled = false; toggleBtn.disabled = false
+    for (const tid of [...targets].sort((a, b) => a - b)) {
+      const u = users.find((x) => x.usersId === tid)
+      const p = u ? await safeProfile(u) : { usersName: `#${tid}` }
+      const row = document.createElement('div'); row.className = 'manage-row'
+      const colCheck = document.createElement('div'); colCheck.className = 'col-check'
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'manage-checkbox'; cb.value = tid
+      colCheck.append(cb)
+      const colImg = document.createElement('div'); colImg.className = 'col-img'
+      const a = document.createElement('a'); a.href = `#/humandetails/${tid}`
+      const img = document.createElement('img'); img.src = avatarFor({ ...p, usersId: tid }); img.className = 'mainusericon'; img.style.cssText = 'width:50px;height:50px;'
+      a.append(img); colImg.append(a)
+      const colName = document.createElement('div'); colName.className = 'col-name'; colName.textContent = p.usersName || `#${tid}`
+      row.append(colCheck, colImg, colName)
+      cb.onchange = updateListUIState
+      box.append(row)
+    }
+  }
+  delBtn.onclick = () => { if (!listSelected.size) return; listMode = 'confirm'; renderListConfirm(wl).catch(() => {}) }
+  toggleBtn.onclick = toggleListAll
+  toggleBtn.textContent = t('BW_BTN_SELECT_ALL')
+  $('listManage').classList.remove('hidden'); $('listConfirm').classList.add('hidden')
+  updateListUIState()
+}
+
+function updateListUIState() {
+  const cbs = $('listBox').querySelectorAll('.manage-checkbox')
+  const checked = Array.from(cbs).filter((cb) => cb.checked)
+  listSelected = new Set(checked.map((cb) => Number(cb.value)))
+  const delBtn = $('listDeleteBtn')
+  if (!checked.length) { delBtn.disabled = true; delBtn.style.opacity = '0.3'; delBtn.style.cursor = 'not-allowed'; delBtn.style.filter = 'grayscale(1)' }
+  else { delBtn.disabled = false; delBtn.style.opacity = '1'; delBtn.style.cursor = 'pointer'; delBtn.style.filter = 'grayscale(0)' }
+  const toggleBtn = $('listToggleAll')
+  if (cbs.length) toggleBtn.textContent = t(checked.length === cbs.length ? 'BW_BTN_DESELECT_ALL' : 'BW_BTN_SELECT_ALL')
+}
+
+function toggleListAll() {
+  const cbs = $('listBox').querySelectorAll('.manage-checkbox')
+  const toggleBtn = $('listToggleAll')
+  if (!cbs.length) return
+  const shouldSelect = toggleBtn.textContent === t('BW_BTN_SELECT_ALL')
+  cbs.forEach((cb) => { cb.checked = shouldSelect })
+  updateListUIState()
+}
+
+async function renderListConfirm(wl) {
+  $('listManage').classList.add('hidden'); $('listConfirm').classList.remove('hidden')
+  const ids = [...listSelected]
+  const actionWord = t(wl ? 'BW_ACT_BLOCK' : 'BW_ACT_UNBLOCK') // whitelist weg = blokkeren; blacklist weg = deblokkeren
+  let name = t('BW_PERSON')
+  if (ids.length === 1) {
+    const u = (await stores.users.all()).map((e) => e.value).find((x) => x.usersId === ids[0])
+    if (u) name = (await safeProfile(u)).usersName || name
+  }
+  $('listConfirmMsg').textContent = ids.length === 1
+    ? t('BW_CONFIRM_SINGLE', actionWord, name)
+    : t('BW_CONFIRM_MULTI', actionWord, ids.length)
+  $('listConfirmReq').classList.toggle('hidden', !wl) // alleen whitelist: verwijderen = blokkeren → verzoeken opgeruimd
+  $('listProceedBtn').onclick = async () => {
+    const listType = wl ? WHITELIST : BLACKLIST
+    for (const tid of ids) {
+      await removeFromList({ stores, ownerId: me, targetId: tid, listType })
+      if (wl) await clearMutualProposals(tid)
+    }
+    listViewInit = false; listMode = 'manage'
+    log(`${ids.length} van ${t(wl ? 'BW_WHITE_LIST' : 'BW_BLACK_LIST')} verwijderd`)
+    render().catch(() => {})
+  }
+}
+
 let pdfSelInitUid = null
 async function renderPdfSelect({ id } = {}) {
   const uid = id != null ? Number(id) : me
@@ -1521,8 +1614,8 @@ function enterProfileEdit() {
   const pay = $('pref-payment'); pay.checked = Number(myProfile.paymentEmails) === 1
   pay.onchange = () => setPref('paymentEmails', pay.checked ? 1 : 0).catch((e) => log('FOUT: ' + e.message))
   $('profLangBtn').onclick = openLangOverlay
-  // Lijst beheren: apart scherm (volgende iteratie) — knop wijst voorlopig naar huidige plaats.
-  $('manage-list-btn').onclick = () => log('Lijst beheren: komt in volgende scherm (black-white-list)')
+  // Lijst beheren → black/white-list beheerpagina (copy van black-white-list.php).
+  $('manage-list-btn').onclick = () => { location.hash = '#/list' }
   // Footer (1:1 met profile.php): PDF → selectiepagina, CSV → keten-export, Geschiedenis → eigen humandetails.
   $('profPdfBtn').onclick = () => { location.hash = `#/pdf-select/${me}` }
   $('profCsvBtn').onclick = async () => {

@@ -744,6 +744,39 @@
         </div></div>
         </section>
 
+        <!-- list: black/white-list beheerpagina (copy van black-white-list.php) -->
+        <section class="view hidden" id="view-list">
+        <div id="centerContainer"><div class="field-wrapper">
+            <div class="medium_line"></div>
+            <div class="button4-row">
+              <div class="button4-column1"></div>
+              <div class="button4-column2" style="display:flex;flex-direction:column;align-items:center;">
+                <p class="title" data-i18n="BW_TITLE_CONTACTS">CONTACTS</p>
+                <p class="display-num" id="listTitle" style="margin-top:-5px;color:var(--text);text-transform:uppercase;"></p>
+              </div>
+              <div class="button4-column3"><a href="#/profile"><button class="login-button" data-i18n="BW_BTN_BACK">Back</button></a></div>
+            </div>
+            <div class="full_line"></div>
+            <div id="listManage">
+              <div class="management-button-row">
+                <div class="manage-btn-col"><button type="button" id="listDeleteBtn" class="login-button" data-i18n="BW_BTN_DELETE">Delete</button></div>
+                <div class="manage-btn-col" style="text-align:right;"><button type="button" id="listToggleAll" class="login-button" data-i18n="BW_BTN_SELECT_ALL">Select all</button></div>
+              </div>
+              <div class="medium_line"></div>
+              <div class="listbox-container" id="listBox" style="max-height:450px;"></div>
+            </div>
+            <div id="listConfirm" class="hidden">
+              <div class="signupdiv">
+                <p class="feedback" id="listConfirmMsg"></p>
+                <p class="feedback hidden" id="listConfirmReq" data-i18n="BW_CONFIRM_DEL_REQ"></p>
+                <div class="small_line"></div>
+                <div class="centered-button-wrap"><button type="button" class="login-button" id="listProceedBtn" data-i18n="BW_BTN_PROCEED">Yes, proceed!</button></div>
+              </div>
+            </div>
+            <div class="full_line"></div>
+        </div></div>
+        </section>
+
         <section class="view hidden" id="view-profile">
         <div id="centerContainer"><div class="field-wrapper">
           <form id="profileForm" action="javascript:void(0)" method="post" onsubmit="return false">
