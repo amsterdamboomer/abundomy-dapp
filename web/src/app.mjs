@@ -458,6 +458,7 @@ function route() {
   const { name, arg, rev } = parseHash()
   const view = VIEW_NAMES[name] || 'home'
   currentView = view
+  if (view !== 'pdfselect') pdfSelInitUid = null // pdf-select opnieuw initialiseren bij terugkomen
   currentParams = { id: arg, tid: arg, rev }
   for (const v of VIEWS) {
     $('view-' + v)?.classList.toggle('hidden', v !== view)
@@ -1123,8 +1124,11 @@ function fmtHdDate(iso) {
   return `${String(d.getUTCDate()).padStart(2, '0')} ${monthsShort()[d.getUTCMonth()]} ${d.getUTCFullYear()}`
 }
 
+let pdfSelInitUid = null
 async function renderPdfSelect({ id } = {}) {
   const uid = id != null ? Number(id) : me
+  if (pdfSelInitUid === uid) return // al geïnitialiseerd voor deze gebruiker — behoud gebruikersinput (render() loopt elke ~2,5s)
+  pdfSelInitUid = uid
   const doc = (await stores.users.get(uid))?.value
   const p = doc ? await safeProfile(doc) : { usersName: `#${uid}` }
   $('pdfSelImg').src = avatarFor({ ...p, usersId: uid })
