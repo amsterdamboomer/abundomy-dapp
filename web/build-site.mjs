@@ -52,17 +52,17 @@ const RTL_LANGS = ['ah', 'ar', 'he', 'fa', 'ur', 'pa', 'pe']
 // zonder eigen boek vallen terug op 'en'. In de statische build kwam dit uit de DB → leeg
 // (gebroken cover/link); we vullen 'en' statisch in en laten JS het per taal wisselen.
 const BOOK_LIST = {
-  ar: { img: 'Cover_AR_300x425.jpg', pdf: 'ALWAFRA_(AR_IISDAR_1.3,_2025_uktubar_6).pdf' },
-  ch: { img: 'Cover_CH_300x425.jpg', pdf: 'FENGSHENG_DE_SHENGHUO_(CH_BANBEN_1.3,_2025_Nian_10_yue_6_ri).pdf' },
-  de: { img: 'Cover_DE_300x425.jpg', pdf: 'ABUNDOMIE_(DE_VERSION_1.3,_6._Oktober_2025).pdf' },
-  en: { img: 'Cover_EN_300x425.jpg', pdf: 'ABUNDOMY_(EN_VERSION_1.3,_October_6th,_2025).pdf' },
-  es: { img: 'Cover_ES_300x425.jpg', pdf: 'ABUNDOMIA_(ES_VERSIÓN_1.3,_6_octubre_2025).pdf' },
-  fr: { img: 'Cover_FR_300x425.jpg', pdf: 'ABUNDOMIE_(FR_VERSION_1.3,_6_Octobre_2025).pdf' },
-  ki: { img: 'Cover_KI_300x425.jpg', pdf: 'ABUNDOMY_(KI_KURE_1.3,_Ku ya_6_Ukwakira_2025).pdf' },
-  ne: { img: 'Cover_NE_300x425.jpg', pdf: 'ABUNDOMIE_(NE_VERSIE_1.3,_6_Oktober_2025).pdf' },
-  pt: { img: 'Cover_PT_300x425.jpg', pdf: 'ABUNDOMIA_(PT_VERSAO_1.3,_6_de_outubro_de_2025).pdf' },
-  pu: { img: 'Cover_PU_300x425.jpg', pdf: 'BELORI_(PU_VARAJANA_1.3,_6_Akatubara,_2025).pdf' },
-  ru: { img: 'Cover_RU_300x425.jpg', pdf: 'IZOBILOMICS_(RU_VERSIYA_1.3,_6_oktyabrya_2025).pdf' },
+  ar: { img: 'Cover_ar_300x425.jpg', pdf: 'ar_Wafraqtisad_2.0.pdf' },
+  ch: { img: 'Cover_ch_300x425.jpg', pdf: 'ch_Fengshengjingji_2.0.pdf' },
+  de: { img: 'Cover_de_300x425.jpg', pdf: 'de_Abundomie_2.0.pdf' },
+  en: { img: 'Cover_en_300x425.jpg', pdf: 'en_Abundomy_2.0.pdf' },
+  es: { img: 'Cover_es_300x425.jpg', pdf: 'es_Abundomia_2.0.pdf' },
+  fr: { img: 'Cover_fr_300x425.jpg', pdf: 'fr_Abondomie_2.0.pdf' },
+  ki: { img: 'Cover_ki_300x425.jpg', pdf: 'ki_Abundomy_2.0.pdf' },
+  ne: { img: 'Cover_ne_300x425.jpg', pdf: 'ne_Abundomie_2.0.pdf' },
+  pt: { img: 'Cover_pt_300x425.jpg', pdf: 'pt_Abundomia_2.0.pdf' },
+  pu: { img: 'Cover_pu_300x425.jpg', pdf: 'pu_Prachurta_Arthachara_2.0.pdf' },
+  ru: { img: 'Cover_ru_300x425.jpg', pdf: 'ru_Izobilomika_2.0.pdf' },
 }
 
 /**
