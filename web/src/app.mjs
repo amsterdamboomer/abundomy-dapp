@@ -895,7 +895,8 @@ async function sendRequest() {
     $('rcvInfo').className = 'success'
     info(`${t('RCV_SUCCESS')} ${prof.usersName || '#' + giver}`)
     $('rcvAmount').value = ''; $('rcvDesc').value = ''
-    await render()
+    // 1 pagina terug (zoals browser-back) — V1 receiver.php gaat na het versturen terug.
+    if (history.length > 1) history.back(); else location.hash = '#/'
   } catch (e) {
     $('rcvInfo').className = 'error'
     info('FOUT: ' + e.message)
