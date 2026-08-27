@@ -655,6 +655,32 @@
         </section>
 
         <!-- ===================== PROFIEL ===================== -->
+        <!-- pdf-select: gedeelde PDF-selectiepagina (copy van download-pdf.php) -->
+        <section class="view hidden" id="view-pdf-select">
+        <div id="centerContainer"><div class="field-wrapper">
+            <div class="medium_line"></div>
+            <p class="title" style="text-align:center;width:100%;" data-i18n="PDF_TITLE">Download PDF</p>
+            <div class="medium_line"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:25px;">
+              <img id="pdfSelImg" class="transactionicon2" style="width:80px;height:80px;margin-bottom:10px;" alt="" />
+              <p class="title" id="pdfSelName" style="text-align:center;font-size:1.2rem;width:100%;"></p>
+            </div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="pdfSelHistory"><span class="slider round"></span></label><span class="feedback5" id="pdfSelHistoryLbl" data-i18n="PDF_LBL_HISTORY">Print full personal history</span></div></div>
+            <div class="large_line"></div>
+            <div class="button5-row">
+              <div class="button5-column1"><label class="form__label" data-i18n="PDF_FROM">From</label><br><input type="date" id="pdfSelFrom" required /></div>
+              <div class="button5-column2"></div>
+              <div class="button5-column3"><label class="form__label" data-i18n="PDF_TO">To</label><br><input type="date" id="pdfSelTo" required /></div>
+            </div>
+            <div class="medium_line"></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="pdfSelAll"><span class="slider round"></span></label><span class="feedback5" data-i18n="PDF_LBL_ALL">Print all transactions</span></div></div>
+            <div class="large_line"></div>
+            <div class="button-row" style="display:flex;justify-content:center;"><button type="button" class="login-button" id="pdfSelGenBtn" data-i18n="PDF_BTN_DL">Print PDF</button></div>
+            <div class="full_line"></div>
+            <div class="button-row" style="display:flex;justify-content:center;"><a id="pdfSelBackLink"><button type="button" class="login-button" data-i18n="PR_BACK">Back</button></a></div>
+        </div></div>
+        </section>
+
         <!-- humandetails: publiek persoonsdetail (copy van humandetails.php) -->
         <section class="view hidden" id="view-humandetails">
         <div id="centerContainer"><div class="field-wrapper">

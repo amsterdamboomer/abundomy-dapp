@@ -444,8 +444,8 @@ async function resyncStores() {
 let currentView = 'home'
 let currentParams = {}
 
-const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', humandetails: 'humandetails', search: 'search', request: 'request' }
-const VIEWS = ['home', 'transactions', 'txdetail', 'humandetails', 'profile', 'search', 'request']
+const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', humandetails: 'humandetails', 'pdf-select': 'pdfselect', search: 'search', request: 'request' }
+const VIEWS = ['home', 'transactions', 'txdetail', 'humandetails', 'pdfselect', 'profile', 'search', 'request']
 
 function parseHash() {
   const h = (location.hash || '#/').replace(/^#\/?/, '')
@@ -541,6 +541,7 @@ async function render() {
     else if (currentView === 'txdetail') await renderTxDetail(currentParams)
     else if (currentView === 'profile') await renderProfile(currentParams)
     else if (currentView === 'humandetails') await renderHumanDetails(currentParams)
+    else if (currentView === 'pdfselect') await renderPdfSelect(currentParams)
     else if (currentView === 'search') await renderSearch()
     else if (currentView === 'request') await renderRequest(currentParams)
     else await renderHome()
@@ -1122,6 +1123,65 @@ function fmtHdDate(iso) {
   return `${String(d.getUTCDate()).padStart(2, '0')} ${monthsShort()[d.getUTCMonth()]} ${d.getUTCFullYear()}`
 }
 
+async function renderPdfSelect({ id } = {}) {
+  const uid = id != null ? Number(id) : me
+  const doc = (await stores.users.get(uid))?.value
+  const p = doc ? await safeProfile(doc) : { usersName: `#${uid}` }
+  $('pdfSelImg').src = avatarFor({ ...p, usersId: uid })
+  $('pdfSelName').textContent = p.usersName || `#${uid}`
+
+  // Geschiedenis-switch: alleen actief als deze gebruiker users_old-rijen heeft.
+  const hasHistory = (await stores.usersOld.all()).map((e) => e.value).some((o) => o.uid_old === uid)
+  const histInput = $('pdfSelHistory')
+  histInput.disabled = !hasHistory
+  histInput.checked = false
+  const histSlider = histInput.parentElement.querySelector('.slider')
+  if (histSlider) histSlider.style.opacity = hasHistory ? '' : '0.3'
+  $('pdfSelHistoryLbl').style.color = hasHistory ? '' : 'var(--disabled)'
+
+  // Transactiebereik (min/max) voor de "alles"-schakelaar.
+  const txs = (await stores.transactions.all()).map((e) => e.value)
+    .filter((t) => t.giver === uid || t.receiver === uid)
+  const times = txs.map((t) => t.time_stamp).sort()
+  const firstT = times.length ? times[0].slice(0, 10) : null
+  const lastT = times.length ? times[times.length - 1].slice(0, 10) : null
+  const year = new Date().getUTCFullYear()
+  const fromInput = $('pdfSelFrom'), toInput = $('pdfSelTo'), allToggle = $('pdfSelAll')
+  fromInput.value = `${year}-01-01`; toInput.value = `${year}-12-31`
+  fromInput.disabled = false; toInput.disabled = false; fromInput.style.opacity = '1'; toInput.style.opacity = '1'
+  allToggle.checked = !!(firstT && lastT && fromInput.value <= firstT && toInput.value >= lastT)
+
+  function updateInputState() {
+    if (allToggle.checked) {
+      if (firstT && lastT) { fromInput.value = firstT; toInput.value = lastT }
+      fromInput.disabled = true; toInput.disabled = true
+      fromInput.style.opacity = '0.3'; toInput.style.opacity = '0.3'
+    } else {
+      fromInput.disabled = false; toInput.disabled = false
+      fromInput.style.opacity = '1'; toInput.style.opacity = '1'
+    }
+  }
+  allToggle.onchange = updateInputState
+  function checkDateBoundaries() {
+    if (!firstT || !lastT) return
+    allToggle.checked = (fromInput.value <= firstT && toInput.value >= lastT)
+    updateInputState()
+  }
+  fromInput.onchange = checkDateBoundaries
+  toInput.onchange = checkDateBoundaries
+  updateInputState()
+
+  $('pdfSelGenBtn').onclick = () => {
+    txUserId = uid
+    const opts = allToggle.checked
+      ? { history: histInput.checked }
+      : { from: fromInput.value, to: toInput.value, history: histInput.checked }
+    printStatement(opts).catch((e) => log('PDF-fout: ' + e.message))
+  }
+  // Terug naar de humandetails-pagina (met evt. rev) waarvandaan we kwamen.
+  $('pdfSelBackLink').href = `#/humandetails/${uid}` + (hdRev ? `/${hdRev}` : '')
+}
+
 async function renderHumanDetails({ id, rev } = {}) {
   const uid = id != null ? Number(id) : me
   hdUid = uid
@@ -1212,8 +1272,8 @@ async function renderHumanDetails({ id, rev } = {}) {
   }
   $('hdDate').textContent = fmtHdDate(currentTime)
 
-  // PDF/CSV voor de getoonde gebruiker (hergebruik transactions-view export)
-  $('hdPdfBtn').onclick = () => { txUserId = uid; printStatement().catch((e) => log('PDF-fout: ' + e.message)) }
+  // PDF/CSV voor de getoonde gebruiker. PDF → selectiepagina (copy van download-pdf.php).
+  $('hdPdfBtn').onclick = () => { location.hash = `#/pdf-select/${uid}` }
   $('hdCsvBtn').onclick = async () => {
     try {
       const csv = await exportUserChain({ stores, userId: uid, communityKey, asOf: new Date() })
