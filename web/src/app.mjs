@@ -1129,6 +1129,10 @@ async function renderHumanDetails({ id, rev } = {}) {
   const isSelf = uid === me
 
   const usersOld = (await stores.usersOld.all()).map((e) => e.value)
+  // Tijdlijn = ALLE users_old-rijen van deze gebruiker (incl. join-only), oplopend op
+  // start_old — 1-op-1 met humandetails.php (prev/next op start_old, géén enc-eis).
+  const hist = usersOld.filter((o) => o.uid_old === uid)
+    .sort((a, b) => (a.start_old < b.start_old ? -1 : a.start_old > b.start_old ? 1 : 0))
   let display, currentTime
   if (hdRev === 0) {
     const doc = (await stores.users.get(uid))?.value
@@ -1136,10 +1140,11 @@ async function renderHumanDetails({ id, rev } = {}) {
     display = await safeProfile(doc)
     currentTime = doc.start ?? null
   } else {
-    const snap = usersOld.find((o) => String(o.usersOldId) === String(hdRev) && o.uid_old === uid)
-    if (!snap) { location.hash = `#/humandetails/${uid}`; return } // stale rev → terug naar current
-    display = await safeProfile(snap)
-    currentTime = snap.start_old ?? null
+    const row = hist.find((o) => String(o.usersOldId) === String(hdRev))
+    if (!row) { location.hash = `#/humandetails/${uid}`; return } // stale rev → terug naar current
+    currentTime = row.start_old ?? null
+    // enc-snapshot → dat revisie's profiel; join-only (zonder enc) → huidig profiel als fallback
+    display = row.enc ? await safeProfile(row) : await safeProfile((await stores.users.get(uid))?.value)
   }
 
   $('hdImg').src = avatarFor({ ...display, usersId: uid })
@@ -1183,32 +1188,29 @@ async function renderHumanDetails({ id, rev } = {}) {
   // Terug-knop = browser-back (komt van search/txdetail/proposal); fallback dashboard.
   $('hdBackLink').onclick = (e) => { e.preventDefault(); history.length > 1 ? history.back() : (location.hash = '#/') }
 
-  // Geschiedenis-navigatie: snapshots (enc) oplopend; current = ná de nieuwste.
-  const snaps = usersOld.filter((o) => o.uid_old === uid && o.enc)
-    .sort((a, b) => (a.start_old < b.start_old ? -1 : a.start_old > b.start_old ? 1 : 0))
+  // Geschiedenis-navigatie (humandetails.php): prev = nieuwste rij met start_old < currentTime;
+  // next = oudste rij met start_old > currentTime (of null = current record).
+  const findPrev = (ct) => { let p = null; for (const r of hist) { if (r.start_old < ct) p = r; else break } return p }
+  const findNext = (ct) => hist.find((r) => r.start_old > ct) ?? null
   const setNav = (el, enabled, fn) => {
     el.classList.toggle('nav-disabled', !enabled)
     el.disabled = !enabled
     el.onclick = enabled ? fn : null
   }
-  if (hdRev === 0) {
-    const prev = snaps.length ? snaps[snaps.length - 1] : null
-    setNav($('hdPrevBtn'), !!prev, () => { location.hash = `#/humandetails/${uid}/${prev.usersOldId}` })
-    setNav($('hdNextBtn'), isSelf, isSelf ? () => { location.hash = '#/profile' } : null)
+  const prevRow = findPrev(currentTime)
+  const nextRow = findNext(currentTime)
+  setNav($('hdPrevBtn'), !!prevRow, () => { location.hash = `#/humandetails/${uid}/${prevRow.usersOldId}` })
+  if (nextRow) {
+    setNav($('hdNextBtn'), true, () => { location.hash = `#/humandetails/${uid}/${nextRow.usersOldId}` })
+  } else if (hdRev === 0 && isSelf) {
+    setNav($('hdNextBtn'), true, () => { location.hash = '#/profile' }) // current + zelf → profiel
+  } else if (hdRev === 0) {
+    setNav($('hdNextBtn'), false, null) // current + ander → disabled (geen nieuwer)
   } else {
-    const idx = snaps.findIndex((s) => String(s.usersOldId) === String(hdRev))
-    const prev = idx > 0 ? snaps[idx - 1] : null
-    setNav($('hdPrevBtn'), !!prev, () => { location.hash = `#/humandetails/${uid}/${prev.usersOldId}` })
-    if (idx >= 0 && idx < snaps.length - 1) {
-      const nxt = snaps[idx + 1]
-      setNav($('hdNextBtn'), true, () => { location.hash = `#/humandetails/${uid}/${nxt.usersOldId}` })
-    } else if (isSelf) {
-      setNav($('hdNextBtn'), true, () => { location.hash = '#/profile' })
-    } else {
-      setNav($('hdNextBtn'), true, () => { location.hash = `#/humandetails/${uid}` })
-    }
+    // op een historische rij, next = current record: zelf → profiel, ander → current humandetails
+    setNav($('hdNextBtn'), true, () => { location.hash = isSelf ? '#/profile' : `#/humandetails/${uid}` })
   }
-  $('hdDate').textContent = fmtHdDate(hdRev === 0 ? currentTime : currentTime)
+  $('hdDate').textContent = fmtHdDate(currentTime)
 
   // PDF/CSV voor de getoonde gebruiker (hergebruik transactions-view export)
   $('hdPdfBtn').onclick = () => { txUserId = uid; printStatement().catch((e) => log('PDF-fout: ' + e.message)) }
