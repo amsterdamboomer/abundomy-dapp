@@ -1,0 +1,19 @@
+{
+  "name": "Abundomy Money",
+  "short_name": "Abundomy",
+  "description": "Gedecentraliseerde gemeenschapsmunt — vraag, stort en volg transacties.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b1208",
+  "theme_color": "#1b1208",
+  "lang": "nl",
+  "dir": "ltr",
+  "categories": ["finance", "social", "productivity"],
+  "icons": [
+    { "src": "./img/pwa-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./img/pwa-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./img/pwa-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

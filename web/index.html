@@ -8,6 +8,15 @@
     <meta name="author" content="Teun van Sambeek" />
 
     <link rel="icon" href="img/favicon.ico" type="image/x-icon" />
+
+    <!-- PWA (2026-09-10, fase A — install-knop). Zie docs/pwa-ontwerp-install-app-2026-09-10.md -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="theme-color" content="#1b1208" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Abundomy" />
+    <link rel="apple-touch-icon" href="./img/pwa-icon-192.png" />
+
     <link rel="stylesheet" type="text/css" href="css/reset.css" />
     <link rel="stylesheet" type="text/css" href="css/main.css" />
     <link rel="stylesheet" type="text/css" href="css/dapp-custom.css" />
@@ -846,5 +855,6 @@
     </div>
 
     <script type="module" src="./src/app.mjs"></script>
+    <script type="module" src="./src/pwa.mjs"></script>
   </body>
 </html>
