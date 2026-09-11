@@ -1818,12 +1818,122 @@ function fmtFullDate(s) {
  * haar/ogen/geboortedatum/bijzondere kenmerken, vertaalde kleurnamen), + brug-regel
  * 'sinds laatste transactie tot nu'. Labels vallen voor niet-EN/NL talen terug op EN.
  */
+let _pdfBlobUrl = null
+// PDF-preview-overlay IN de app openen met een laad-document; de aanroeper laadt
+// daarna het echte PDF-document in #pdfFrame (blob = zelfde-origin). Zonder overlay
+// zou window.open('','_blank') op een geïnstalleerde PWA de gebruiker opsluiten in
+// het webview, zonder terug-knop of print-UI.
+function openPdfOverlay(loading) {
+  $('pdfOverlay').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+  const frame = $('pdfFrame')
+  frame.onload = null
+  if (_pdfBlobUrl) URL.revokeObjectURL(_pdfBlobUrl)
+  _pdfBlobUrl = URL.createObjectURL(new Blob(
+      [loading || '<!doctype html><meta charset="utf-8"><body style="font:14px sans-serif;margin:32px;color:#555">…</body>'],
+      { type: 'text/html;charset=utf-8' }))
+  frame.src = _pdfBlobUrl
+  $('pdfTitle').textContent = t('PDF_TRANSACTION_OVERVIEW')
+  fillPdfAppbar()
+}
+function closePdfOverlay() {
+  $('pdfOverlay').classList.add('hidden')
+  document.body.style.overflow = ''
+  const frame = $('pdfFrame')
+  frame.onload = null
+  if (_pdfBlobUrl) { URL.revokeObjectURL(_pdfBlobUrl); _pdfBlobUrl = null }
+  frame.src = 'about:blank'
+}
+
+// App-balk van de PDF-overlay vullen (home/saldo/user-avatar + 'Delen/Opslaan'-knop),
+// zodat de gebruiker óók tijdens de preview en vóór de PDF-actie in de app georiënteerd
+// blijft en via home/avatar kan navigeren. De balans komt uit #app-header, de avatar
+// uit #headerAvatar. Zodat er NIET wordt gekeken naar een kale PDF-viewport.
+function fillPdfAppbar() {
+  try {
+    const hn = $('headerNum'), hb = $('header-balance'), hAv = $('headerAvatar')
+    if ($('pdfBalance')) {
+      const parts = [hn && hn.textContent, hb && hb.textContent].filter(Boolean)
+      $('pdfBalance').textContent = parts.join(' ').replace(/\s+/g, ' ').trim()
+      }
+    if (hAv && hAv.src && $('pdfAvatarImg')) $('pdfAvatarImg').src = hAv.src
+    if ($('pdfShareBtn')) $('pdfShareBtn').textContent = getLang() === 'en' ? 'Share / Save PDF' : 'Delen / Opslaan'
+  } catch {}
+}
+
+// Maak van de preview-iframe één echt, deelbaar PDF-bestand (html2canvas → jsPDF) en
+// deel via het OS-share-sheet (Web Share API — dat heeft altijd een Cancel/terug, dus de
+// gebruiker valt terug in de app) of — als dat niet kan — download het als .pdf.
+// Native print blijft de 'Print'-knop; bij enige fout valen we terug op print.
+async function shareOrSavePdf(frame, name) {
+  const btn = $('pdfShareBtn'), hint = $('pdfHint')
+  const label = btn ? btn.textContent : ''
+  try {
+    if (btn) btn.textContent = '…'
+    if (hint) hint.textContent = 'PDF wordt gemaakt …'
+    const jsPDFmod = await import('jspdf')
+    const html2canvasMod = await import('html2canvas')
+    const jsPDFCtor = jsPDFmod.jsPDF || jsPDFmod.default
+    const html2canvas = html2canvasMod.default || html2canvasMod
+    const w = frame.contentWindow
+    const doc = w && w.document
+    if (!doc) throw new Error('iframe-document niet beschikbaar')
+    if (doc.readyState !== 'complete') { await new Promise((r) => setTimeout(r, 350)) }
+    const canvas = await html2canvas(doc.documentElement, {
+      scale: Math.max(1.5, Math.min(2, (window.devicePixelRatio || 1.5) + 0.5)),
+      backgroundColor: '#ffffff',
+      useCORS: true
+      })
+     // Canvas → A4-pagina's.
+    const pdf = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageW = 210, pageH = 297
+    const imgH = (canvas.height * pageW) / canvas.width
+    const imgData = canvas.toDataURL('image/jpeg', 0.92)
+    pdf.addImage(imgData, 'JPEG', 0, 0, pageW, imgH, undefined, 'FAST')
+    let pos = 0, remaining = imgH - pageH
+    while (remaining > 0) {
+      pos -= pageH
+      pdf.addPage()
+      pdf.addImage(imgData, 'JPEG', 0, pos, pageW, imgH, undefined, 'FAST')
+      remaining -= pageH
+      }
+    const ab = pdf.output('arraybuffer')
+    const blob = new Blob([ab], { type: 'application/pdf' })
+    const fname = `${String(name || 'overzicht').replace(/[^\w.-]+/g, '_')}-overzicht.pdf`
+    const file = new File([blob], fname, { type: 'application/pdf' })
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: fname, text: t('PDF_TRANSACTION_OVERVIEW') })
+        log(`PDF gedeeld: ${fname}`)
+        if (hint) hint.textContent = 'PDF gedeeld ✓'
+        } catch (e) {
+        if (e && e.name === 'AbortError') { if (hint) hint.textContent = 'Deelen geannuleerd.'; return }
+        throw e
+         }
+      } else {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a'); a.href = url; a.download = fname
+      document.body.appendChild(a); a.click(); a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 5000)
+      log(`PDF opgeslagen: ${fname}`)
+      if (hint) hint.textContent = 'PDF opgeslagen ✓'
+      }
+  } catch (e) {
+    log('PDF-maken/mislukt, fallback naar print', e)
+    if (hint) hint.textContent = 'PDF kon niet worden gemaakt — gebruik de “Print”-knop.'
+    try { if (frame && frame.contentWindow) frame.contentWindow.print() } catch {}
+  } finally {
+    if (btn) btn.textContent = label
+    }
+}
 async function printStatement({ from, to, history } = {}) {
   // Venster METEEN openen (binnen het klik-gebaar) — anders blokkeert de pop-upfilter
   // het na de async data-ophaal. Daarna vullen we het.
-  const w = window.open('', '_blank')
-  if (!w) { log('Pop-up geblokkeerd — sta pop-ups toe om de PDF te maken.'); return }
-  w.document.write('<!doctype html><meta charset="utf-8"><title>Overzicht</title>' +
+   // Overlay IN de app openen (niet window.open('_blank')): op een geïnstalleerde
+   // PWA is dat nieuwe "venster" het webview zonder retour- of print-UI. We renderen
+   // de PDF in een iframe met vaste Terug/Print-knoppen → je kunt altijd terug en
+   // via 'PDF' de systeem-print/Share-sheet (opslaan als PDF).
+  openPdfOverlay('<!doctype html><meta charset="utf-8"><title>Overzicht</title>' +
     '<body style="font:14px Arial,sans-serif;margin:32px;color:#555">Overzicht voorbereiden…</body>')
 
   const uid = txUserId ?? me
@@ -2026,9 +2136,18 @@ async function printStatement({ from, to, history } = {}) {
     `<a href="https://www.abundomy.com" style="color:#916B01;text-decoration:none;">www.abundomy.com</a></div></div>` +
     `</body></html>`
 
-  w.document.open(); w.document.write(html); w.document.close(); w.focus()
-  setTimeout(() => { try { w.print() } catch {} }, 350) // even tijd om te renderen
-  log(`PDF-overzicht ${name} geopend (${all.length} transacties) — kies 'Opslaan als PDF'.`)
+    // Laad het volledige PDF-document in de in-app iframe (blob-URL = zelfde-origin,
+    // dus #pdfFrame.contentWindow.print() print alleen dit frame). De gebruiker blijft
+    // in de app: 'Terug' sluit de overlay, 'PDF' opent de print/Share-sheet.
+  if (_pdfBlobUrl) URL.revokeObjectURL(_pdfBlobUrl)
+  _pdfBlobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }))
+  const frame = $('pdfFrame')
+  frame.onload = () => {
+      $('pdfHint').textContent = 'Blader door de preview · tik "PDF" om te printen of "Opslaan als PDF" te kiezen.'
+    }
+  frame.src = _pdfBlobUrl
+   $('pdfTitle').textContent = `${name} — ${t('PDF_TRANSACTION_OVERVIEW')}`
+  log(`PDF-overzicht ${name} geopend (${all.length} transacties) — tik 'PDF' om te printen of kies 'Opslaan als PDF'.`)
 }
 
 fetch('relay.json').then((r) => r.ok ? $('relayInfo').textContent = 'Relay gevonden ✓ — klaar om te verbinden.'
@@ -2088,6 +2207,40 @@ $('pdfGenBtn').onclick = () => {
   const opts = scope === 'range' ? { from: $('pdfFrom').value, to: $('pdfTo').value, history } : { history }
   printStatement(opts).catch((e) => log('FOUT: ' + e.message))
 }
+      // PDF-preview-overlay (in-app print/save-as-PDF — vervanger voor window.open, dat op
+      // de geïnstalleerde PWA opsluit): 'Terug' sluit de overlay, 'PDF' print via het
+      // iframe-venster (frame-gedeeld → alleen de PDF, geen app-chrome), Escape sluit.
+// Stale-overlay reset: voorkom dat de PDF-overlay 'vast' over de app zit na een
+// (her-)start van de iOS PWA-webview of na bfcache-terugkeer (pagehide/pageshow).
+// Zet de overlay bij laden/terugkeer altijd gesloten en maak blob-URL + iframe op. Zodat
+// de app nooit 'opgesloten' achter de PDF-preview begint. (Oude window.open-weg is weg — die
+// opende een nieuw tabblad op de browser en liet op iOS een losse webview over.)
+function _pdfOverlayForceClosed() {
+  const o = $('pdfOverlay')
+  if (o && !o.classList.contains('hidden')) closePdfOverlay()
+  document.body.style.overflow = ''
+  if (_pdfBlobUrl) { URL.revokeObjectURL(_pdfBlobUrl); _pdfBlobUrl = null }
+  const f = $('pdfFrame')
+  if (f) { f.onload = null; f.src = 'about:blank' }
+ }
+_pdfOverlayForceClosed()
+window.addEventListener('pageshow', (e) => { if (e.persisted || !$('pdfOverlay').classList.contains('hidden')) _pdfOverlayForceClosed() })
+window.addEventListener('load', () => _pdfOverlayForceClosed())
+  if ($('pdfBackBtn')) $('pdfBackBtn').onclick = closePdfOverlay
+  if ($('pdfHomeBtn')) $('pdfHomeBtn').onclick = closePdfOverlay
+  if ($('pdfAvatarBtn')) $('pdfAvatarBtn').onclick = closePdfOverlay
+  if ($('pdfPrintBtn')) $('pdfPrintBtn').onclick = () => {
+      const w = $('pdfFrame').contentWindow
+      if (!w || w.document.readyState !== 'complete') { log('Preview wordt nog geladen…'); return }
+      try { w.focus(); w.print() } catch { log('Print niet beschikbaar — open in een browser om te printen.') }
+  }
+  if ($('pdfShareBtn')) $('pdfShareBtn').onclick = () => {
+      const nm = ($('txViewName') && $('txViewName').textContent) || 'overzicht'
+      shareOrSavePdf($('pdfFrame'), nm)
+      }
+  window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('pdfOverlay').classList.contains('hidden')) closePdfOverlay()
+  })
 $('txCsvBtn').onclick = () => exportChain(txUserId ?? me).catch((e) => log('FOUT: ' + e.message))
 $('refreshBtn').onclick = () => { log('Verversen (verse sync)…'); location.reload() }
 $('goDashboard').onclick = () => finishLogin().catch((e) => log('FOUT: ' + e.message))

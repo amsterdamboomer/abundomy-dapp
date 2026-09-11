@@ -202,6 +202,32 @@
       .lang-overlay .lang-item { display: block; cursor: pointer; padding: clamp(6px, 1.8vw, 10px) clamp(8px, 2.4vw, 14px); border-bottom: 1px solid var(--line-color, rgba(255,255,255,0.1)); }
       .lang-overlay .lang-item:hover .lang-content { filter: brightness(1.25); }
       .lang-overlay .lang-radio { position: absolute; opacity: 0; pointer-events: none; }
+         /* PDF-preview-overlay (in-app): de transactie-PDF wordt in #pdfFrame getoond i.p.v.
+            window.open('','_blank'), dat op de geïnstalleerde PWA de gebruiker opsluit
+           (geen retour-, geen print-UI). Vaste 'Terug'/'PDF'-balk blijft steeds boven. */
+         .pdf-overlay { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; background: #fff; }
+         .pdf-overlay.hidden { display: none; }
+          /* App-balk (home/saldo/avatar) blijft Boven de preview zichtbaar → nooit 'opgesloten'. */
+          .pdf-appbar { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 14px; background-color: var(--background, #1b1208); border-bottom: 1px solid var(--line-color, rgba(255,255,255,0.12)); }
+          .pdf-appbar .pdf-home-btn, .pdf-appbar .pdf-avatar-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; }
+          .pdf-appbar .pdf-home-btn img { width: 30px; height: 30px; }
+          .pdf-appbar .pdf-avatar-btn .pdf-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line-color, rgba(255,255,255,0.3)); background: #333; }
+          .pdf-appbar .pdf-balance { flex: 1; text-align: center; color: var(--text, #eee); font-family: raleway_bold, sans-serif; font-size: 14px; }
+          .pdf-toolbar { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background-color: var(--background, #1b1208); border-bottom: 1px solid var(--line-color, rgba(255,255,255,0.12)); flex-wrap: wrap; justify-content: flex-start; row-gap: 4px; }
+          .pdf-toolbar .pdf-share-btn { background: var(--button, #4caf50); color: #1b1208 !important; border-radius: 2rem; padding: 7px 14px; font-size: 13px; flex: 0 0 auto; }
+          .pdf-toolbar .pdf-print-btn, .pdf-toolbar .pdf-terug { font-size: 13px; flex: 0 0 auto; }
+         .pdf-toolbar { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background-color: var(--background, #1b1208); border-bottom: 1px solid var(--line-color, rgba(255,255,255,0.12)); }
+         .pdf-toolbar .login-button { margin: 0; }
+         .pdf-toolbar-title { flex: 1; text-align: center; color: #eee; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; }
+         .pdf-frame { flex: 1 1 auto; width: 100%; border: 0; background: #fff; }
+         .pdf-hint { flex: 0 0 auto; text-align: center; color: #888; font-size: 0.7rem; padding: 6px 10px; background: #fff; }
+          /* Vals-fallback: als een platform het hele venster i.p.v. het frame printt,
+            dan alleen de PDF-content (niet toolbar of rest van de app). */
+         @media print {
+          #topNav, #app-header, .Centercontainer, #langOverlay, .pdf-appbar, .pdf-toolbar, .pdf-toolbar-title, .pdf-hint { display: none !important; }
+          .pdf-overlay { position: static; display: block; }
+          .pdf-frame { position: static; width: 100%; height: auto; border: 0; }
+         }
     
       /* Punt 03 (23 jul 2026): copy-beveiliging weg — content selecteerbaar (header blijft niet-selecteerbaar). */
       html, body { user-select: text !important; -webkit-user-select: text !important; -moz-user-select: text !important; -ms-user-select: text !important; }</style>
@@ -228,7 +254,26 @@
         </div>
       </div>
     </div>
-    <div class="full-width-header-wrapper" id="topNav">
+    
+         <!-- PDF-preview-overlay (in-app print/save-as-PDF): de transactie-PDF wordt hier in
+             #pdfFrame getoond met een vaste 'Terug'/'PDF'-balk. Zonder deze overlay zou
+             window.open('','_blank') op de geïnstalleerde PWA de gebruiker opsluiten. -->
+         <div id="pdfOverlay" class="pdf-overlay hidden">
+           <div class="pdf-appbar">
+             <button type="button" class="pdf-home-btn" id="pdfHomeBtn" aria-label="Home"><img src="img/Home_70x70.png" alt="Home"/></button>
+             <span class="pdf-balance" id="pdfBalance"></span>
+             <button type="button" class="pdf-avatar-btn" id="pdfAvatarBtn" aria-label="Profiel"><img id="pdfAvatarImg" class="pdf-avatar" alt="profiel"/></button>
+           </div>
+           <div class="pdf-toolbar">
+             <button type="button" class="login-button pdf-terug" id="pdfBackBtn" data-i18n="PR_BACK">Terug</button>
+             <div class="pdf-toolbar-title" id="pdfTitle"></div>
+             <button type="button" class="login-button pdf-print-btn" id="pdfPrintBtn">Print</button>
+             <button type="button" class="login-button pdf-share-btn" id="pdfShareBtn">Delen / Opslaan</button>
+           </div>
+           <iframe id="pdfFrame" class="pdf-frame" title="PDF-preview"></iframe>
+           <p class="pdf-hint" id="pdfHint"></p>
+         </div>
+         <div class="full-width-header-wrapper" id="topNav">
       <div class="header-content">
         <header class="header-main">
           <!-- 02.01b: bovenbalk = huisje (links, naar content-site home) + woordmerk (midden, niet klikbaar) + vlag (rechts). -->
