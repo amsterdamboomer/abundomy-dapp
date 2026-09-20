@@ -2,8 +2,8 @@
   "ws": "wss://app.brainfusion.nl/chat-ws",
   "room": "abundomy",
   "pin": {
-    "url": "https://chat.brainfusion.nl",
+    "url": "https://app.brainfusion.nl",
     "token": "ae32fae5b738c2e61f4e4316c7d72303612ad747ae2d0c57d24ff6625b8a92c0",
-    "note": "1-op-1 overgenomen uit chat.brainfusion.nl/chat.json (PoC-token, best-effort: de relay pinnt de geschiedenis zelf; /pin op chat-origin is de PINSVC). Roteer bij livegang."
+    "note": "Eigen origin (P12-vrij): pin via de /pin-naad in de bf-vhost (nginx -> 8097). CORS-allowlist van de pin-service bevat chat- en app-origin."
   }
 }
