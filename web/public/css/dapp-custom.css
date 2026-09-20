@@ -69,3 +69,24 @@
 :where(:not(#view-profile)) .balance-link { text-decoration: none; display: inline-block; transition: filter 0.3s ease; cursor: pointer; }
 :where(:not(#view-profile)) #capture-section { display: none; }
 /* reden: capture-section verborgen in dApp (geen PHP-upload); action-icon/balance-link = cursor:pointer (klikbaar)
+
+/* ============================ I3 SHELL-FIX (20 sep 2026) ============================
+   Desktop-hardening (≥700px) na I3: de mobiel-first shell (root font 30px by design,
+   "Fluid Font: starts shrinking below 576px") overloopt op desktop zodra de runtime
+   PWA-install-knop (#installAppBtn, alleen buiten privévensters) in de 576px-header
+   komt. Dit blok capt de header + install-knop en centreert de chat-kolom.
+   Mobiel (<700px) volledig onveranderd. Bewijs: snapshots/i3-20260920/ (voor/na). */
+@media (min-width: 700px) {
+  html { font-size: 16px; }
+  .header-main { height: 60px; }
+  .menu-column2 { width: auto; flex: 1 1 auto; min-width: 0; }
+  .header-main .display-num { font-size: 12px; }
+  .header-main .amount { font-size: 20px; white-space: nowrap; }
+  .header-main .mainusericon { height: 38px; width: 38px; }
+  .header-main .header-main-index-logo { max-height: 42px; }
+  #installAppBtn.login-button { font-size: 12px; max-width: 130px; padding: 4px 10px; border: 1px solid var(--button); border-radius: 999px; line-height: 1.25; }
+  .index-title-row, .button6-row { font-size: 20px; }
+  .index-title-row .feedback2 { font-size: 20px; }
+  .button6-column1 .title, .button6-row .title { font-size: 20px; white-space: nowrap; }
+  #view-chat { max-width: 576px; margin: 0 auto; width: 100%; }
+}
