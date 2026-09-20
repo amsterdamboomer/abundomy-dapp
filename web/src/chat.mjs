@@ -57,6 +57,38 @@ let ipfsPublishTimer = null
 let lastIpfsAt = 0
 let _ctx = null       // { me, profile, node, accountSeed, dappLang, t }
 
+// --- Vertaal-statuschip (lokale-vertaling indicator, 20 sep 2026) ------------
+// Haalt runtime de vertaalstatus op bij de relay (/relay-health → {backend, translateOk});
+// NIET gebakken in de bundel (zelfde patroon als relay.json/chat.json). Faalt de call
+// (of translateOk=false) → chip toont "vertaling niet beschikbaar".
+let xlateTimer = null
+let xlateState = { backend: null, translateOk: null, checked: false }
+function renderXlateChip() {
+  const el = $('chatXlateChip'); if (!el) return
+  const { backend, translateOk, checked } = xlateState
+  if (!checked) { el.className = 'chat-xlate'; el.textContent = '…'; el.title = ''; return }
+  if (translateOk === false || backend === null) { el.className = 'chat-xlate down'; el.textContent = _ctx.t('CHAT_XLATE_DOWN'); el.title = ''; return }
+  if (backend === 'libre') { el.className = 'chat-xlate ok'; el.textContent = _ctx.t('CHAT_XLATE_LOCAL'); el.title = 'LibreTranslate @ SER5 (self-hosted)' }
+  else if (backend === 'google') { el.className = 'chat-xlate cloud'; el.textContent = _ctx.t('CHAT_XLATE_CLOUD'); el.title = 'Google Translate API (cloud)' }
+  else if (backend === 'mock') { el.className = 'chat-xlate mock'; el.textContent = _ctx.t('CHAT_XLATE_MOCK'); el.title = 'mock-backend (test)' }
+  else { el.className = 'chat-xlate down'; el.textContent = _ctx.t('CHAT_XLATE_DOWN'); el.title = '' }
+}
+function startXlatePolling() {
+  if (xlateTimer) return // idempotent — de dapp re-rendert de view elke ~2.5s
+  const poll = async () => {
+    try {
+      const r = await fetch('/relay-health', { cache: 'no-store' })
+      const j = await r.json()
+      xlateState = { backend: j.backend, translateOk: j.translateOk, checked: true }
+    } catch {
+      xlateState = { backend: null, translateOk: false, checked: true }
+    }
+    renderXlateChip()
+  }
+  poll().catch(() => {})
+  xlateTimer = setInterval(() => { poll().catch(() => {}) }, 30000)
+}
+
 // --- Helpers ----------------------------------------------------------------
 const $ = (id) => document.getElementById(id)
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
@@ -231,7 +263,10 @@ function renderMessage(m, fromHistory = false) {
   }
   html += '</div>'
   if (!mine && m.translation && m.tgtLang && m.tgtLang !== m.srcLang) {
-    html += '<div class="chat-text">' + esc(m.translation) + '</div>'
+    // Hover-title op de vertaling: "vertaald via lokaal · N ms" (alleen bij succes; bij de
+    // [!]-markering (fout) ontbreekt translationMs en toont de zichtbare markering zelf al).
+    const via = (m.translationMs > 0) ? _ctx.t('CHAT_XLATE_HOVER', m.translationMs) : ''
+    html += '<div class="chat-text"' + (via ? ' title="' + esc(via) + '"' : '') + '>' + esc(m.translation) + '</div>'
     html += '<div class="chat-orig">[' + esc(m.srcLang || '?') + '] ' + esc(m.text) + '</div>'
   } else {
     html += '<div class="chat-text">' + esc(mine ? m.text : (m.translation || m.text)) + '</div>'
@@ -353,6 +388,7 @@ export async function renderChat(ctx) {
       <span><b>${esc(ctx.profile?.usersName || ('#'+ctx.me))}</b> · <span id="chatLang">${esc(tgt)}</span></span>
       <span class="room">kamer: <span id="chatRoom">…</span></span>
       <span class="peers" id="chatPeers">—</span>
+      <span class="chat-xlate" id="chatXlateChip" title="">…</span>
     </div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-typing" id="chatTyping"></div>
@@ -389,6 +425,9 @@ export async function renderChat(ctx) {
     else stEl.textContent = _ctx.t('CHAT_DISCONNECTED')
   }
   const roomEl = $('chatRoom'); if (roomEl) roomEl.textContent = 'abundomy'
+  // vertaal-statuschip: herstel laatste bekende state + start polling (idempotent)
+  renderXlateChip()
+  startXlatePolling()
   if (latestCid) { const el = $('chatHistoryCid'); if (el) el.textContent = latestCid }
   if (roomHistory.length) {
     const box = $('chatMessages')
@@ -428,4 +467,5 @@ export function closeChat() {
   if (ws) { try { ws.close() } catch {} }
   ws = null
   clearInterval(pingTimer)
+  clearInterval(xlateTimer); xlateTimer = null
 }

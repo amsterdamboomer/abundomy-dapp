@@ -121,6 +121,11 @@ const EXTRA = {
     CHAT_IDENTITY: 'Logged in as %s (#%s) — messages are Ed25519-signed with your dapp-identity.',
     CHAT_NO_KEY: 'no account key — log in again with password to chat',
     CHAT_KEY_ERR: 'key error',
+    CHAT_XLATE_LOCAL: 'Translation: local (SER5)',
+    CHAT_XLATE_CLOUD: 'Translation: Google (cloud)',
+    CHAT_XLATE_MOCK: 'Translation: mock (test)',
+    CHAT_XLATE_DOWN: 'translation unavailable',
+    CHAT_XLATE_HOVER: 'translated via local · %d ms',
   },
   ne: {
     APP_PROFILE: 'PROFIEL',
@@ -202,6 +207,11 @@ const EXTRA = {
     CHAT_IDENTITY: 'Ingelogd als %s (#%s) — berichten worden Ed25519-ondertekend met je dapp-identity.',
     CHAT_NO_KEY: 'geen account-sleutel — log opnieuw in met wachtwoord om te kunnen chatten',
     CHAT_KEY_ERR: 'sleutel-fout',
+    CHAT_XLATE_LOCAL: 'Vertaling: lokaal (SER5)',
+    CHAT_XLATE_CLOUD: 'Vertaling: Google (cloud)',
+    CHAT_XLATE_MOCK: 'Vertaling: mock (test)',
+    CHAT_XLATE_DOWN: 'vertaling niet beschikbaar',
+    CHAT_XLATE_HOVER: 'vertaald via lokaal · %d ms',
   },
   de: {
     // --- MyChat (Abundomy-spoor) ---
@@ -237,6 +247,11 @@ const EXTRA = {
     CHAT_IDENTITY: 'Angemeldet als %s (#%s) — Nachrichten werden mit deiner dapp-identity Ed25519-signiert.',
     CHAT_NO_KEY: 'kein Account-Schlüssel — zum Chatten erneut mit Passwort anmelden',
     CHAT_KEY_ERR: 'Schlüssel-Fehler',
+    CHAT_XLATE_LOCAL: 'Übersetzung: lokal (SER5)',
+    CHAT_XLATE_CLOUD: 'Übersetzung: Google (cloud)',
+    CHAT_XLATE_MOCK: 'Übersetzung: mock (test)',
+    CHAT_XLATE_DOWN: 'Übersetzung nicht verfügbar',
+    CHAT_XLATE_HOVER: 'übersetzt via lokal · %d ms',
   },
   fr: {
     // --- MyChat (Abundomy-spoor) ---
@@ -272,6 +287,11 @@ const EXTRA = {
     CHAT_IDENTITY: 'Connecté en tant que %s (#%s) — les messages sont signés Ed25519 avec ta dapp-identity.',
     CHAT_NO_KEY: 'pas de clé de compte — reconnecte-toi avec mot de passe pour chatter',
     CHAT_KEY_ERR: 'erreur de clé',
+    CHAT_XLATE_LOCAL: 'Traduction : local (SER5)',
+    CHAT_XLATE_CLOUD: 'Traduction : Google (cloud)',
+    CHAT_XLATE_MOCK: 'Traduction : mock (test)',
+    CHAT_XLATE_DOWN: 'traduction indisponible',
+    CHAT_XLATE_HOVER: 'traduit via local · %d ms',
   },
   es: {
     // --- MyChat (Abundomy-spoor) ---
@@ -307,6 +327,11 @@ const EXTRA = {
     CHAT_IDENTITY: 'Conectado como %s (#%s) — los mensajes se firman Ed25519 con tu dapp-identity.',
     CHAT_NO_KEY: 'sin clave de cuenta — vuelve a iniciar sesión con contraseña para chatear',
     CHAT_KEY_ERR: 'error de clave',
+    CHAT_XLATE_LOCAL: 'Traducción: local (SER5)',
+    CHAT_XLATE_CLOUD: 'Traducción: Google (cloud)',
+    CHAT_XLATE_MOCK: 'Traducción: mock (test)',
+    CHAT_XLATE_DOWN: 'traducción no disponible',
+    CHAT_XLATE_HOVER: 'traducido vía local · %d ms',
   },
   it: {
     // --- MyChat (Abundomy-spoor) ---
@@ -342,6 +367,11 @@ const EXTRA = {
     CHAT_IDENTITY: 'Connesso come %s (#%s) — i messaggi sono firmati Ed25519 con la tua dapp-identity.',
     CHAT_NO_KEY: 'nessuna chiave account — riaccedi con password per chattare',
     CHAT_KEY_ERR: 'errore di chiave',
+    CHAT_XLATE_LOCAL: 'Traduzione: locale (SER5)',
+    CHAT_XLATE_CLOUD: 'Traduzione: Google (cloud)',
+    CHAT_XLATE_MOCK: 'Traduzione: mock (test)',
+    CHAT_XLATE_DOWN: 'traduzione non disponibile',
+    CHAT_XLATE_HOVER: 'tradotto via locale · %d ms',
   },
   hu: {
     // --- MyChat (Abundomy-spoor) ---
@@ -377,6 +407,11 @@ const EXTRA = {
     CHAT_IDENTITY: 'Bejelentkezve mint %s (#%s) — az üzenetek Ed25519-aláírással lesznek ellátva a dapp-identity-val.',
     CHAT_NO_KEY: 'nincs fiókkulcs — jelentkezz be újra jelszóval a chateléshez',
     CHAT_KEY_ERR: 'kulcs-hiba',
+    CHAT_XLATE_LOCAL: 'Fordítás: helyi (SER5)',
+    CHAT_XLATE_CLOUD: 'Fordítás: Google (felhő)',
+    CHAT_XLATE_MOCK: 'Fordítás: mock (teszt)',
+    CHAT_XLATE_DOWN: 'fordítás nem elérhető',
+    CHAT_XLATE_HOVER: 'lefordítva helyi úton · %d ms',
   },
 }
 
