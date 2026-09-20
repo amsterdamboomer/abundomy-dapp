@@ -19,8 +19,25 @@ import { exportUserChain } from '../../src/export.mjs'
 import { addToList, removeFromList, getList, BLACKLIST, WHITELIST } from '../../src/lists.mjs'
 import { COMMUNITY_SECRET, DECAY_RATE } from '../../src/config.mjs'
 import { t, getLang, setLang, onLangChange, loadI18n, applyStaticI18n, getFlag, hasLang, LANGUAGES } from './i18n.mjs'
+import { renderChat, closeChat } from './chat.mjs'
 
 const $ = (id) => document.getElementById(id)
+
+// MyChat (Abundomy-spoor): de Ed25519-account-sleutel wordt deterministisch uit
+// de seed afgeleid. De seed wordt alleen bij wachtwoord-login/signup/reset
+// ontgrendeld (uit de keystore) en bewust NIET in sessionStorage gezet (de bestaande
+// app doet dat ook niet — de seed verlaat het tabblad nooit in rust). Bij een
+// page-reload (tryResume, zonder wachtwoord) is de seed dus niet beschikbaar →
+// chat kan geschiedenis tonen maar geen nieuwe berichten ondertekenen. Gebruiker
+// moet dan opnieuw inloggen met wachtwoord om te chatten. Dit is een bewuste
+// security-keuze (consistent met de rest van de dapp).
+let accountSeed = null
+// MyChat chat-view is stateful (ws, messages, UI-state). De dapp's periodieke render()-loop
+// (setInterval 2500ms + store/connection events) mag de chat-view NIET steeds rebuilden —
+// dat vernielt selectie, open <details>, focus en scroll. chatBuilt guardt: renderChat draait
+// 1× bij route-entry; daarna update de chat-view zichzelf via ws-events + toggle-events.
+// Reset bij: route weg van chat (closeChat), logout, taal-wissel (onLangChange).
+let chatBuilt = false
 const log = (...a) => {
   const line = a.join(' ')
   $('log').textContent += line + '\n'; $('log').scrollTop = 1e9
@@ -316,6 +333,7 @@ async function loginWithPassword() {
     if (!rec.auth) throw new Error('dit account heeft nog geen wachtwoord — meld je aan met je e-mailadres om er een in te stellen')
     const seed = await openKeystore(rec.auth, pwd) // verifieert het wachtwoord (gooit 'verkeerd wachtwoord')
     me = rec.usersId
+    accountSeed = seed // MyChat: beschikbaar voor Ed25519-signing in de chat-view
     // Self-heal: door historische usersId-collisions kan dit doc inconsistent zijn (pubkey/
     // claim van een andere identiteit dan auth/recovery) → reset kapot. Repareer met de seed
     // die dit wachtwoord oplevert, en toon de NIEUWE herstelcode prominent (bewaren!).
@@ -327,6 +345,7 @@ async function loginWithPassword() {
         try { alert('Je account is automatisch hersteld.\n\nNIEUWE HERSTELCODE — bewaar deze goed; je hebt \'m nodig om je wachtwoord te resetten:\n\n' + fix.recoveryCode) } catch {}
       }
     } catch (e) { log('identiteit-herstel overgeslagen: ' + e.message) }
+    accountSeed = seed // MyChat: beschikbaar voor Ed25519-signing in de chat-view
     await finishLogin()
   } catch (err) {
     log('FOUT: ' + err.message)
@@ -389,6 +408,7 @@ async function doSignup() {
     const recovery = await createKeystore(seed, recoveryRaw)
     const doc = await signup({ stores, seed, profile, communityKey, auth, recovery })
     me = doc.usersId
+    accountSeed = seed // MyChat: beschikbaar voor Ed25519-signing in de chat-view
     info(`Account #${me} aangemaakt ✓ — log voortaan in met je gebruikersnaam en wachtwoord. ` +
       `De herstelcode staat in je welkomstmail.`)
     $('goDashboard').classList.remove('hidden')
@@ -442,8 +462,8 @@ async function resyncStores() {
 let currentView = 'home'
 let currentParams = {}
 
-const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', search: 'search', request: 'request' }
-const VIEWS = ['home', 'transactions', 'txdetail', 'profile', 'search', 'request']
+const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', search: 'search', request: 'request', chat: 'chat' }
+const VIEWS = ['home', 'transactions', 'txdetail', 'profile', 'search', 'request', 'chat']
 
 function parseHash() {
   const h = (location.hash || '#/').replace(/^#\/?/, '')
@@ -455,8 +475,11 @@ function route() {
   if (me == null || !stores) return
   const { name, arg } = parseHash()
   const view = VIEW_NAMES[name] || 'home'
+  const prev = currentView
   currentView = view
   currentParams = { id: arg, tid: arg }
+  // MyChat: verbreek de chat-verbinding + sta een verse rebuild toe als we weggaan van de chat-view.
+  if (prev === 'chat' && view !== 'chat') { try { closeChat() } catch {}; chatBuilt = false }
   for (const v of VIEWS) {
     $('view-' + v)?.classList.toggle('hidden', v !== view)
   }
@@ -540,6 +563,15 @@ async function render() {
     else if (currentView === 'profile') await renderProfile(currentParams)
     else if (currentView === 'search') await renderSearch()
     else if (currentView === 'request') await renderRequest(currentParams)
+    else if (currentView === 'chat') {
+      if (!chatBuilt) {
+        await renderChat({
+          me, profile: myProfile, node,
+          accountSeed, dappLang: getLang(), t,
+        })
+        chatBuilt = true
+      }
+    }
     else await renderHome()
   } catch (e) { log('render-fout: ' + e.message) }
 }
@@ -1471,6 +1503,7 @@ async function doReset() {
     info('Herstelcode ✓ — nieuw wachtwoord instellen…')
     await rekeyAuth({ stores, seed, usersId: me, newPassword: pwd })
     info('Wachtwoord opnieuw ingesteld ✓ — je wordt ingelogd…')
+    accountSeed = seed // MyChat: beschikbaar voor Ed25519-signing in de chat-view
     await finishLogin()
   } catch (e) {
     info('FOUT: ' + e.message)
@@ -1481,6 +1514,9 @@ async function doReset() {
 /** Uitloggen: node afsluiten en de pagina herladen (alle sleutels/seed uit het geheugen). */
 async function logout() {
   log('Uitloggen…')
+  try { closeChat?.() } catch {}
+  accountSeed = null
+  chatBuilt = false
   try { location.hash = '#/' } catch {}
   try { sessionStorage.removeItem('abundomy-me') } catch {}
   try { await node?.orbitdb?.stop() } catch {}
@@ -1887,6 +1923,7 @@ function chooseLang(code) { setLang(code); closeLangOverlay() }
       relabelSelect('peRightEye', eyeLabels())
     }
     refreshSignupImagePreview()
+    chatBuilt = false // MyChat: taal-wissel → chat-view opnieuw bouwen met nieuwe i18n-teksten
     if (me != null && stores) render().catch(() => {})
   })
   tryResume() // bewaarde sessie hervatten na (her)laden

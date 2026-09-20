@@ -1647,6 +1647,7 @@ textarea:focus,
   justify-content: flex-end;
   margin-right: clamp(4px, 1.5vw, 10px);
   margin-left: auto;
+  flex-shrink: 0;
 }
 .menu-column1, .menu-column3 { width: auto; height: auto; }
 .menu-column2 {
@@ -3102,3 +3103,127 @@ input:checked + .slider:before { transform: translateX(26px); }
 
 /* Kale knop om een avatar heen (origineel: <button> zonder class in request.php). */
 .avatar-button { background: none; border: none; padding: 0; cursor: pointer; line-height: 0; }
+
+/* ============================ MyChat (Abundomy-spoor) ============================
+   Chat als dapp-feature: één openbare kamer, open/transparant (plaintext + signatures),
+   live vertaling, geschiedenis op IPFS. Eigen blok zodat het Brainfusion-spoor-stijl-
+   werk (chat.brainfusion.nl) hier niet mee mengt. */
+#view-chat { max-width: 46rem; margin: 0 auto; padding: 0 0.6rem 3rem; }
+.chat-gate { font-size: 0.9rem; margin: 0.4rem 0 0.2rem; }
+.chat-gate.ok { color: var(--button); }
+.chat-gate.fallback { color: #b8860b; }
+.chat-identity { font-size: 0.85rem; margin: 0 0 0.6rem; }
+.chat-warn { color: #c0392b; }
+
+.chat-header {
+  display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: space-between;
+  align-items: center; margin: 0.6rem 0; font-size: 0.9rem;
+}
+.chat-header .room, .chat-header .peers { color: var(--muted, #888); font-size: 0.82rem; }
+
+.chat-messages {
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 0.5rem;
+  background: rgba(0,0,0,0.18); padding: 0.6rem; height: 22rem; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.chat-msg { max-width: 80%; padding: 0.5rem 0.7rem; border-radius: 0.7rem; word-wrap: break-word; }
+.chat-msg.mine { align-self: flex-end; background: var(--button, #4a8aff); color: #fff; }
+.chat-msg.theirs { align-self: flex-start; background: rgba(255,255,255,0.07); }
+.chat-from { font-size: 0.72rem; opacity: 0.85; margin-bottom: 0.15rem; }
+.chat-sig { color: #6cffa0; font-size: 0.7rem; }
+.chat-text { font-size: 0.95rem; line-height: 1.25; }
+.chat-orig { font-size: 0.74rem; opacity: 0.6; margin-top: 0.15rem; font-style: italic; }
+.chat-meta { font-size: 0.66rem; opacity: 0.5; margin-top: 0.2rem; }
+
+.chat-typing { font-size: 0.78rem; color: var(--muted, #888); min-height: 1rem; padding: 0.2rem 0.4rem; }
+.chat-typing.active { color: var(--button, #4a8aff); }
+
+.chat-composer { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+.chat-composer input {
+  flex: 1; padding: 0.55rem 0.7rem; border-radius: 0.5rem;
+  border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: inherit;
+}
+.chat-composer button {
+  padding: 0.55rem 1.1rem; border: none; border-radius: 0.5rem; cursor: pointer;
+  background: var(--button, #4a8aff); color: #fff; font-weight: 600;
+}
+.chat-composer button:disabled, .chat-composer input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.chat-history-details { margin-top: 0.8rem; }
+.chat-history-details summary { cursor: pointer; }
+.chat-history-details code { word-break: break-all; background: rgba(0,0,0,0.25); padding: 0.1rem 0.3rem; border-radius: 0.3rem; }
+.chat-err { color: #c0392b; font-size: 0.8rem; margin: 0.2rem 0; }
+
+/* MyChat-navknop in de header (naast avatar). */
+.nav-chat-link {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.3rem 0.7rem;
+  margin-left: clamp(6px, 1.8vw, 14px);
+  margin-right: clamp(6px, 1.8vw, 14px);
+  flex-shrink: 0;
+  background: rgba(74,138,255,0.18); color: var(--button, #4a8aff);
+  border: 1px solid rgba(74,138,255,0.4); border-radius: 0.5rem;
+  font-size: 0.8rem; font-weight: 600; text-decoration: none; cursor: pointer;
+}
+.nav-chat-link:hover { background: rgba(74,138,255,0.32); }
+.nav-chat-ico { white-space: nowrap; }
+
+/* MyChat signature-badge states (client-side Ed25519-verify). */
+.chat-sig { font-size: 0.7rem; margin-left: 0.15rem; }
+.chat-sig-verify { color: var(--muted, #888); }
+.chat-sig-ok { color: #6cffa0; }
+.chat-sig-bad { color: #ff6b6b; font-weight: 700; }
+.chat-sig-unknown { color: #b8860b; }
+
+/* MyChat talen-set toggle-paneel (stap 3 interactief). */
+.chat-langs-details { margin-top: 0.6rem; }
+.chat-langs-details summary { cursor: pointer; }
+.chat-lang-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+.chat-lang-row {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.3rem 0.55rem; border-radius: 0.4rem; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03);
+  font-size: 0.82rem;
+}
+.chat-lang-row.on { border-color: rgba(108,255,160,0.45); background: rgba(108,255,160,0.10); }
+.chat-lang-row.off { opacity: 0.55; }
+.chat-lang-row input[type=checkbox] { cursor: pointer; }
+.chat-lang-name { font-weight: 600; }
+.chat-lang-iso { color: var(--muted, #888); font-size: 0.72rem; }
+
+/* MyChat chat-view: maak tekst selecteerbaar/kopieerbaar (override op de globale user-select:none van de geld-SPA). */
+#view-chat, #view-chat * {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+#view-chat code { cursor: text; }
+
+/* MyChat header-avatar defensieve fix: forceer vierkant + cirkel (ei-vorm = box uitgerekt). */
+#avatarAnchor { flex-shrink: 0; display: inline-flex; align-items: center; }
+#headerAvatar.mainusericon {
+  width: clamp(35px, 12.15vw, 70px) !important;
+  height: clamp(35px, 12.15vw, 70px) !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+}
+
+/* PoC-ONLY (2026-07-17): kopieer-beveiliging GLOBAAL uit.
+   De geld-SPA heeft bewust `user-select:none` op html/body + `.header-main *{...!important}`.
+   Voor de PoC-browser-test moet Patrick alles kunnen selecteren/kopiëren (CIDs, berichten,
+   header-tekst). Voor LIVEGANG (PBFS2) te bepalen: anti-select behouden (geld-SPA) en alleen
+   per-view (#view-chat) uitzetten, OF globaal — Patrick's keuze. Zie visuele-open-punten.md. */
+html, body, body *,
+.header-main, .header-main *,
+.menu-column1, .menu-column2, .menu-column3, .menu-column-chat,
+.nav-chat-link, .nav-chat-ico,
+#app-header, #app-header *,
+#view-chat, #view-chat * {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}

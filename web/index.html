@@ -209,6 +209,7 @@
             </a>
           </div>
           <div class="menu-column3">
+            <a id="navChat" href="#/chat" class="nav-chat-link" tabindex="-1" title="MyChat"><span class="nav-chat-ico" data-i18n="CHAT_NAV">Chat</span></a>
             <a id="avatarAnchor" href="#/profile" tabindex="-1"><img class="mainusericon" id="headerAvatar" alt="profiel" /></a>
           </div>
         </header>
@@ -343,6 +344,12 @@
             <div id="log" style="margin-top:0.6rem;"></div>
           </details>
         </section><!-- /#view-home -->
+
+        <!-- ============================ MyChat (Abundomy-spoor) ============================
+             Eén openbare kamer, open/transparant (plaintext + Ed25519-signatures), live
+             vertaling, geschiedenis op IPFS. Inhoud wordt dynamisch gerenderd door
+             web/src/chat.mjs (renderChat). Leeg container = opzet. -->
+        <section class="view hidden" id="view-chat"></section>
 
         <!-- ===================== TRANSACTIES ===================== -->
         <section class="view hidden" id="view-transactions">
