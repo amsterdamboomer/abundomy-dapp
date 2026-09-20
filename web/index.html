@@ -7,9 +7,19 @@
     <meta name="description" content="Abundomy dApp — gedecentraliseerde gemeenschapsmunt op IPFS + OrbitDB" />
     <meta name="author" content="Teun van Sambeek" />
 
-    <link rel="icon" href="/img/favicon.ico" type="image/x-icon" />
-    <link rel="stylesheet" type="text/css" href="/css/reset.css" />
-    <link rel="stylesheet" type="text/css" href="/css/main.css?v=20260920" />
+    <link rel="icon" href="img/favicon.ico" type="image/x-icon" />
+
+    <!-- PWA (2026-09-10, fase A — install-knop). Zie docs/pwa-ontwerp-install-app-2026-09-10.md -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="theme-color" content="#1b1208" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Abundomy" />
+    <link rel="apple-touch-icon" href="./img/pwa-icon-192.png" />
+
+    <link rel="stylesheet" type="text/css" href="css/reset.css" />
+    <link rel="stylesheet" type="text/css" href="css/main.css?v=20260920" />
+    <link rel="stylesheet" type="text/css" href="css/dapp-custom.css" />
 
     <meta property="og:type" content="article" />
     <meta property="og:title" content="Abundomy dApp" />
@@ -122,8 +132,8 @@
          even groot als de andere icoontjes; zoals het origineel van abundomy.com */
       .app-lang-flag {
         flex: 0 0 auto;
-        width: clamp(40px, 13.89vw, 70px);
-        height: clamp(40px, 13.89vw, 70px);
+        width: 50px;
+        height: 50px;
         padding: 0;
         border: 2px solid rgba(255, 255, 255, 0.7);
         border-radius: 50%;
@@ -133,7 +143,51 @@
         transition: filter 0.2s ease, transform 0.2s ease;
       }
       .app-lang-flag:hover { filter: brightness(1.25); transform: scale(1.06); }
-      .app-lang-flag svg { width: 100%; height: 100%; display: block; }
+      /* 02.01d: woordmerk = V1: uppercase + geen p-margin (hoog, zoals 1coinh.com). */
+      .menu-column2 .feedback2 { margin: 0; text-transform: uppercase; }
+      /* 02.02: Login-titel exact midden + 25% groter. p.title heeft eigen font-size +
+         padding-inline-end (verschuift links) in main.css; daarom op #login .title zelf. */
+      #login .title { font-size: clamp(18.75px, 6.51vw, 37.5px); padding-inline-end: 0; }
+      /* 02.03: topNav height = V1 (80px, geen padding) + margins huisje/vlag (V1 menu-column1/3). */
+      #topNav .header-main { height: clamp(40px, 13.89vw, 80px); padding: 0; }
+      #topNav .nav-item { margin-left: clamp(4px, 1.5vw, 10px); }
+      #topNav .app-lang-flag { margin-right: clamp(4px, 1.5vw, 10px); }
+      /* 03.04b: pagineringsknoppen = alleen gekleurde letters (grijs disabled / groen enabled), géén vierkant. */
+      #searchNavTop button, #searchNavBottom button { background: transparent; border: none; padding: 0; font-family: raleway_bold, sans-serif; font-size: clamp(15px, 5.21vw, 30px); }
+      #searchNavTop button.login-button, #searchNavBottom button.login-button { color: var(--button); }
+      #searchNavTop button.disabled-button, #searchNavBottom button.disabled-button { color: var(--disabled); cursor: default; }
+      /* 02 (Registratie): #signup = V1 layout — form__labels boven velden (block), paren via button5-row. */
+      #signup label.form__label, #signup label.form__label2 { display: block; }
+      /* 02-reg fix: paren netjes naast elkaar + even breed, label kleiner (V1). */
+      #signup .button5-row { width: 100%; margin: 0; justify-content: space-between; }
+      #signup .button4-row { width: 100%; margin: 0; }
+      #signup .button4-row .title { font-size: clamp(15px, 5.21vw, 30px); padding-inline-end: 0; }
+      #signup .button4-column2 { flex: 1 1 auto; text-align: center; }
+      #signup .button5-column1, #signup .button5-column3 { width: 48%; max-width: none; }
+      #signup .button5-column2 { width: 4%; }
+      #signup .form__label, #signup .form__label2 { font-size: clamp(13px, 4vw, 20px); }
+      #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select { width: 100%; box-sizing: border-box; font-size: clamp(15px, 5.21vw, 30px); }
+      #signup textarea { width: 100%; box-sizing: border-box; min-height: clamp(100px, 20vw, 150px); margin-top: clamp(8px, 1.5vw, 12px); resize: vertical; font-family: raleway_regular, sans-serif; font-size: clamp(15px, 5.21vw, 30px); color: var(--white); border-radius: 0.6rem; }
+      /* Punt 01: #signup = V1 — container-box weg, velden zwart (V1 .form__input). */
+      #signup.dapp-card { border: none; background: none; padding: 0; }
+      /* Punt 03-24-07: #signup ~1 cm breder (max 550 → 600, richting V1 576+). */
+      #signup.dapp-card { width: clamp(300px, 95.49vw, 600px); }
+      #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select, #signup textarea { background-color: var(--black); border: none; color: var(--white); }
+      #signup .form__input, #signup .form__input2, #signup input[type="text"], #signup input[type="email"], #signup input[type="password"], #signup input[type="date"], #signup select { border-radius: 2rem; height: clamp(40px, 10.42vw, 60px); padding-left: clamp(15px, 5.21vw, 30px); }
+      /* Punt 02-24-07: #signup foto-knop = V1 .photo-button (groen, volledige breedte, pill). */
+      #signup .photo-button { border: none; border-radius: clamp(15px, 5.21vw, 30px); background-color: var(--button); color: var(--black); font-family: raleway_bold, sans-serif; font-size: clamp(14px, 3.82vw, 22px); width: 100%; height: clamp(40px, 10.42vw, 60px); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-top: clamp(8px, 1.5vw, 12px); }
+      /* Punt 04-foto stap 1: #view-image = V1 image.php-layout (scaffolding + upload). */
+      #view-image .parent-container { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 20px 0; }
+      #view-image .tableclass1 { width: 350px; background-color: #162042; border: 0; padding: 5px; box-shadow: inset 0 2px 2px 2px rgba(120,120,120,0.05); }
+      #view-image .canvasclass { width: 350px; height: 250px; display: block; background: #000; }
+      #view-image .image-button, #view-image .image-button2 { border: none; outline: none; border-radius: 6px; background-color: var(--button); font-family: raleway_bold, sans-serif; font-size: 22px; color: black; margin: 3px 0 0 3px; height: 46px; align-items: center; display: flex; cursor: pointer; }
+      #view-image .image-button2 { width: 75px; justify-content: center; }
+      #view-image .iconclass35 { width: 35px; height: 35px; }
+      #view-image .image-text { background-color: var(--button); font-family: raleway_bold, sans-serif; font-size: 22px; width: 125px; color: black; text-align: right; }
+      #view-image .dark { background-color: #162042; }
+      #view-image .img-makecenter { display: flex; justify-content: center; }
+      #view-image:not(.edit-mode) .edit-only { display: none; }
+      .app-lang-flag img { width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover; }
 
       /* Taalpagina-overlay (set-language.php-equivalent) */
       .lang-overlay {
@@ -144,11 +198,39 @@
         background-color: var(--background, #1b1208);
         background-image: inherit;
       }
-      .lang-overlay .flag-container svg { width: clamp(34px, 11vw, 44px); height: clamp(34px, 11vw, 44px); display: block; }
+      .lang-overlay .flag-container img { width: clamp(34px, 11vw, 44px); height: clamp(34px, 11vw, 44px); display: block; border-radius: 50%; object-fit: cover; }
       .lang-overlay .lang-item { display: block; cursor: pointer; padding: clamp(6px, 1.8vw, 10px) clamp(8px, 2.4vw, 14px); border-bottom: 1px solid var(--line-color, rgba(255,255,255,0.1)); }
       .lang-overlay .lang-item:hover .lang-content { filter: brightness(1.25); }
       .lang-overlay .lang-radio { position: absolute; opacity: 0; pointer-events: none; }
-    </style>
+         /* PDF-preview-overlay (in-app): de transactie-PDF wordt in #pdfFrame getoond i.p.v.
+            window.open('','_blank'), dat op de geïnstalleerde PWA de gebruiker opsluit
+           (geen retour-, geen print-UI). Vaste 'Terug'/'PDF'-balk blijft steeds boven. */
+         .pdf-overlay { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; background: #fff; }
+         .pdf-overlay.hidden { display: none; }
+          /* App-balk (home/saldo/avatar) blijft Boven de preview zichtbaar → nooit 'opgesloten'. */
+          .pdf-appbar { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 14px; background-color: var(--background, #1b1208); border-bottom: 1px solid var(--line-color, rgba(255,255,255,0.12)); }
+          .pdf-appbar .pdf-home-btn, .pdf-appbar .pdf-avatar-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; }
+          .pdf-appbar .pdf-home-btn img { width: 30px; height: 30px; }
+          .pdf-appbar .pdf-avatar-btn .pdf-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line-color, rgba(255,255,255,0.3)); background: #333; }
+          .pdf-appbar .pdf-balance { flex: 1; text-align: center; color: var(--text, #eee); font-family: raleway_bold, sans-serif; font-size: 14px; }
+          .pdf-toolbar { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background-color: var(--background, #1b1208); border-bottom: 1px solid var(--line-color, rgba(255,255,255,0.12)); flex-wrap: wrap; justify-content: flex-start; row-gap: 4px; }
+          .pdf-toolbar .pdf-share-btn { background: var(--button, #4caf50); color: #1b1208 !important; border-radius: 2rem; padding: 7px 14px; font-size: 13px; flex: 0 0 auto; }
+          .pdf-toolbar .pdf-print-btn, .pdf-toolbar .pdf-terug { font-size: 13px; flex: 0 0 auto; }
+         .pdf-toolbar { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background-color: var(--background, #1b1208); border-bottom: 1px solid var(--line-color, rgba(255,255,255,0.12)); }
+         .pdf-toolbar .login-button { margin: 0; }
+         .pdf-toolbar-title { flex: 1; text-align: center; color: #eee; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; }
+         .pdf-frame { flex: 1 1 auto; width: 100%; border: 0; background: #fff; }
+         .pdf-hint { flex: 0 0 auto; text-align: center; color: #888; font-size: 0.7rem; padding: 6px 10px; background: #fff; }
+          /* Vals-fallback: als een platform het hele venster i.p.v. het frame printt,
+            dan alleen de PDF-content (niet toolbar of rest van de app). */
+         @media print {
+          #topNav, #app-header, .Centercontainer, #langOverlay, .pdf-appbar, .pdf-toolbar, .pdf-toolbar-title, .pdf-hint { display: none !important; }
+          .pdf-overlay { position: static; display: block; }
+          .pdf-frame { position: static; width: 100%; height: auto; border: 0; }
+         }
+    
+      /* Punt 03 (23 jul 2026): copy-beveiliging weg — content selecteerbaar (header blijft niet-selecteerbaar). */
+      html, body { user-select: text !important; -webkit-user-select: text !important; -moz-user-select: text !important; -ms-user-select: text !important; }</style>
   </head>
 
   <body>
@@ -172,25 +254,35 @@
         </div>
       </div>
     </div>
-    <div class="full-width-header-wrapper" id="topNav">
+    
+         <!-- PDF-preview-overlay (in-app print/save-as-PDF): de transactie-PDF wordt hier in
+             #pdfFrame getoond met een vaste 'Terug'/'PDF'-balk. Zonder deze overlay zou
+             window.open('','_blank') op de geïnstalleerde PWA de gebruiker opsluiten. -->
+         <div id="pdfOverlay" class="pdf-overlay hidden">
+           <div class="pdf-appbar">
+             <button type="button" class="pdf-home-btn" id="pdfHomeBtn" aria-label="Home"><img src="img/Home_70x70.png" alt="Home"/></button>
+             <span class="pdf-balance" id="pdfBalance"></span>
+             <button type="button" class="pdf-avatar-btn" id="pdfAvatarBtn" aria-label="Profiel"><img id="pdfAvatarImg" class="pdf-avatar" alt="profiel"/></button>
+           </div>
+           <div class="pdf-toolbar">
+             <button type="button" class="login-button pdf-terug" id="pdfBackBtn" data-i18n="PR_BACK">Terug</button>
+             <div class="pdf-toolbar-title" id="pdfTitle"></div>
+             <button type="button" class="login-button pdf-print-btn" id="pdfPrintBtn">Print</button>
+             <button type="button" class="login-button pdf-share-btn" id="pdfShareBtn">Delen / Opslaan</button>
+           </div>
+           <iframe id="pdfFrame" class="pdf-frame" title="PDF-preview"></iframe>
+           <p class="pdf-hint" id="pdfHint"></p>
+         </div>
+         <div class="full-width-header-wrapper" id="topNav">
       <div class="header-content">
         <header class="header-main">
-          <a href="/" class="nav-item" tabindex="-1">
-            <img src="/img/Home_70x70.png" alt="Home" />
+          <!-- 02.01b: bovenbalk = huisje (links, naar content-site home) + woordmerk (midden, niet klikbaar) + vlag (rechts). -->
+          <a href="/" class="nav-item" tabindex="-1" aria-label="Home">
+            <img src="img/Home_70x70.png" alt="Home" />
           </a>
-          <a href="/base.html" class="nav-item" tabindex="-1">
-            <img src="/img/Abundomy_Logo.gif" class="rotating-world" alt="World" />
-          </a>
-          <a href="/projects.html" class="nav-item" tabindex="-1">
-            <img src="/img/Projects_70x70.png" alt="Projects" />
-          </a>
-          <a href="/education.html" class="nav-item" tabindex="-1">
-            <img src="/img/Books_70x70.png" alt="Books" />
-          </a>
-          <a href="/community.html" class="nav-item" tabindex="-1">
-            <img src="/img/Community_70x70.png" alt="Community" />
-          </a>
+          <div class="menu-column2"><p class="feedback2" data-i18n="TITLE">ABUNDOMY MONEY</p></div>
           <button id="langFlag" class="app-lang-flag" type="button" aria-label="Language"></button>
+          <img id="suAvatar" alt="foto" src="" style="display:none;width:50px;height:50px;border-radius:50%;object-fit:cover;cursor:default;margin-right:clamp(4px,1.5vw,10px);" />
         </header>
       </div>
     </div>
@@ -266,45 +358,105 @@
         </section>
 
         <section class="dapp-card hidden" id="signup">
-          <h2 data-i18n="APP_SIGNUP_TITLE">Nieuw account</h2>
-          <p class="muted" data-i18n="APP_SIGNUP_HINT">Eén mens = één account. Je e-mail wordt geverifieerd en is uniek.
-            Je kiest een gebruikersnaam en wachtwoord; daarmee log je voortaan in.</p>
-          <div style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-bottom:0.6rem;">
-            <img id="suImgPreview" class="humanicon2" alt="foto" />
-            <label class="login-button-small" style="cursor:pointer;"><span data-i18n="APP_CHOOSE_PHOTO">Foto kiezen</span>
-              <input id="suImgFile" type="file" accept="image/*" style="display:none;" />
-            </label>
-            <button type="button" class="btn-secondary" id="suImgClear" style="display:none;" data-i18n="APP_REMOVE_PHOTO">Foto verwijderen</button>
+          <div class="button4-row">
+            <div class="button4-column1"><button id="signupBtn" type="button" class="login-button" data-i18n="SIGNUP">Registreren</button></div>
+            <div class="button4-column2"><p class="title">JIJ</p></div>
+            <div class="button4-column3"><button id="suCancelBtn" type="button" class="login-button" data-i18n="RCV_CANCEL">Annuleren</button></div>
           </div>
-          <label><span data-i18n="SU_FN">Naam</span> <input id="suName" type="text" autocomplete="name" placeholder=">3" /></label>
-          <label><span data-i18n="APP_EMAIL">E-mailadres</span> <input id="suEmail" type="email" autocomplete="email" placeholder="jij@voorbeeld.nl" /></label>
-          <label><span data-i18n="SU_UN">Gebruikersnaam</span> <input id="suUid" type="text" autocomplete="username" placeholder=">3 az/AZ/09/_" /></label>
-          <label><span data-i18n="SU_PW">Wachtwoord</span> <input id="suPwd" type="password" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></label>
-          <label><span data-i18n="SU_PW2">Herhaal wachtwoord</span> <input id="suPwd2" type="password" autocomplete="new-password" /></label>
-          <label><span data-i18n="SU_BD">Geboortedatum</span> <input id="suBirthday" type="date" min="1900-01-01" max="2050-01-01" /></label>
-          <label><span data-i18n="SU_HT">Lengte</span> <input id="suHeight" type="text" placeholder="1.78m" /></label>
-          <label><span data-i18n="SU_GN">Geslacht</span> <select id="suGender">
-            <option value="0" data-i18n="SU_ML">Man</option><option value="1" data-i18n="SU_FM">Vrouw</option><option value="2" data-i18n="SU_OT">Anders</option>
-          </select></label>
-          <label><span data-i18n="SU_HR">Haarkleur</span> <select id="suHair"></select></label>
-          <label><span data-i18n="SU_LE">Linkeroog</span> <select id="suLeftEye"></select></label>
-          <label><span data-i18n="SU_RE">Rechteroog</span> <select id="suRightEye"></select></label>
-          <label style="flex:1;min-width:14rem"><input id="suSpecial" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken" style="flex:1;min-width:12rem" /></label>
-          <div class="actions">
-            <button id="signupBtn" type="button" class="login-button" data-i18n="APP_SIGNUP_VERIFY">Registreer &amp; verifieer e-mail</button>
+          <label class="form__label" for="suName"><span data-i18n="SU_FN">Naam</span></label>
+          <input id="suName" type="text" class="form__input" autocomplete="name" placeholder=">3" />
+          <button type="button" class="photo-button" id="suPhotoBtn" data-i18n="SU_IMG">Upload uw pasfoto</button>
+          <label class="form__label" for="suEmail"><span data-i18n="APP_EMAIL">E-mailadres</span></label>
+          <input id="suEmail" type="email" class="form__input" autocomplete="email" placeholder="jij@voorbeeld.nl" />
+          <label class="form__label" for="suUid"><span data-i18n="SU_UN">Gebruikersnaam</span></label>
+          <input id="suUid" type="text" class="form__input" autocomplete="username" placeholder=">3 az/AZ/09/_" />
+          <div class="button5-row">
+            <div class="button5-column1"><label class="form__label2"><span data-i18n="SU_PW">Wachtwoord</span></label><input id="suPwd" type="password" class="form__input2" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></div>
+            <div class="button5-column2"></div>
+            <div class="button5-column3"><label class="form__label2"><span data-i18n="SU_PW2">Herhaal wachtwoord</span></label><input id="suPwd2" type="password" class="form__input2" autocomplete="new-password" /></div>
           </div>
+          <div class="button5-row">
+            <div class="button5-column1"><label class="form__label"><span data-i18n="SU_BD">Geboortedatum</span></label><input id="suBirthday" type="date" min="1900-01-01" max="2050-01-01" /></div>
+            <div class="button5-column2"></div>
+            <div class="button5-column3"><label class="form__label"><span data-i18n="SU_GN">Geslacht</span></label><select id="suGender"><option value="0" data-i18n="SU_ML">Man</option><option value="1" data-i18n="SU_FM">Vrouw</option><option value="2" data-i18n="SU_OT">Anders</option></select></div>
+          </div>
+          <div class="button5-row">
+            <div class="button5-column1"><label class="form__label"><span data-i18n="SU_HT">Lengte</span></label><input id="suHeight" type="text" placeholder="1.78m" /></div>
+            <div class="button5-column2"></div>
+            <div class="button5-column3"><label class="form__label"><span data-i18n="SU_HR">Haarkleur</span></label><select id="suHair"></select></div>
+          </div>
+          <div class="button5-row">
+            <div class="button5-column1"><label class="form__label2"><span data-i18n="SU_LE">Linkeroog</span></label><select id="suLeftEye"></select></div>
+            <div class="button5-column2"></div>
+            <div class="button5-column3"><label class="form__label2"><span data-i18n="SU_RE">Rechteroog</span></label><select id="suRightEye"></select></div>
+          </div>
+          <textarea id="suSpecial" class="form__input" rows="3" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken zoals tatoeages, littekens, ontbrekende tanden of vingers... om te controleren of u echt bent"></textarea>
           <p class="dapp-relay-info" id="signupInfo"></p>
           <div class="actions">
             <button id="goDashboard" type="button" class="login-button hidden" data-i18n="APP_GO_ACCOUNT">Ga naar mijn account &rarr;</button>
           </div>
-          <p class="muted"><a href="#" id="toLogin" data-i18n="APP_HAVE_ACCOUNT">&larr; Heb je al een account? Inloggen</a></p>
+        </section>
+
+        <!-- Punt 04-foto stap 1: #view-image = V1 image.php-layout (scaffolding + upload). Webcam/bewerking = stap 2. -->
+        <section class="view hidden" id="view-image">
+          <div id="imgCenterContainer">
+            <div class="field-wrapper">
+              <div class="medium_line"></div>
+              <div class="button4-row">
+                <div class="button4-column1"></div>
+                <div class="button4-column2"><p class="title" data-i18n="IMG_TITLE">FOTO</p></div>
+                <div class="button4-column3"><button type="button" id="imgCancelBtn" class="login-button" data-i18n="IMG_CANCEL">Annuleren</button></div>
+              </div>
+              <div class="medium_line"></div>
+              <div class="button9-row"><div class="button9-column1"><span class="feedback" data-i18n="IMG_INSTR">Kies en bewerk een afbeelding van je gezicht</span></div></div>
+              <div class="medium_line"></div>
+            </div>
+          </div>
+          <div class="parent-container">
+            <div class="edit-only">
+              <table cellspacing="0" cellpadding="0" class="tableclass1">
+                <tr>
+                  <td class="dark" style="height:50px;"><button type="button" class="image-button2" id="zoomout"><img src="img/ZoomOut_Icon_35x35.png"/></button></td>
+                  <td class="dark" style="height:50px;"><button type="button" class="image-button2" id="brightnessmax"><img src="img/BrightnessMax_Icon_35x35.png"/></button></td>
+                  <td class="dark" style="height:50px;"><button type="button" class="image-button2" id="contrastmax"><img src="img/ContrastMax_Icon_35x35.png"/></button></td>
+                  <td class="dark" style="height:50px;"><button type="button" class="image-button2" id="colormax"><img src="img/ColorMax_Icon_35x35.png"/></button></td>
+                </tr>
+                <tr><td style="height:5px;background:#162042;"></td><td style="height:5px;background:#162042;"></td><td style="height:5px;background:#162042;"></td><td style="height:5px;background:#162042;"></td></tr>
+                <tr>
+                  <td class="dark" style="height:50px;"><button type="button" class="image-button2" id="zoomin"><img src="img/ZoomIn_Icon_35x35.png"/></button></td>
+                  <td class="dark" style="height:50px;"><button type="button" class="image-button2" id="brightnessmin"><img src="img/BrightnessMin_Icon_35x35.png"/></button></td>
+                  <td class="dark" style="height:50px;"><button type="button" class="image-button2" id="contrastmin"><img src="img/ContrastMin_Icon_35x35.png"/></button></td>
+                  <td class="dark" style="height:50px;"><button type="button" class="image-button2" id="colormin"><img src="img/ColorMin_Icon_35x35.png"/></button></td>
+                </tr>
+              </table>
+            </div>
+            <div class="img-makecenter" style="position:relative;width:350px;height:250px;">
+              <canvas id="imgCanvas" class="canvasclass" width="350" height="250"></canvas>
+              <video id="webcamVideo" autoplay playsinline style="display:none;width:350px;height:250px;object-fit:cover;border-radius:4px;position:absolute;top:0;left:0;z-index:10;"></video>
+            </div>
+            <div>
+              <table cellspacing="0" cellpadding="0" class="tableclass1">
+                <tr class="edit-only">
+                  <td class="dark" style="width:175px;height:50px;"><button type="button" class="image-button" id="imgResetBtn"><img src="img/Reset_Icon_70x70.png" class="iconclass35"/><span class="image-text" data-i18n="IMG_RESET">Reset</span></button></td>
+                  <td class="dark" style="width:175px;height:50px;"><button type="button" class="image-button" id="imgRotateBtn"><img src="img/Rotate_Icon_70x70.png" class="iconclass35"/><span class="image-text" data-i18n="IMG_ROTATE">Draaien</span></button></td>
+                </tr>
+                <tr>
+                  <td class="dark" style="width:175px;height:50px;"><button type="button" class="image-button" id="imgUploadBtn"><img src="img/Upload_Icon_70x70.png" class="iconclass35"/><span id="imgUploadLbl" class="image-text" data-i18n="IMG_GET">Foto</span></button></td>
+                  <td class="dark" style="width:175px;height:50px;"><button type="button" class="image-button" id="imgSnapBtn"><img src="img/Camera_Icon_70x70.png" class="iconclass35"/><span id="imgSnapLbl" class="image-text" data-i18n="IMG_SNAP">Klik</span></button></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <input type="file" id="loadpicture" accept="image/*" style="display:none;"/>
+          <input type="file" id="camerapicture" accept="image/*" capture="user" style="display:none;"/>
+          <canvas id="canvas2" width="350" height="250" style="display:none;"></canvas>
         </section>
 
         <section class="view hidden" id="view-home">
           <div class="medium_line"></div>
           <div class="index-title-row">
             <div class="index-title-column">
-              <a href="https://abundomy.com" target="_blank" class="title-link"><p class="feedback2" data-i18n="TITLE">ABUNDOMY MONEY</p></a>
+              <p class="feedback2" data-i18n="TITLE">ABUNDOMY MONEY</p>
             </div>
             <div class="index-title-column" style="justify-content: flex-end;">
               <button id="logoutBtn" type="button" class="login-button" data-i18n="LOGOUT">Uitloggen</button>
@@ -338,7 +490,6 @@
             <summary class="muted" data-i18n="APP_TOOLS">Hulpmiddelen, status &amp; log</summary>
             <p class="dapp-status" id="status" style="margin-top:0.6rem;">verbindingsstatus…</p>
             <div class="actions" style="justify-content: center;">
-              <button id="exportBtn" type="button" class="btn-secondary" data-i18n="APP_EXPORT_CSV">Exporteer mijn keten (CSV)</button>
               <button id="refreshBtn" type="button" class="btn-secondary" data-i18n="APP_REFRESH">Ververs</button>
             </div>
             <div id="log" style="margin-top:0.6rem;"></div>
@@ -565,120 +716,197 @@
         </section>
 
         <!-- ===================== PROFIEL ===================== -->
-        <section class="view hidden" id="view-profile">
-          <div class="medium_line"></div>
-          <div class="button4-row">
-            <div class="button4-column1"></div>
-            <div class="button4-column2"><p class="title" data-i18n="APP_PROFILE">PROFIEL</p></div>
-            <div class="button4-column3">
-              <a href="#/"><button type="button" class="login-button" data-i18n="PR_BACK">Terug</button></a>
+        <!-- pdf-select: gedeelde PDF-selectiepagina (copy van download-pdf.php) -->
+        <section class="view hidden" id="view-pdfselect">
+        <div id="centerContainer"><div class="field-wrapper">
+            <div class="medium_line"></div>
+            <p class="title" style="text-align:center;width:100%;" data-i18n="PDF_TITLE">Download PDF</p>
+            <div class="medium_line"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:25px;">
+              <img id="pdfSelImg" class="transactionicon2" style="width:80px;height:80px;margin-bottom:10px;" alt="" />
+              <p class="title" id="pdfSelName" style="text-align:center;font-size:1.2rem;width:100%;"></p>
             </div>
-          </div>
-          <div class="full_line"></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="pdfSelHistory"><span class="slider round"></span></label><span class="feedback5" id="pdfSelHistoryLbl" data-i18n="PDF_LBL_HISTORY">Print full personal history</span></div></div>
+            <div class="large_line"></div>
+            <div class="button5-row">
+              <div class="button5-column1"><label class="form__label" data-i18n="PDF_FROM">From</label><br><input type="date" id="pdfSelFrom" required /></div>
+              <div class="button5-column2"></div>
+              <div class="button5-column3"><label class="form__label" data-i18n="PDF_TO">To</label><br><input type="date" id="pdfSelTo" required /></div>
+            </div>
+            <div class="medium_line"></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="pdfSelAll"><span class="slider round"></span></label><span class="feedback5" data-i18n="PDF_LBL_ALL">Print all transactions</span></div></div>
+            <div class="large_line"></div>
+            <div class="button-row" style="display:flex;justify-content:center;"><button type="button" class="login-button" id="pdfSelGenBtn" data-i18n="PDF_BTN_DL">Print PDF</button></div>
+            <div class="full_line"></div>
+            <div class="button-row" style="display:flex;justify-content:center;"><a id="pdfSelBackLink"><button type="button" class="login-button" data-i18n="PR_BACK">Back</button></a></div>
+        </div></div>
+        </section>
 
-          <!-- BEKIJKEN -->
-          <div id="profView">
-            <div style="display:flex; flex-direction:column; align-items:center; gap:0.6rem;">
-              <img id="profImg" class="humanicon2" alt="profiel" />
-              <p class="title" id="profName" style="margin:0;"></p>
-              <a id="profBalanceLink" class="balance-link" title="Bekijk transacties">
-                <p class="display-num" style="color:var(--text); margin:0;" id="profBalance"></p>
-              </a>
+        <!-- humandetails: publiek persoonsdetail (copy van humandetails.php) -->
+        <section class="view hidden" id="view-humandetails">
+        <div id="centerContainer"><div class="field-wrapper">
+            <div class="medium_line"></div>
+            <div class="button4-row">
+              <div class="button4-column1"><button type="button" class="error-button" id="hdBlockBtn" data-i18n="HD_BLOCK">Block</button></div>
+              <div class="button4-column2"><p class="title" data-i18n="HD_TITLE">DETAILS</p></div>
+              <div class="button4-column3"><a id="hdBackLink" href="#/"><button type="button" class="login-button" data-i18n="PR_BACK">Back</button></a></div>
+            </div>
+            <div class="medium_line"></div>
+            <div class="button9-row"><div class="button9-column1"><p class="title"><img id="hdImg" class="humanicon" alt="" /></p></div></div>
+            <div class="small_line"></div>
+            <div class="button9-row"><div class="button9-column1"><p class="title" id="hdName"></p></div></div>
+            <div class="medium_line"></div>
+            <div class="button5-row">
+              <div class="button5-column1"><label class="form__label" data-i18n="HD_BALANCE">Balance</label><br><a id="hdBalanceLink" class="balance-link"><div class="form__numbers2" id="hdBalance" style="color:var(--button);cursor:pointer;"></div></a></div>
+              <div class="button5-column2"></div>
+              <div class="button5-column3"><label class="form__label2" data-i18n="HD_ACCOUNT">Account</label><br><div class="form__numbers2" id="hdAccount"></div></div>
             </div>
             <div class="small_line"></div>
-            <!-- Profielhistorie-navigatie (gat C): blader door eerdere profielversies (users_old) -->
-            <div id="profRevNav" style="display:none; align-items:center; justify-content:center; gap:0.6rem; margin:0 0 0.5rem;">
-              <button type="button" class="btn-secondary" id="profRevPrev" data-i18n="REQ_PREV">Vorige</button>
-              <span class="muted" id="profRevLabel" style="font-size:0.85rem; min-width:10rem; text-align:center;"></span>
-              <button type="button" class="btn-secondary" id="profRevNext" data-i18n="REQ_NEXT">Volgende</button>
+            <div class="button5-row">
+              <div class="button5-column1"><label class="form__label2" data-i18n="SU_BD">Birthday</label><br><div class="form__numbers2" id="hdBirthday"></div></div>
+              <div class="button5-column2"></div>
+              <div class="button5-column3"><label class="form__label2" data-i18n="SU_GN">Gender</label><br><div class="form__text2" id="hdGender"></div></div>
             </div>
-            <div class="calc-table" id="profFields"></div>
-            <!-- Statistieken (alleen op andermans profiel) — uit 1coinh humandetails.php -->
-            <div id="profStatsBox" style="display:none;">
+            <div class="small_line"></div>
+            <div class="button5-row">
+              <div class="button5-column1"><label class="form__label2" data-i18n="SU_HT">Height</label><br><div class="form__numbers2" id="hdHeight"></div></div>
+              <div class="button5-column2"></div>
+              <div class="button5-column3"><label class="form__label2" data-i18n="SU_HR">Hair</label><br><div class="form__text2" id="hdHair"></div></div>
+            </div>
+            <div class="small_line"></div>
+            <div class="button5-row">
+              <div class="button5-column1"><label class="form__label2" data-i18n="SU_LE">Left Eye</label><br><div class="form__text2" id="hdLeftEye"></div></div>
+              <div class="button5-column2"></div>
+              <div class="button5-column3"><label class="form__label2" data-i18n="SU_RE">Right Eye</label><br><div class="form__text2" id="hdRightEye"></div></div>
+            </div>
+            <div class="small_line"></div>
+            <div id="hdSpecialWrap" class="hidden">
+              <label class="form__label" data-i18n="SU_SF">Special Features</label>
+              <textarea class="special-features" id="hdSpecial" readonly style="resize:none;"></textarea>
               <div class="small_line"></div>
-              <p class="muted" id="profStatsTitle" data-i18n="HD_STATS" style="margin-bottom:0.4rem;">Statistieken</p>
-              <div class="calc-table" id="profStats"></div>
             </div>
-            <div class="actions" id="profEditActions" style="justify-content:center; display:none;">
-              <button type="button" class="login-button" id="profEditBtn" data-i18n="APP_EDIT">Gegevens aanpassen</button>
+            <div id="hdStatsWrap">
+              <label class="form__label" data-i18n="HD_STATS">Statistics</label>
+              <textarea class="special-features" id="hdStats" readonly style="resize:none;"></textarea>
+              <div class="small_line"></div>
             </div>
-            <!-- Peer: blokkeren/toestaan -->
-            <div class="actions" id="profPeerActions" style="justify-content:center; display:none;">
-              <button type="button" class="login-button" id="profBlockBtn"></button>
-            </div>
-            <!-- Eigen: privacy-modus + beheerlijst -->
-            <details class="dapp-card" id="privacyBox" style="display:none;">
-              <summary class="muted" data-i18n="APP_PRIV_TITLE">Privacy &amp; lijsten</summary>
-              <p class="muted" id="privacyModeText" style="margin-top:0.6rem;"></p>
-              <div class="actions">
-                <button type="button" class="btn-secondary" id="privacyToggleBtn"></button>
+            <div class="full-screen-line"></div>
+            <div class="hd-footer-row">
+              <div class="hd-date-group">
+                <button type="button" class="time-nav-button" id="hdPrevBtn">&nbsp;&nbsp;&nbsp;&lt;&nbsp;&nbsp;&nbsp;</button>
+                <div class="hd-date-display" id="hdDate"></div>
+                <button type="button" class="time-nav-button" id="hdNextBtn">&nbsp;&nbsp;&nbsp;&gt;&nbsp;&nbsp;&nbsp;</button>
               </div>
-              <label id="listAddLabel"><span data-i18n="APP_ADD">Toevoegen</span> <select id="listAddSelect"></select></label>
-              <div class="actions">
-                <button type="button" class="btn-secondary" id="listAddBtn">Aan lijst toevoegen</button>
+              <div class="hd-download-group">
+                <a class="btn-gap-wide"><button type="button" class="login-button" id="hdPdfBtn">PDF</button></a>
+                <a class="csv-edge-margin"><button type="button" class="login-button" id="hdCsvBtn">CSV</button></a>
               </div>
-              <div id="listManage" style="margin-top:0.6rem;"></div>
-              <div class="full_line"></div>
-              <p class="muted" data-i18n="APP_EMAIL_PREFS">E-mailvoorkeuren</p>
-              <label><input type="checkbox" id="prefPaymentEmails" /> <span data-i18n="PR_LBL_PAY_EM">Betalingsmails ontvangen</span></label>
-              <label><input type="checkbox" id="prefNewsletter" /> <span data-i18n="PR_LBL_NEWS">Nieuwsbrief ontvangen</span></label>
-            </details>
-          </div>
+            </div>
+        </div></div>
+        </section>
 
-          <!-- BEWERKEN (alleen eigen profiel) -->
-          <div class="dapp-card hidden" id="profEdit" style="border:none; background:none; padding:0;">
-            <div style="display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-bottom:0.6rem;">
-              <img id="peImgPreview" class="humanicon2" alt="foto" />
-              <label class="login-button-small" style="cursor:pointer;"><span data-i18n="APP_CHOOSE_PHOTO">Foto kiezen</span>
-                <input id="peImgFile" type="file" accept="image/*" style="display:none;" />
-              </label>
-              <button type="button" class="btn-secondary" id="peImgClear" style="display:none;" data-i18n="APP_REMOVE_PHOTO">Foto verwijderen</button>
-            </div>
-            <label><span data-i18n="SU_FN">Naam</span> <input id="peName" type="text" autocomplete="name" /></label>
-            <label><span data-i18n="SU_UN">Gebruikersnaam</span> <input id="peUid" type="text" autocomplete="username" /></label>
-            <label><span data-i18n="SU_EM">E-mail</span> <input id="peEmail" type="email" readonly title="Huidig e-mailadres — wijzigen kan hieronder met verificatie" /></label>
-            <details id="emailChangeBox">
-              <summary class="muted" data-i18n="APP_EMAIL_CHANGE">E-mailadres wijzigen (met verificatie)</summary>
-              <label><span data-i18n="APP_NEW_EMAIL">Nieuw e-mailadres</span> <input id="peNewEmail" type="email" autocomplete="email" placeholder="nieuw@voorbeeld.nl" /></label>
-              <div class="actions">
-                <button type="button" class="login-button-small" id="peEmailVerifyBtn" data-i18n="APP_SEND_VERIFY">Verstuur verificatie</button>
+        <!-- list: black/white-list beheerpagina (copy van black-white-list.php) -->
+        <section class="view hidden" id="view-list">
+        <div id="centerContainer"><div class="field-wrapper">
+            <div class="medium_line"></div>
+            <div class="button4-row">
+              <div class="button4-column1"></div>
+              <div class="button4-column2" style="display:flex;flex-direction:column;align-items:center;">
+                <p class="title" data-i18n="BW_TITLE_CONTACTS">CONTACTS</p>
+                <p class="display-num" id="listTitle" style="margin-top:-5px;color:var(--text);text-transform:uppercase;"></p>
               </div>
-              <p class="dapp-relay-info" id="peEmailInfo"></p>
-            </details>
-            <!-- Wachtwoord wijzigen — hoort bij de inloggegevens, dus in het profiel.
-                 Staat in #profEdit en is daarmee alleen op je eigen profiel zichtbaar. -->
-            <details class="dapp-card" id="changePwdCard" style="border:none; background:none; padding:0;">
-              <summary class="muted" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</summary>
-              <p class="muted" data-i18n="APP_CHANGE_PWD_HINT">Alleen jij kunt dit — het vereist je huidige wachtwoord.
-                Je identiteit en saldo blijven ongewijzigd.</p>
-              <label><span data-i18n="APP_CUR_PWD">Huidig wachtwoord</span> <input id="cpCurrent" type="password" autocomplete="current-password" /></label>
-              <label><span data-i18n="APP_NEW_PWD">Nieuw wachtwoord</span> <input id="cpNew" type="password" autocomplete="new-password" placeholder=">7 az+AZ+09+!@" /></label>
-              <label><span data-i18n="APP_REPEAT_NEW">Herhaal nieuw</span> <input id="cpNew2" type="password" autocomplete="new-password" /></label>
-              <div class="actions">
-                <button id="changePwdBtn" type="button" class="login-button-small" data-i18n="APP_CHANGE_PWD">Wachtwoord wijzigen</button>
-              </div>
-              <p class="dapp-relay-info" id="changePwdInfo"></p>
-            </details>
-            <label><span data-i18n="SU_BD">Geboortedatum</span> <input id="peBirthday" type="date" min="1900-01-01" max="2050-01-01" /></label>
-            <label><span data-i18n="SU_HT">Lengte</span> <input id="peHeight" type="text" placeholder="1.78m" /></label>
-            <label><span data-i18n="SU_GN">Geslacht</span> <select id="peGender">
-              <option value="0">Man</option><option value="1">Vrouw</option><option value="2">Anders</option>
-            </select></label>
-            <label><span data-i18n="SU_HR">Haarkleur</span> <select id="peHair"></select></label>
-            <label><span data-i18n="SU_LE">Linkeroog</span> <select id="peLeftEye"></select></label>
-            <label><span data-i18n="SU_RE">Rechteroog</span> <select id="peRightEye"></select></label>
-            <label style="flex:1;min-width:14rem"><input id="peSpecial" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken" style="flex:1;min-width:12rem" /></label>
-            <div class="actions">
-              <button type="button" class="login-button" id="profSaveBtn" data-i18n="PR_SAVE">Opslaan</button>
-              <button type="button" class="btn-secondary" id="profCancelBtn" data-i18n="RCV_CANCEL">Annuleren</button>
+              <div class="button4-column3"><a href="#/profile"><button class="login-button" data-i18n="BW_BTN_BACK">Back</button></a></div>
             </div>
-            <p class="dapp-relay-info" id="profEditInfo"></p>
-          </div>
+            <div class="full_line"></div>
+            <div id="listManage">
+              <div class="management-button-row">
+                <div class="manage-btn-col"><button type="button" id="listDeleteBtn" class="login-button" data-i18n="BW_BTN_DELETE">Delete</button></div>
+                <div class="manage-btn-col" style="text-align:right;"><button type="button" id="listToggleAll" class="login-button" data-i18n="BW_BTN_SELECT_ALL">Select all</button></div>
+              </div>
+              <div class="medium_line"></div>
+              <div class="listbox-container" id="listBox" style="max-height:450px;"></div>
+            </div>
+            <div id="listConfirm" class="hidden">
+              <div class="signupdiv">
+                <p class="feedback" id="listConfirmMsg"></p>
+                <p class="feedback hidden" id="listConfirmReq" data-i18n="BW_CONFIRM_DEL_REQ"></p>
+                <div class="small_line"></div>
+                <div class="centered-button-wrap"><button type="button" class="login-button" id="listProceedBtn" data-i18n="BW_BTN_PROCEED">Yes, proceed!</button></div>
+              </div>
+            </div>
+            <div class="full_line"></div>
+        </div></div>
+        </section>
+
+        <section class="view hidden" id="view-profile">
+        <div id="centerContainer"><div class="field-wrapper">
+          <form id="profileForm" action="javascript:void(0)" method="post" onsubmit="return false">
+            <div class="medium_line"></div>
+            <div class="button4-row">
+              <div class="button4-column1"><button type="submit" class="login-button" id="profHeaderSave" data-i18n="PR_SAVE">Opslaan</button></div>
+              <div class="button4-column2"><p class="title" data-i18n="APP_YOU">JIJ</p></div>
+              <div class="button4-column3"><a href="#/"><button type="button" class="login-button" data-i18n="PR_BACK">Terug</button></a></div>
+            </div>
+            <div>
+              <label class="form__label" data-i18n="SU_FN">Naam</label><br>
+              <input type="text" class="form__input" id="name" autocomplete="name" />
+              <div class="full_line"></div>
+              <button type="button" class="photo-button" id="profPhotoBtn" data-i18n="APP_CHOOSE_PHOTO">Pasfoto wijzigen</button>
+              <input type="hidden" name="image_source" id="image_source_input" value="" />
+              <label class="form__label" data-i18n="SU_EM">E-mail</label><br>
+              <input type="email" class="form__input" id="email" readonly />
+              <label class="form__label" data-i18n="SU_UN">Gebruikersnaam</label><br>
+              <input type="text" class="form__input" id="uid" autocomplete="username" />
+              <div class="button5-row">
+                <div class="button5-column1"><label class="form__label2" data-i18n="SU_BD">Geboortedatum</label><br><input type="date" id="birthday" min="1900-01-01" max="2050-01-01" /></div>
+                <div class="button5-column2"></div>
+                <div class="button5-column3"><label class="form__label" data-i18n="SU_GN">Geslacht</label><br><div class="select-wrap"><select class="gender-selector" id="gender"><option value="0">Man</option><option value="1">Vrouw</option><option value="2">Anders</option></select></div></div>
+              </div>
+              <div class="button5-row">
+                <div class="button5-column1"><label class="form__label" data-i18n="SU_HT">Lengte</label><br><input type="text" class="form__input" id="height" placeholder="1.78m" /></div>
+                <div class="button5-column2"></div>
+                <div class="button5-column3"><label class="form__label" data-i18n="SU_HR">Haarkleur</label><br><div class="select-wrap-hair"><select class="hair-selector" id="hair"></select></div></div>
+              </div>
+              <div class="button5-row">
+                <div class="button5-column1"><label class="form__label2" data-i18n="SU_LE">Linkeroog</label><br><div class="select-wrap-hair"><select class="hair-selector" id="lefteye"></select></div></div>
+                <div class="button5-column2"></div>
+                <div class="button5-column3"><label class="form__label2" data-i18n="SU_RE">Rechteroog</label><br><div class="select-wrap-hair"><select class="hair-selector" id="righteye"></select></div></div>
+              </div>
+              <label class="form__label" data-i18n="SU_SF">Bijzondere kenmerken</label><br>
+              <textarea class="special-features2" id="specialfeatures" data-i18n-ph="APP_FEATURES_PH" placeholder="bijzondere kenmerken"></textarea>
+            </div>
+            <label class="form__label" style="display:block" data-i18n="PR_LANG">Taal</label>
+            <button type="button" id="profLangBtn" style="text-decoration:none;background:none;border:none;width:100%;padding:0;cursor:pointer;">
+              <div class="profile-lang-button">
+                <div class="profile-lang-flag"><span class="flag-crop-container page-list-flag" style="display:inline-block;"><img id="profLangFlag" alt="" class="flag-img-round"></span></div><span class="profile-lang-text" id="profLangText"></span>
+              </div>
+            </button>
+            <div class="small_line"></div>
+            <label class="form__label2" data-i18n="PR_SPAM">Spam voorkomen</label><br><div class="small_line"></div>
+            <button type="button" id="manage-list-btn" class="photo-button" style="width:100%;" data-i18n="PR_MANAGE">Lijst beheren</button>
+            <div class="medium_line"></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="whitelist-toggle"><span class="slider round"></span></label><span class="feedback5" data-i18n="PR_WL_LABEL">Whitelist gebruiken</span></div></div>
+            <div class="medium_line"></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="pref-newsletter"><span class="slider round"></span></label><span class="feedback5" data-i18n="PR_LBL_NEWS">Nieuwsbrief ontvangen</span></div></div>
+            <div class="medium_line"></div>
+            <div class="button-full-row"><div class="switch-container"><label class="switch"><input type="checkbox" id="pref-payment"><span class="slider round"></span></label><span class="feedback5" data-i18n="PR_LBL_PAY_EM">Betalingsmails ontvangen</span></div></div>
+            <div class="full_line"></div>
+            <br><div class="signupdiv"></div>
+            <div class="full-screen-line"></div>
+            <div class="profile-footer-row">
+              <div class="footer-item footer-date" id="profFooterDate"></div>
+              <div class="footer-item"><button type="button" class="login-button" id="profPdfBtn">PDF</button></div>
+              <div class="footer-item"><button type="button" class="login-button" id="profCsvBtn">CSV</button></div>
+              <div class="footer-item" id="profHistoryItem"><button type="button" class="login-button" id="profHistoryBtn" data-i18n="BTN_HISTORY">Geschiedenis</button></div>
+            </div>
+          </form>
+        </div></div>
         </section>
 
       </div>
     </div>
 
-    <script type="module" src="/src/app.mjs"></script>
+    <script type="module" src="./src/app.mjs"></script>
+    <script type="module" src="./src/pwa.mjs"></script>
   </body>
 </html>

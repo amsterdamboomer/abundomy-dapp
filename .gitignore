@@ -29,3 +29,18 @@ web/public/relay.json
 
 # Per ongeluk aangemaakte map met een glyph-naam (bevat bron-repos) — nooit committen
 /
+# --- toegevoegd 2026-07-31 (css-refactor): state/build/junk uitsluiten ---
+*.7z
+*.bak
+*.bak-*
+keystore/
+dist-bundle/
+dist-web/
+.abundomy-data/
+.abundomy-ipfs/
+.abundomy-relay/
+.abundomy-mailer/
+.abundomy-poc/
+.abundomy-wipe/
+1CoinH_*.sql
+migratieIPFSnorelay.md

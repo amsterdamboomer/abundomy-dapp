@@ -11,14 +11,14 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { startBrowserNode } from './ipfs-browser.mjs'
 import { openStores, closeStores } from '../../src/stores.mjs'
 import { deriveCommunityKey, decryptUserProfile } from '../../src/crypto.mjs'
-import { availableCoins, joinedDate, parseSqlDate } from '../../src/ledger.mjs'
+import { availableCoins, joinedDate, parseSqlDate, hoursBetween } from '../../src/ledger.mjs'
 import { createProposal, payProposal } from '../../src/payments.mjs'
 import { signup, changePassword, rekeyAuth, deriveAccountKey, updateProfile, repairIdentity } from '../../src/identity.mjs'
 import { createKeystore, openKeystore, validatePassword, generateRecoveryCode, formatRecoveryCode, normalizeRecoveryCode } from '../../src/auth.mjs'
 import { exportUserChain } from '../../src/export.mjs'
 import { addToList, removeFromList, getList, BLACKLIST, WHITELIST } from '../../src/lists.mjs'
 import { COMMUNITY_SECRET, DECAY_RATE } from '../../src/config.mjs'
-import { t, getLang, setLang, onLangChange, loadI18n, applyStaticI18n, getFlag, hasLang, LANGUAGES } from './i18n.mjs'
+import { t, getLang, setLang, onLangChange, loadI18n, applyStaticI18n, getFlag, flagSrc, hasLang, LANGUAGES } from './i18n.mjs'
 import { renderChat, closeChat } from './chat.mjs'
 
 const $ = (id) => document.getElementById(id)
@@ -274,9 +274,10 @@ async function finishLogin() {
   setInterval(() => resyncStores().catch(() => {}), 15000)
 
   $('app-header').classList.remove('hidden')
+  $('topNav').classList.add('hidden')
   for (const id of ['login', 'signup', 'resetCard']) $(id).classList.add('hidden')
   $('goDashboard').classList.add('hidden')
-  if (!(location.hash || '').startsWith('#/')) location.hash = '#/'
+  location.hash = '#/' // punt 02: na login altijd dashboard (1coinh index.php?login=success), ook als je op #/profile herlaadde
   route() // toont de juiste view + rendert (header + inhoud)
 }
 
@@ -412,6 +413,7 @@ async function doSignup() {
     info(`Account #${me} aangemaakt ✓ — log voortaan in met je gebruikersnaam en wachtwoord. ` +
       `De herstelcode staat in je welkomstmail.`)
     $('goDashboard').classList.remove('hidden')
+    clearSignupForm()  // Punt 04-24-07: form leegmaken na succesvolle account-aanmaak
   } catch (e) {
     info('FOUT: ' + e.message)
     btn.disabled = false
@@ -462,22 +464,24 @@ async function resyncStores() {
 let currentView = 'home'
 let currentParams = {}
 
-const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', search: 'search', request: 'request', chat: 'chat' }
-const VIEWS = ['home', 'transactions', 'txdetail', 'profile', 'search', 'request', 'chat']
+const VIEW_NAMES = { '': 'home', home: 'home', transactions: 'transactions', tx: 'txdetail', profile: 'profile', humandetails: 'humandetails', 'pdf-select': 'pdfselect', list: 'list', search: 'search', request: 'request', chat: 'chat' }
+const VIEWS = ['home', 'transactions', 'txdetail', 'humandetails', 'pdfselect', 'list', 'profile', 'search', 'request', 'chat']
 
 function parseHash() {
   const h = (location.hash || '#/').replace(/^#\/?/, '')
   const parts = h.split('/').filter(Boolean) // '#/transactions/5' → ['transactions','5']
-  return { name: parts[0] || 'home', arg: parts[1] }
+  return { name: parts[0] || 'home', arg: parts[1], rev: parts[2] }
 }
 
 function route() {
   if (me == null || !stores) return
-  const { name, arg } = parseHash()
+  const { name, arg, rev } = parseHash()
   const view = VIEW_NAMES[name] || 'home'
   const prev = currentView
   currentView = view
-  currentParams = { id: arg, tid: arg }
+  if (view !== 'pdfselect') pdfSelInitUid = null // pdf-select opnieuw initialiseren bij terugkomen
+  if (view !== 'list') { listViewInit = false; listMode = 'manage' } // list opnieuw initialiseren bij terugkomen
+  currentParams = { id: arg, tid: arg, rev }
   // MyChat: verbreek de chat-verbinding + sta een verse rebuild toe als we weggaan van de chat-view.
   if (prev === 'chat' && view !== 'chat') { try { closeChat() } catch {}; chatBuilt = false }
   for (const v of VIEWS) {
@@ -561,6 +565,9 @@ async function render() {
     if (currentView === 'transactions') await renderTransactions(currentParams)
     else if (currentView === 'txdetail') await renderTxDetail(currentParams)
     else if (currentView === 'profile') await renderProfile(currentParams)
+    else if (currentView === 'humandetails') await renderHumanDetails(currentParams)
+    else if (currentView === 'pdfselect') await renderPdfSelect(currentParams)
+    else if (currentView === 'list') await renderList()
     else if (currentView === 'search') await renderSearch()
     else if (currentView === 'request') await renderRequest(currentParams)
     else if (currentView === 'chat') {
@@ -585,7 +592,7 @@ async function renderHeader() {
   const bal = availableCoins({ joined: joinedDate(myDoc, usersOld), transactions: txs, userId: me, asOf: new Date() })
   $('header-balance').textContent = `${formatCoins(bal)} ᕫ`
   $('headerNum').textContent = formatDisplayNum(me)
-  $('headerAvatar').src = avatarFor({ ...myProfile, usersId: me })
+  $('headerAvatar').src = avatarFor({ ...myProfile, usersId: me, image: profileEditing ? (pendingImage || myProfile.image) : myProfile.image })
 }
 
 // ============================ HOME (openstaande verzoeken) ============================
@@ -635,7 +642,7 @@ function buildProposalRow(p, prof, partnerId, kind) {
   const mine = kind === 'mine'
   const row = document.createElement('div')
   row.className = mine ? 'my-request-row' : 'request-row'
-  const profHref = partnerId === me ? '#/profile' : `#/profile/${partnerId}`
+  const profHref = partnerId === me ? '#/profile' : `#/humandetails/${partnerId}`
   const desc = (p.description || '').slice(0, mine ? 25 : 20)
   row.innerHTML =
     `<div class="request-column1"><a href="${profHref}"><img class="mainusericon" src="${avatarFor(prof)}" /></a></div>` +
@@ -722,23 +729,35 @@ let searchDone = false
 /** Alle andere gebruikers, ontsleuteld, gesorteerd zoals het origineel. */
 async function searchMatches() {
   const docs = (await stores.users.all()).map((e) => e.value).filter((u) => u.usersId !== me)
+  // 05: contacten (persons met wie je al proposals/verzoeken hebt) eerst, dan de rest.
+  const proposals = (await stores.proposals.all()).map((e) => e.value)
+  const contactIds = new Set()
+  for (const p of proposals) {
+    if (p.receiver === me) contactIds.add(p.giver)
+    if (p.giver === me) contactIds.add(p.receiver)
+  }
+  const byContact = (a, b) => {
+    const ac = contactIds.has(a.usersId) ? 0 : 1
+    const bc = contactIds.has(b.usersId) ? 0 : 1
+    return ac - bc
+  }
   const profiles = await Promise.all(docs.map((d) => safeProfile(d)))
   const q = searchQuery.trim()
   const numeric = q !== '' && /^\d+$/.test(q)
 
   let hits
   if (!q) {
-    hits = profiles.sort((a, b) => a.usersId - b.usersId)
+    hits = profiles.sort((a, b) => byContact(a, b) || (a.usersId - b.usersId))
   } else if (numeric) {
     const n = Number(q)
     hits = n < 100
       ? profiles.filter((p) => p.usersId === n)
       : profiles.filter((p) => String(p.usersId).startsWith(q))
-    hits.sort((a, b) => a.usersId - b.usersId)
+    hits.sort((a, b) => byContact(a, b) || (a.usersId - b.usersId))
   } else {
     const needle = q.toLowerCase()
     hits = profiles.filter((p) => (p.usersName || '').toLowerCase().includes(needle))
-    hits.sort((a, b) => (a.usersName || '').localeCompare(b.usersName || ''))
+    hits.sort((a, b) => byContact(a, b) || (a.usersName || '').localeCompare(b.usersName || ''))
   }
   return hits
 }
@@ -766,7 +785,7 @@ async function renderSearch() {
     row.querySelector('img').src = avatarFor(p)
     row.querySelector('.select-button span:last-child').textContent = p.usersName || `#${p.usersId}`
     // Foto → persoonsdetail; brede knop → direct het verzoek (net als in het origineel).
-    row.querySelector('.avatar-button').onclick = () => { location.hash = `#/profile/${p.usersId}` }
+    row.querySelector('.avatar-button').onclick = () => { location.hash = `#/humandetails/${p.usersId}` }
     row.querySelector('.select-button').onclick = () => { location.hash = `#/request/${p.usersId}` }
     box.append(row)
     const line = document.createElement('div'); line.className = 'small_line'; box.append(line)
@@ -857,8 +876,8 @@ async function renderRequest({ id } = {}) {
   $('rcvImg').src = avatarFor(prof)
   $('rcvName').textContent = prof.usersName || `#${giver}`
   $('rcvAvail').textContent = `${t('RCV_AVAIL')}: ${formatCoins(avail)} ᕫ`
-  $('rcvDetailLink').href = `#/profile/${giver}`
-  $('rcvDetailLink2').href = `#/profile/${giver}`
+  $('rcvDetailLink').href = `#/humandetails/${giver}`
+  $('rcvDetailLink2').href = `#/humandetails/${giver}`
 
   const allowed = await mayRequestFrom(doc, giver)
   $('rcvForm').classList.toggle('hidden', !allowed)
@@ -897,8 +916,8 @@ async function sendRequest() {
     if (description.length < 3) { $('rcvInfo').className = 'error'; info(t('RCV_ERR_DESC')); return }
     // Bedrag nul of leeg: geen melding, alleen het veld markeren — er valt niets uit te leggen.
     if (amount <= 0) { $('rcvAmount').classList.add('amount-error'); $('rcvAmount').focus(); return }
-    // Meer dan hun beschikbare saldo: het origineel weigert dat al bij het verzoek.
-    if (amount > rcvAvail) { $('rcvInfo').className = 'error'; info(t('RCV_ERR_FUNDS')); return }
+    // 06: altijd kunnen vragen — geen saldo-limiet bij versturen. Proposal blijft open tot
+    // de gever voldoende saldo heeft (confirmPay weigert dan, proposal blijft staan).
 
     const giverDoc = (await stores.users.get(giver))?.value
     const receiverDoc = (await stores.users.get(me))?.value
@@ -908,7 +927,8 @@ async function sendRequest() {
     $('rcvInfo').className = 'success'
     info(`${t('RCV_SUCCESS')} ${prof.usersName || '#' + giver}`)
     $('rcvAmount').value = ''; $('rcvDesc').value = ''
-    await render()
+    // 1 pagina terug (zoals browser-back) — V1 receiver.php gaat na het versturen terug.
+    if (history.length > 1) history.back(); else location.hash = '#/'
   } catch (e) {
     $('rcvInfo').className = 'error'
     info('FOUT: ' + e.message)
@@ -1085,14 +1105,313 @@ async function renderTxDetail({ tid } = {}) {
   $('txdReceiverName').textContent = receiverP.usersName
   $('txdGiverImg').src = avatarFor({ usersId: t.giver, usersName: giverP.usersName, image: giverP.image })
   $('txdReceiverImg').src = avatarFor({ usersId: t.receiver, usersName: receiverP.usersName, image: receiverP.image })
-  $('txdGiverLink').href = t.giver === me ? '#/profile' : `#/profile/${t.giver}`
-  $('txdReceiverLink').href = t.receiver === me ? '#/profile' : `#/profile/${t.receiver}`
+  $('txdGiverLink').href = t.giver === me ? '#/profile' : `#/humandetails/${t.giver}`
+  $('txdReceiverLink').href = t.receiver === me ? '#/profile' : `#/humandetails/${t.receiver}`
   // Terug → de transactielijst van de eigen/peer-keten.
   $('txdBack').href = '#/transactions'
 }
 
 async function safeProfile(doc) {
   try { return await decryptUserProfile(doc, communityKey) } catch { return { usersName: `#${doc.usersId}`, usersId: doc.usersId } }
+}
+
+// ============================ HUMANDETAILS (publiek persoonsdetail — copy van humandetails.php) ============================
+let hdUid = null
+let hdRev = 0
+
+/** Trust-log-curve uit 1coinh humandetails.php ($calcCurve). */
+function hdCurve(v) { return v <= 0 ? 0 : 7.427 * Math.log(v + 0.008) + 35.85 }
+
+/** Statistieken + vertrouwen-score als platte tekst (humandetails.php → textarea). 1-op-1 met `renderProfileStats`. */
+function hdStatsText(h, m, joinedStr, txs) {
+  const cnt = (f) => txs.reduce((n, x) => n + (f(x) ? 1 : 0), 0)
+  const uniq = (pick, f) => new Set(txs.filter(f).map(pick)).size
+  const hGiver = cnt((x) => x.giver === h), hGiverU = uniq((x) => x.receiver, (x) => x.giver === h)
+  const hReceiver = cnt((x) => x.receiver === h), hReceiverU = uniq((x) => x.giver, (x) => x.receiver === h)
+  const mGiver = cnt((x) => x.giver === m && x.receiver === h)
+  const mReceiver = cnt((x) => x.receiver === m && x.giver === h)
+  const pOthers = hGiver - mReceiver, rOthers = hReceiver - mGiver
+  const hours = Math.max(0, hoursBetween(joinedStr ? parseSqlDate(joinedStr) : new Date(), new Date()))
+  const days = hours / 24, vdays = days < 10 ? days.toFixed(1) : Math.round(days).toString()
+  const trust = Math.max(0.1, Math.min(99.9, Math.round(
+    hdCurve(mGiver) * 0.37 + hdCurve(mReceiver) * 0.16 + hdCurve(hReceiver) * 0.12 +
+    hdCurve(hGiver) * 0.04 + hdCurve(hReceiverU) * 0.22 + hdCurve(hGiverU) * 0.02 + hdCurve(hours) * 0.07)))
+  return [
+    `${t('ST_PART')} ${vdays} ${t('ST_DAYS')}    ${t('ST_TRUST')} ${trust}%`,
+    `${t('ST_PAID_YOU')}: ${mReceiver}, ${t('ST_FROM_YOU')}: ${mGiver}`,
+    `${t('ST_PAID_OTHERS')} ${pOthers}, ${t('ST_RECEIVED')}: ${rOthers}`,
+    `${t('ST_UNI_PAID')}: ${hGiverU}, ${t('ST_UNI_REC')}: ${hReceiverU}`,
+  ].join('\n')
+}
+
+/** "5 Jan 2024" — geboortedatum zoals humandetails.php (j + M_ + Y). */
+function fmtHdBirthday(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '')
+  if (!m) return iso || '—'
+  return `${Number(m[3])} ${monthsShort()[Number(m[2]) - 1]} ${m[1]}`
+}
+
+/** Footer-datum "05 Jan 2024" (d + M_ + Y, UTC zoals de dapp-conventie). */
+function fmtHdDate(iso) {
+  if (!iso) return '—'
+  const d = parseSqlDate(iso)
+  if (isNaN(d.getTime())) return iso
+  return `${String(d.getUTCDate()).padStart(2, '0')} ${monthsShort()[d.getUTCMonth()]} ${d.getUTCFullYear()}`
+}
+
+// ============================ LIJST BEHEREN (black-white-list.php) ============================
+let listViewInit = false
+let listMode = 'manage' // 'manage' | 'confirm'
+let listSelected = new Set()
+
+async function renderList() {
+  const wl = Number(myProfile.useWhitelist) === 1
+  $('listTitle').textContent = t(wl ? 'BW_WHITE_LIST' : 'BW_BLACK_LIST')
+  if (listMode === 'confirm') { await renderListConfirm(wl); return }
+  if (listViewInit) return // al gebouwd — behoud checkbox-keuze (render() loopt elke ~2,5s)
+  listViewInit = true
+  const listType = wl ? WHITELIST : BLACKLIST
+  const targets = await getList({ stores, ownerId: me, listType })
+  const users = (await stores.users.all()).map((e) => e.value)
+  const box = $('listBox'); box.innerHTML = ''
+  const delBtn = $('listDeleteBtn'), toggleBtn = $('listToggleAll')
+  if (!targets.length) {
+    box.innerHTML = `<p class="feedback" style="padding:20px;">${t('BW_EMPTY_MSG', t(wl ? 'BW_WHITE_LIST' : 'BW_BLACK_LIST'))}</p>`
+    delBtn.disabled = true; toggleBtn.disabled = true
+    delBtn.style.opacity = '0.3'; delBtn.style.cursor = 'not-allowed'; delBtn.style.filter = 'grayscale(1)'
+  } else {
+    delBtn.disabled = false; toggleBtn.disabled = false
+    for (const tid of [...targets].sort((a, b) => a - b)) {
+      const u = users.find((x) => x.usersId === tid)
+      const p = u ? await safeProfile(u) : { usersName: `#${tid}` }
+      const row = document.createElement('div'); row.className = 'manage-row'
+      const colCheck = document.createElement('div'); colCheck.className = 'col-check'
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'manage-checkbox'; cb.value = tid
+      colCheck.append(cb)
+      const colImg = document.createElement('div'); colImg.className = 'col-img'
+      const a = document.createElement('a'); a.href = `#/humandetails/${tid}`
+      const img = document.createElement('img'); img.src = avatarFor({ ...p, usersId: tid }); img.className = 'mainusericon'; img.style.cssText = 'width:50px;height:50px;'
+      a.append(img); colImg.append(a)
+      const colName = document.createElement('div'); colName.className = 'col-name'; colName.textContent = p.usersName || `#${tid}`
+      row.append(colCheck, colImg, colName)
+      cb.onchange = updateListUIState
+      box.append(row)
+    }
+  }
+  delBtn.onclick = () => { if (!listSelected.size) return; listMode = 'confirm'; renderListConfirm(wl).catch(() => {}) }
+  toggleBtn.onclick = toggleListAll
+  toggleBtn.textContent = t('BW_BTN_SELECT_ALL')
+  $('listManage').classList.remove('hidden'); $('listConfirm').classList.add('hidden')
+  updateListUIState()
+}
+
+function updateListUIState() {
+  const cbs = $('listBox').querySelectorAll('.manage-checkbox')
+  const checked = Array.from(cbs).filter((cb) => cb.checked)
+  listSelected = new Set(checked.map((cb) => Number(cb.value)))
+  const delBtn = $('listDeleteBtn')
+  if (!checked.length) { delBtn.disabled = true; delBtn.style.opacity = '0.3'; delBtn.style.cursor = 'not-allowed'; delBtn.style.filter = 'grayscale(1)' }
+  else { delBtn.disabled = false; delBtn.style.opacity = '1'; delBtn.style.cursor = 'pointer'; delBtn.style.filter = 'grayscale(0)' }
+  const toggleBtn = $('listToggleAll')
+  if (cbs.length) toggleBtn.textContent = t(checked.length === cbs.length ? 'BW_BTN_DESELECT_ALL' : 'BW_BTN_SELECT_ALL')
+}
+
+function toggleListAll() {
+  const cbs = $('listBox').querySelectorAll('.manage-checkbox')
+  const toggleBtn = $('listToggleAll')
+  if (!cbs.length) return
+  const shouldSelect = toggleBtn.textContent === t('BW_BTN_SELECT_ALL')
+  cbs.forEach((cb) => { cb.checked = shouldSelect })
+  updateListUIState()
+}
+
+async function renderListConfirm(wl) {
+  $('listManage').classList.add('hidden'); $('listConfirm').classList.remove('hidden')
+  const ids = [...listSelected]
+  const actionWord = t(wl ? 'BW_ACT_BLOCK' : 'BW_ACT_UNBLOCK') // whitelist weg = blokkeren; blacklist weg = deblokkeren
+  let name = t('BW_PERSON')
+  if (ids.length === 1) {
+    const u = (await stores.users.all()).map((e) => e.value).find((x) => x.usersId === ids[0])
+    if (u) name = (await safeProfile(u)).usersName || name
+  }
+  $('listConfirmMsg').textContent = ids.length === 1
+    ? t('BW_CONFIRM_SINGLE', actionWord, name)
+    : t('BW_CONFIRM_MULTI', actionWord, ids.length)
+  $('listConfirmReq').classList.toggle('hidden', !wl) // alleen whitelist: verwijderen = blokkeren → verzoeken opgeruimd
+  $('listProceedBtn').onclick = async () => {
+    const listType = wl ? WHITELIST : BLACKLIST
+    for (const tid of ids) {
+      await removeFromList({ stores, ownerId: me, targetId: tid, listType })
+      if (wl) await clearMutualProposals(tid)
+    }
+    listViewInit = false; listMode = 'manage'
+    log(`${ids.length} van ${t(wl ? 'BW_WHITE_LIST' : 'BW_BLACK_LIST')} verwijderd`)
+    render().catch(() => {})
+  }
+}
+
+let pdfSelInitUid = null
+async function renderPdfSelect({ id } = {}) {
+  const uid = id != null ? Number(id) : me
+  if (pdfSelInitUid === uid) return // al geïnitialiseerd voor deze gebruiker — behoud gebruikersinput (render() loopt elke ~2,5s)
+  pdfSelInitUid = uid
+  const doc = (await stores.users.get(uid))?.value
+  const p = doc ? await safeProfile(doc) : { usersName: `#${uid}` }
+  $('pdfSelImg').src = avatarFor({ ...p, usersId: uid })
+  $('pdfSelName').textContent = p.usersName || `#${uid}`
+
+  // Geschiedenis-switch: alleen actief als deze gebruiker users_old-rijen heeft.
+  const hasHistory = (await stores.usersOld.all()).map((e) => e.value).some((o) => o.uid_old === uid)
+  const histInput = $('pdfSelHistory')
+  histInput.disabled = !hasHistory
+  histInput.checked = false
+  const histSlider = histInput.parentElement.querySelector('.slider')
+  if (histSlider) histSlider.style.opacity = hasHistory ? '' : '0.3'
+  $('pdfSelHistoryLbl').style.color = hasHistory ? '' : 'var(--disabled)'
+
+  // Transactiebereik (min/max) voor de "alles"-schakelaar.
+  const txs = (await stores.transactions.all()).map((e) => e.value)
+    .filter((t) => t.giver === uid || t.receiver === uid)
+  const times = txs.map((t) => t.time_stamp).sort()
+  const firstT = times.length ? times[0].slice(0, 10) : null
+  const lastT = times.length ? times[times.length - 1].slice(0, 10) : null
+  const year = new Date().getUTCFullYear()
+  const fromInput = $('pdfSelFrom'), toInput = $('pdfSelTo'), allToggle = $('pdfSelAll')
+  fromInput.value = `${year}-01-01`; toInput.value = `${year}-12-31`
+  fromInput.disabled = false; toInput.disabled = false; fromInput.style.opacity = '1'; toInput.style.opacity = '1'
+  allToggle.checked = !!(firstT && lastT && fromInput.value <= firstT && toInput.value >= lastT)
+
+  function updateInputState() {
+    if (allToggle.checked) {
+      if (firstT && lastT) { fromInput.value = firstT; toInput.value = lastT }
+      fromInput.disabled = true; toInput.disabled = true
+      fromInput.style.opacity = '0.3'; toInput.style.opacity = '0.3'
+    } else {
+      fromInput.disabled = false; toInput.disabled = false
+      fromInput.style.opacity = '1'; toInput.style.opacity = '1'
+    }
+  }
+  allToggle.onchange = updateInputState
+  function checkDateBoundaries() {
+    if (!firstT || !lastT) return
+    allToggle.checked = (fromInput.value <= firstT && toInput.value >= lastT)
+    updateInputState()
+  }
+  fromInput.onchange = checkDateBoundaries
+  toInput.onchange = checkDateBoundaries
+  updateInputState()
+
+  $('pdfSelGenBtn').onclick = () => {
+    txUserId = uid
+    const opts = allToggle.checked
+      ? { history: histInput.checked }
+      : { from: fromInput.value, to: toInput.value, history: histInput.checked }
+    printStatement(opts).catch((e) => log('PDF-fout: ' + e.message))
+  }
+  // Terug naar de humandetails-pagina (met evt. rev) waarvandaan we kwamen.
+  $('pdfSelBackLink').href = `#/humandetails/${uid}` + (hdRev ? `/${hdRev}` : '')
+}
+
+async function renderHumanDetails({ id, rev } = {}) {
+  const uid = id != null ? Number(id) : me
+  hdUid = uid
+  hdRev = rev != null && rev !== '' ? rev : 0
+  const isSelf = uid === me
+
+  const usersOld = (await stores.usersOld.all()).map((e) => e.value)
+  // Tijdlijn = ALLE users_old-rijen van deze gebruiker (incl. join-only), oplopend op
+  // start_old — 1-op-1 met humandetails.php (prev/next op start_old, géén enc-eis).
+  const hist = usersOld.filter((o) => o.uid_old === uid)
+    .sort((a, b) => (a.start_old < b.start_old ? -1 : a.start_old > b.start_old ? 1 : 0))
+  let display, currentTime
+  if (hdRev === 0) {
+    const doc = (await stores.users.get(uid))?.value
+    if (!doc) { $('hdName').textContent = t('HD_ERR_404'); return }
+    display = await safeProfile(doc)
+    currentTime = doc.start ?? null
+  } else {
+    const row = hist.find((o) => String(o.usersOldId) === String(hdRev))
+    if (!row) { location.hash = `#/humandetails/${uid}`; return } // stale rev → terug naar current
+    currentTime = row.start_old ?? null
+    // enc-snapshot → dat revisie's profiel; join-only (zonder enc) → huidig profiel als fallback
+    display = row.enc ? await safeProfile(row) : await safeProfile((await stores.users.get(uid))?.value)
+  }
+
+  $('hdImg').src = avatarFor({ ...display, usersId: uid })
+  $('hdName').textContent = display.usersName || `#${uid}`
+
+  const txs = (await stores.transactions.all()).map((e) => e.value)
+  const joined = hdRev === 0 ? joinedDate({ usersId: uid, start: currentTime }, usersOld) : currentTime
+  $('hdBalance').textContent = `${formatCoins(availableCoins({ joined, transactions: txs, userId: uid, asOf: new Date() }))} ᕫ`
+  $('hdAccount').textContent = formatDisplayNum(uid)
+  $('hdBalanceLink').href = `#/transactions/${uid}`
+
+  $('hdBirthday').textContent = fmtHdBirthday(display.birthday)
+  $('hdGender').textContent = genderLabels()[Number(display.gender) || 0] ?? '—'
+  $('hdHeight').textContent = display.height || '—'
+  $('hdHair').textContent = hairLabels()[Number(display.hair) || 0] ?? '—'
+  $('hdLeftEye').textContent = eyeLabels()[Number(display.leftEye) || 0] ?? '—'
+  $('hdRightEye').textContent = eyeLabels()[Number(display.rightEye) || 0] ?? '—'
+  const sf = display.specialFeatures || ''
+  $('hdSpecialWrap').classList.toggle('hidden', !sf)
+  if (sf) $('hdSpecial').value = sf
+
+  if (hdRev === 0) {
+    $('hdStatsWrap').classList.remove('hidden')
+    $('hdStats').value = hdStatsText(uid, me, joined, txs)
+  } else {
+    $('hdStatsWrap').classList.add('hidden') // humandetails.php: stats alleen bij current record
+  }
+
+  // Blokkeren-knop (verborgen voor zelf, zoals humandetails.php)
+  const blockBtn = $('hdBlockBtn')
+  if (isSelf) {
+    blockBtn.style.display = 'none'
+  } else {
+    blockBtn.style.display = ''
+    const blocked = new Set(await getList({ stores, ownerId: me, listType: BLACKLIST })).has(uid)
+    blockBtn.textContent = t(blocked ? 'HD_UNBLOCK' : 'HD_BLOCK')
+    blockBtn.className = blocked ? 'login-button' : 'error-button'
+    blockBtn.onclick = () => (blocked ? unblockUser(uid) : blockUser(uid)).catch((e) => log('FOUT: ' + e.message))
+  }
+
+  // Terug-knop = browser-back (komt van search/txdetail/proposal); fallback dashboard.
+  $('hdBackLink').onclick = (e) => { e.preventDefault(); history.length > 1 ? history.back() : (location.hash = '#/') }
+
+  // Geschiedenis-navigatie (humandetails.php): prev = nieuwste rij met start_old < currentTime;
+  // next = oudste rij met start_old > currentTime (of null = current record).
+  const findPrev = (ct) => { let p = null; for (const r of hist) { if (r.start_old < ct) p = r; else break } return p }
+  const findNext = (ct) => hist.find((r) => r.start_old > ct) ?? null
+  const setNav = (el, enabled, fn) => {
+    el.classList.toggle('nav-disabled', !enabled)
+    el.disabled = !enabled
+    el.onclick = enabled ? fn : null
+  }
+  const prevRow = findPrev(currentTime)
+  const nextRow = findNext(currentTime)
+  setNav($('hdPrevBtn'), !!prevRow, () => { location.hash = `#/humandetails/${uid}/${prevRow.usersOldId}` })
+  if (nextRow) {
+    setNav($('hdNextBtn'), true, () => { location.hash = `#/humandetails/${uid}/${nextRow.usersOldId}` })
+  } else if (hdRev === 0 && isSelf) {
+    setNav($('hdNextBtn'), true, () => { location.hash = '#/profile' }) // current + zelf → profiel
+  } else if (hdRev === 0) {
+    setNav($('hdNextBtn'), false, null) // current + ander → disabled (geen nieuwer)
+  } else {
+    // op een historische rij, next = current record: zelf → profiel, ander → current humandetails
+    setNav($('hdNextBtn'), true, () => { location.hash = isSelf ? '#/profile' : `#/humandetails/${uid}` })
+  }
+  $('hdDate').textContent = fmtHdDate(currentTime)
+
+  // PDF/CSV voor de getoonde gebruiker. PDF → selectiepagina (copy van download-pdf.php).
+  $('hdPdfBtn').onclick = () => { location.hash = `#/pdf-select/${uid}` }
+  $('hdCsvBtn').onclick = async () => {
+    try {
+      const csv = await exportUserChain({ stores, userId: uid, communityKey, asOf: new Date() })
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+      const a = document.createElement('a'); a.href = url; a.download = `${String(uid).padStart(10, '0')}-abundomy.csv`; a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) { log('CSV-fout: ' + e.message) }
+  }
 }
 
 // ============================ PROFIEL (eigen + peer) ============================
@@ -1104,67 +1423,15 @@ let revIsMe = false
 let revUid = null
 
 async function renderProfile({ id } = {}) {
-  if (profileEditing) return // niet herrenderen tijdens bewerken (zou velden overschrijven)
+  if (profileEditing) return
   const uid = id != null ? Number(id) : me
-  const isMe = uid === me
-  $('profEditActions').style.display = isMe ? 'flex' : 'none'
-  $('profView').classList.remove('hidden')
-  $('profEdit').classList.add('hidden')
-  let p
-  if (isMe) p = myProfile
-  else {
-    const doc = (await stores.users.get(uid))?.value
-    if (!doc) { $('profName').textContent = 'Onbekende gebruiker'; $('profFields').innerHTML = ''; $('profRevNav').style.display = 'none'; return }
-    p = await safeProfile(doc)
-  }
-
-  const txs = (await stores.transactions.all()).map((e) => e.value)
-  const usersOld = (await stores.usersOld.all()).map((e) => e.value)
-  const myDoc = (await stores.users.get(uid))?.value
-  const joined = joinedDate(myDoc ?? { usersId: uid, start: txs[0]?.time_stamp }, usersOld)
-  const bal = availableCoins({ joined, transactions: txs, userId: uid, asOf: new Date() })
-
-  $('profBalance').textContent = `${formatCoins(bal)} ᕫ`
-  $('profBalanceLink').href = isMe ? '#/transactions' : `#/transactions/${uid}` // saldo → keten (humandetails)
-
-  // Profielhistorie (gat C): huidige versie + de gearchiveerde versies uit users_old
-  // (nieuwste historische eerst), doorbladerbaar met Vorige/Volgende. Alleen échte
-  // snapshots (met enc); de slank-gemigreerde join-only rijen overslaan.
-  const histSnaps = usersOld
-    .filter((o) => o.uid_old === uid && o.enc)
-    .sort((a, b) => (a.start_old < b.start_old ? 1 : a.start_old > b.start_old ? -1 : 0))
-  const hist = []
-  for (const s of histSnaps) hist.push({ profile: await safeProfile(s), start_old: s.start_old, end_old: s.end_old })
-  const today = new Date().toISOString().slice(0, 10)
-  const curStart = hist.length ? hist[0].end_old : joined
-  revUid = uid
-  revIsMe = isMe
-  revVersions = [
-    { profile: p, period: `${formatDateNL(curStart)} – ${formatDateNL(today)}` },
-    ...hist.map((h) => ({ profile: h.profile, period: `${formatDateNL(h.start_old)} – ${formatDateNL(h.end_old)}` })),
-  ]
-  revIdx = 0
-  $('profRevNav').style.display = revVersions.length > 1 ? 'flex' : 'none'
-  renderProfileVersion()
-
-  // Statistieken-blok (alleen op andermans profiel) — uit 1coinh humandetails.php.
-  const statsBox = $('profStatsBox')
-  if (!isMe) {
-    statsBox.style.display = 'block'
-    $('profStats').innerHTML = renderProfileStats(txs, uid, me, joined)
-  } else {
-    statsBox.style.display = 'none'
-  }
-
-  await renderListControls(uid, isMe) // blok-/whitelijst-knoppen
+  if (uid !== me) { location.hash = `#/humandetails/${uid}`; return } // peer → humandetails (copy van humandetails.php)
+  $('profHeaderSave').style.display = ''
+  enterProfileEdit()
+  // Geschiedenis-knop alleen tonen als je users_old-historie hebt (zoals profile.php).
+  const hasHistory = (await stores.usersOld.all()).map((e) => e.value).some((o) => o.uid_old === me)
+  $('profHistoryItem').style.display = hasHistory ? '' : 'none'
 }
-
-/**
- * Toon de geselecteerde profielversie (huidig = index 0, of een gearchiveerde uit
- * users_old) in de profielweergave: avatar, naam en velden wisselen mee; saldo/statistieken
- * blijven (die horen bij de persoon, niet bij de versie). De caption toont positie +
- * geldigheidsperiode; bewerken kan alleen op de EIGEN, huidige versie.
- */
 function renderProfileVersion() {
   const v = revVersions[revIdx]
   if (!v) return
@@ -1288,7 +1555,7 @@ async function renderPrivacy(wl, blocks, allows) {
   if (!ids.length) box.innerHTML = `<p class="muted">${wl ? t('APP_NONE_ALLOWED') : t('APP_NONE_BLOCKED')}</p>`
   for (const id of ids) {
     const row = document.createElement('div'); row.className = 'calc-row'
-    row.innerHTML = `<span class="calc-title"><a href="#/profile/${id}">${nameOf(id)} (#${id})</a></span>`
+    row.innerHTML = `<span class="calc-title"><a href="#/humandetails/${id}">${nameOf(id)} (#${id})</a></span>`
     const b = document.createElement('button'); b.className = 'btn-secondary'
     b.textContent = wl ? t('BW_BTN_DELETE') : t('HD_UNBLOCK')
     b.onclick = () => (wl ? removeAllow(id) : unblockUser(id)).catch((e) => log('FOUT: ' + e.message))
@@ -1350,38 +1617,61 @@ let pendingImage = '' // de (nog niet opgeslagen) gekozen profielfoto in bewerkm
 
 /** Update de foto-preview + zichtbaarheid van 'verwijderen' in bewerkmodus. */
 function refreshImagePreview() {
-  $('peImgPreview').src = avatarFor({ ...myProfile, usersId: me, image: pendingImage })
-  $('peImgClear').style.display = (typeof pendingImage === 'string' && pendingImage.startsWith('data:image')) ? 'inline-block' : 'none'
+  // Foto in #app-header (geen inline preview meer, 1:1 met statische profile.php).
+  $('headerAvatar').src = avatarFor({ ...myProfile, usersId: me, image: pendingImage })
 }
 
 /** Bewerkmodus openen (alleen eigen profiel): velden vullen uit myProfile. */
 function enterProfileEdit() {
   profileEditing = true
-  $('profEditInfo').textContent = ''
-  $('peNewEmail').value = ''; $('peEmailInfo').textContent = ''; $('emailChangeBox').open = false
   pendingImage = myProfile.image || ''
   refreshImagePreview()
-  $('peName').value = myProfile.usersName || ''
-  $('peUid').value = myProfile.usersUid || ''
-  $('peEmail').value = myProfile.usersEmail || ''
-  $('peBirthday').value = (myProfile.birthday || '').slice(0, 10)
-  $('peHeight').value = myProfile.height || ''
-  fillSelect('peGender', genderLabels(), Number(myProfile.gender) || 0)
-  fillSelect('peHair', hairLabels(), Number(myProfile.hair) || 0)
-  fillSelect('peLeftEye', eyeLabels(), Number(myProfile.leftEye) || 0)
-  fillSelect('peRightEye', eyeLabels(), Number(myProfile.rightEye) || 0)
-  $('peSpecial').value = myProfile.specialFeatures || ''
-  $('profView').classList.add('hidden')
-  $('profEdit').classList.remove('hidden')
+  if (myProfile.start) $('profFooterDate').textContent = formatDateNL(myProfile.start)
+  $('name').value = myProfile.usersName || ''
+  $('uid').value = myProfile.usersUid || ''
+  $('email').value = myProfile.usersEmail || ''
+  $('birthday').value = (myProfile.birthday || '').slice(0, 10)
+  $('height').value = myProfile.height || ''
+  fillSelect('gender', genderLabels(), Number(myProfile.gender) || 0)
+  fillSelect('hair', hairLabels(), Number(myProfile.hair) || 0)
+  fillSelect('lefteye', eyeLabels(), Number(myProfile.leftEye) || 0)
+  fillSelect('righteye', eyeLabels(), Number(myProfile.rightEye) || 0)
+  $('specialfeatures').value = myProfile.specialFeatures || ''
+  // Onderaan (1–4): taal-pil + whitelist + nieuwsbrief/betalingsmails + footer.
+  renderProfLangBtn()
+  const wl = Number(myProfile.useWhitelist) === 1
+  const wlToggle = $('whitelist-toggle'); wlToggle.checked = wl
+  wlToggle.onchange = () => setPrivacyMode(wlToggle.checked ? 1 : 0).catch((e) => log('FOUT: ' + e.message))
+  const news = $('pref-newsletter'); news.checked = Number(myProfile.newsletter) === 1
+  news.onchange = () => setPref('newsletter', news.checked ? 1 : 0).catch((e) => log('FOUT: ' + e.message))
+  const pay = $('pref-payment'); pay.checked = Number(myProfile.paymentEmails) === 1
+  pay.onchange = () => setPref('paymentEmails', pay.checked ? 1 : 0).catch((e) => log('FOUT: ' + e.message))
+  $('profLangBtn').onclick = openLangOverlay
+  // Lijst beheren → black/white-list beheerpagina (copy van black-white-list.php).
+  $('manage-list-btn').onclick = () => { location.hash = '#/list' }
+  // Footer (1:1 met profile.php): PDF → selectiepagina, CSV → keten-export, Geschiedenis → eigen humandetails.
+  $('profPdfBtn').onclick = () => { location.hash = `#/pdf-select/${me}` }
+  $('profCsvBtn').onclick = async () => {
+    try {
+      const csv = await exportUserChain({ stores, userId: me, communityKey, asOf: new Date() })
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+      const a = document.createElement('a'); a.href = url; a.download = `${String(me).padStart(10,'0')}-abundomy.csv`; a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) { log('CSV-fout: ' + e.message) }
+  }
+  $('profHistoryBtn').onclick = () => { location.hash = `#/humandetails/${me}` }
 }
 
+/** Taal-pil op het profiel vullen: huidige vlag + naam (1:1 met profile.php). */
+function renderProfLangBtn() {
+  const code = getLang()
+  const flag = $('profLangFlag'); if (flag) flag.src = flagSrc(code) || 'img/flags/flag_en.jpg'
+  const txt = $('profLangText'); if (txt) txt.textContent = LANGUAGES[code] || 'Select Language'
+}
 function cancelProfileEdit() {
   profileEditing = false
-  $('profEdit').classList.add('hidden')
-  $('profView').classList.remove('hidden')
   render().catch(() => {})
 }
-
 /**
  * E-mailadres wijzigen mét verificatie (hergebruikt de signup-verificatieflow). De
  * mailer dwingt uniciteit af op de account-pubkey; pas ná bevestiging via de mail
@@ -1411,7 +1701,7 @@ async function changeEmail() {
     info('Bevestigd ✓ — e-mailadres bijwerken…')
     await updateProfile({ stores, usersId: me, communityKey, updates: { usersEmail: newEmail } })
     myProfile = { ...myProfile, usersEmail: newEmail }
-    $('peEmail').value = newEmail
+    $('email').value = newEmail
     $('peNewEmail').value = ''
     info('E-mailadres gewijzigd ✓ — log voortaan in met je nieuwe e-mail.')
     log('E-mailadres gewijzigd naar ' + newEmail)
@@ -1424,35 +1714,28 @@ async function changeEmail() {
 
 /** Profielwijzigingen opslaan (versleuteld), myProfile verversen, terug naar bekijken. */
 async function saveProfile() {
-  const info = (m) => { $('profEditInfo').textContent = m }
-  const btn = $('profSaveBtn'); btn.disabled = true
+  const btn = $('profHeaderSave'); btn.disabled = true
   try {
-    const uid = $('peUid').value.trim()
-    if (uid.length <= 3) throw new Error('gebruikersnaam moet langer dan 3 tekens zijn')
+    const uidVal = $('uid').value.trim()
+    if (uidVal.length <= 3) throw new Error('gebruikersnaam moet langer dan 3 tekens zijn')
     const updates = {
-      usersName: $('peName').value.trim(),
-      usersUid: uid,
-      birthday: $('peBirthday').value, // '' of 'JJJJ-MM-DD'
-      height: $('peHeight').value.trim(),
-      gender: Number($('peGender').value) || 0,
-      hair: Number($('peHair').value) || 0,
-      leftEye: Number($('peLeftEye').value) || 0,
-      rightEye: Number($('peRightEye').value) || 0,
-      specialFeatures: $('peSpecial').value.trim(),
-      image: pendingImage, // profielfoto (data-URI) of '' om te verwijderen
-      // usersEmail bewust niet: wijzigen vereist verificatie (apart)
+      usersName: $('name').value.trim(),
+      usersUid: uidVal,
+      birthday: $('birthday').value,
+      height: $('height').value.trim(),
+      gender: Number($('gender').value) || 0,
+      hair: Number($('hair').value) || 0,
+      leftEye: Number($('lefteye').value) || 0,
+      rightEye: Number($('righteye').value) || 0,
+      specialFeatures: $('specialfeatures').value.trim(),
+      image: pendingImage,
     }
-    info('Opslaan…')
     await updateProfile({ stores, usersId: me, updates, communityKey })
     myProfile = { ...myProfile, ...updates }
     profileEditing = false
-    $('profEdit').classList.add('hidden')
-    $('profView').classList.remove('hidden')
-    await render()
-    info('')
-    log('Profiel bijgewerkt ✓')
+    log('Profiel bijgewerkt \u2713')
   } catch (e) {
-    info('FOUT: ' + (e.message === 'usernametaken' ? 'die gebruikersnaam is al in gebruik' : e.message))
+    log('FOUT: ' + (e.message === 'usernametaken' ? 'die gebruikersnaam is al in gebruik' : e.message))
   } finally {
     btn.disabled = false
   }
@@ -1571,12 +1854,122 @@ function fmtFullDate(s) {
  * haar/ogen/geboortedatum/bijzondere kenmerken, vertaalde kleurnamen), + brug-regel
  * 'sinds laatste transactie tot nu'. Labels vallen voor niet-EN/NL talen terug op EN.
  */
+let _pdfBlobUrl = null
+// PDF-preview-overlay IN de app openen met een laad-document; de aanroeper laadt
+// daarna het echte PDF-document in #pdfFrame (blob = zelfde-origin). Zonder overlay
+// zou window.open('','_blank') op een geïnstalleerde PWA de gebruiker opsluiten in
+// het webview, zonder terug-knop of print-UI.
+function openPdfOverlay(loading) {
+  $('pdfOverlay').classList.remove('hidden')
+  document.body.style.overflow = 'hidden'
+  const frame = $('pdfFrame')
+  frame.onload = null
+  if (_pdfBlobUrl) URL.revokeObjectURL(_pdfBlobUrl)
+  _pdfBlobUrl = URL.createObjectURL(new Blob(
+      [loading || '<!doctype html><meta charset="utf-8"><body style="font:14px sans-serif;margin:32px;color:#555">…</body>'],
+      { type: 'text/html;charset=utf-8' }))
+  frame.src = _pdfBlobUrl
+  $('pdfTitle').textContent = t('PDF_TRANSACTION_OVERVIEW')
+  fillPdfAppbar()
+}
+function closePdfOverlay() {
+  $('pdfOverlay').classList.add('hidden')
+  document.body.style.overflow = ''
+  const frame = $('pdfFrame')
+  frame.onload = null
+  if (_pdfBlobUrl) { URL.revokeObjectURL(_pdfBlobUrl); _pdfBlobUrl = null }
+  frame.src = 'about:blank'
+}
+
+// App-balk van de PDF-overlay vullen (home/saldo/user-avatar + 'Delen/Opslaan'-knop),
+// zodat de gebruiker óók tijdens de preview en vóór de PDF-actie in de app georiënteerd
+// blijft en via home/avatar kan navigeren. De balans komt uit #app-header, de avatar
+// uit #headerAvatar. Zodat er NIET wordt gekeken naar een kale PDF-viewport.
+function fillPdfAppbar() {
+  try {
+    const hn = $('headerNum'), hb = $('header-balance'), hAv = $('headerAvatar')
+    if ($('pdfBalance')) {
+      const parts = [hn && hn.textContent, hb && hb.textContent].filter(Boolean)
+      $('pdfBalance').textContent = parts.join(' ').replace(/\s+/g, ' ').trim()
+      }
+    if (hAv && hAv.src && $('pdfAvatarImg')) $('pdfAvatarImg').src = hAv.src
+    if ($('pdfShareBtn')) $('pdfShareBtn').textContent = getLang() === 'en' ? 'Share / Save PDF' : 'Delen / Opslaan'
+  } catch {}
+}
+
+// Maak van de preview-iframe één echt, deelbaar PDF-bestand (html2canvas → jsPDF) en
+// deel via het OS-share-sheet (Web Share API — dat heeft altijd een Cancel/terug, dus de
+// gebruiker valt terug in de app) of — als dat niet kan — download het als .pdf.
+// Native print blijft de 'Print'-knop; bij enige fout valen we terug op print.
+async function shareOrSavePdf(frame, name) {
+  const btn = $('pdfShareBtn'), hint = $('pdfHint')
+  const label = btn ? btn.textContent : ''
+  try {
+    if (btn) btn.textContent = '…'
+    if (hint) hint.textContent = 'PDF wordt gemaakt …'
+    const jsPDFmod = await import('jspdf')
+    const html2canvasMod = await import('html2canvas')
+    const jsPDFCtor = jsPDFmod.jsPDF || jsPDFmod.default
+    const html2canvas = html2canvasMod.default || html2canvasMod
+    const w = frame.contentWindow
+    const doc = w && w.document
+    if (!doc) throw new Error('iframe-document niet beschikbaar')
+    if (doc.readyState !== 'complete') { await new Promise((r) => setTimeout(r, 350)) }
+    const canvas = await html2canvas(doc.documentElement, {
+      scale: Math.max(1.5, Math.min(2, (window.devicePixelRatio || 1.5) + 0.5)),
+      backgroundColor: '#ffffff',
+      useCORS: true
+      })
+     // Canvas → A4-pagina's.
+    const pdf = new jsPDFCtor({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageW = 210, pageH = 297
+    const imgH = (canvas.height * pageW) / canvas.width
+    const imgData = canvas.toDataURL('image/jpeg', 0.92)
+    pdf.addImage(imgData, 'JPEG', 0, 0, pageW, imgH, undefined, 'FAST')
+    let pos = 0, remaining = imgH - pageH
+    while (remaining > 0) {
+      pos -= pageH
+      pdf.addPage()
+      pdf.addImage(imgData, 'JPEG', 0, pos, pageW, imgH, undefined, 'FAST')
+      remaining -= pageH
+      }
+    const ab = pdf.output('arraybuffer')
+    const blob = new Blob([ab], { type: 'application/pdf' })
+    const fname = `${String(name || 'overzicht').replace(/[^\w.-]+/g, '_')}-overzicht.pdf`
+    const file = new File([blob], fname, { type: 'application/pdf' })
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: fname, text: t('PDF_TRANSACTION_OVERVIEW') })
+        log(`PDF gedeeld: ${fname}`)
+        if (hint) hint.textContent = 'PDF gedeeld ✓'
+        } catch (e) {
+        if (e && e.name === 'AbortError') { if (hint) hint.textContent = 'Deelen geannuleerd.'; return }
+        throw e
+         }
+      } else {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a'); a.href = url; a.download = fname
+      document.body.appendChild(a); a.click(); a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 5000)
+      log(`PDF opgeslagen: ${fname}`)
+      if (hint) hint.textContent = 'PDF opgeslagen ✓'
+      }
+  } catch (e) {
+    log('PDF-maken/mislukt, fallback naar print', e)
+    if (hint) hint.textContent = 'PDF kon niet worden gemaakt — gebruik de “Print”-knop.'
+    try { if (frame && frame.contentWindow) frame.contentWindow.print() } catch {}
+  } finally {
+    if (btn) btn.textContent = label
+    }
+}
 async function printStatement({ from, to, history } = {}) {
   // Venster METEEN openen (binnen het klik-gebaar) — anders blokkeert de pop-upfilter
   // het na de async data-ophaal. Daarna vullen we het.
-  const w = window.open('', '_blank')
-  if (!w) { log('Pop-up geblokkeerd — sta pop-ups toe om de PDF te maken.'); return }
-  w.document.write('<!doctype html><meta charset="utf-8"><title>Overzicht</title>' +
+   // Overlay IN de app openen (niet window.open('_blank')): op een geïnstalleerde
+   // PWA is dat nieuwe "venster" het webview zonder retour- of print-UI. We renderen
+   // de PDF in een iframe met vaste Terug/Print-knoppen → je kunt altijd terug en
+   // via 'PDF' de systeem-print/Share-sheet (opslaan als PDF).
+  openPdfOverlay('<!doctype html><meta charset="utf-8"><title>Overzicht</title>' +
     '<body style="font:14px Arial,sans-serif;margin:32px;color:#555">Overzicht voorbereiden…</body>')
 
   const uid = txUserId ?? me
@@ -1779,9 +2172,18 @@ async function printStatement({ from, to, history } = {}) {
     `<a href="https://www.abundomy.com" style="color:#916B01;text-decoration:none;">www.abundomy.com</a></div></div>` +
     `</body></html>`
 
-  w.document.open(); w.document.write(html); w.document.close(); w.focus()
-  setTimeout(() => { try { w.print() } catch {} }, 350) // even tijd om te renderen
-  log(`PDF-overzicht ${name} geopend (${all.length} transacties) — kies 'Opslaan als PDF'.`)
+    // Laad het volledige PDF-document in de in-app iframe (blob-URL = zelfde-origin,
+    // dus #pdfFrame.contentWindow.print() print alleen dit frame). De gebruiker blijft
+    // in de app: 'Terug' sluit de overlay, 'PDF' opent de print/Share-sheet.
+  if (_pdfBlobUrl) URL.revokeObjectURL(_pdfBlobUrl)
+  _pdfBlobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }))
+  const frame = $('pdfFrame')
+  frame.onload = () => {
+      $('pdfHint').textContent = 'Blader door de preview · tik "PDF" om te printen of "Opslaan als PDF" te kiezen.'
+    }
+  frame.src = _pdfBlobUrl
+   $('pdfTitle').textContent = `${name} — ${t('PDF_TRANSACTION_OVERVIEW')}`
+  log(`PDF-overzicht ${name} geopend (${all.length} transacties) — tik 'PDF' om te printen of kies 'Opslaan als PDF'.`)
 }
 
 fetch('relay.json').then((r) => r.ok ? $('relayInfo').textContent = 'Relay gevonden ✓ — klaar om te verbinden.'
@@ -1798,11 +2200,26 @@ for (const id of ['loginId', 'loginPwd']) {
   }
 }
 $('signupBtn').onclick = () => doSignup().catch((e) => log('FOUT: ' + e.message))
-const showCard = (id) => { for (const c of ['login', 'signup', 'resetCard']) $(c).classList.toggle('hidden', c !== id) }
-$('toSignupBtn').onclick = () => showCard('signup')
+const showCard = (id) => {
+  for (const c of ['login', 'signup', 'resetCard']) $(c).classList.toggle('hidden', c !== id)
+  // Punt 04-foto: op signup → avatar ipv vlag (taal alleen op home vóór inlog, per Patrick); elders → vlag.
+  const onSignup = (id === 'signup')
+  $('suAvatar').style.display = onSignup ? 'block' : 'none'
+  $('langFlag').style.display = onSignup ? 'none' : 'block'
+  if (onSignup) $('suAvatar').src = avatarFor({ usersName: $('suName').value, image: signupImage })
+}
+$('toSignupBtn').onclick = () => {
+  // 05 (Registratie): e-mail + wachtwoord 1x meenemen naar signup. E-mail alleen als loginId een @ bevat.
+  const lid = $('loginId').value.trim()
+  if (lid.includes('@')) $('suEmail').value = lid
+  const lpw = $('loginPwd').value
+  if (lpw) $('suPwd').value = lpw
+  showCard('signup')
+}
 $('toResetBtn').onclick = () => showCard('resetCard')
 $('resetBackBtn').onclick = () => showCard('login')
-$('toLogin').onclick = (e) => { e.preventDefault(); showCard('login') }
+if ($('toLogin')) $('toLogin').onclick = (e) => { e.preventDefault(); showCard('login') }
+$('suCancelBtn').onclick = () => showCard('login')
 $('resetBtn').onclick = () => doReset().catch((e) => log('FOUT: ' + e.message))
 $('logoutBtn').onclick = () => logout().catch((e) => log('FOUT: ' + e.message))
 // Zoeken: knop dood onder de 3 tekens, Enter zoekt, elke zoekopdracht begint op pagina 1.
@@ -1818,7 +2235,7 @@ $('searchBtn').onclick = doSearch
 // Verzoek: bedrag live opmaken/valideren, verzenden.
 $('rcvAmount').oninput = () => checkAmount(rcvAvail)
 $('rcvSendBtn').onclick = () => sendRequest()
-$('exportBtn').onclick = () => exportChain().catch((e) => log('FOUT: ' + e.message))
+if ($('exportBtn')) $('exportBtn').onclick = () => exportChain().catch((e) => log('FOUT: ' + e.message))
 $('txPdfBtn').onclick = () => $('pdfOpts').classList.toggle('hidden') // toon/verberg opties
 $('pdfGenBtn').onclick = () => {
   const scope = document.querySelector('input[name="pdfScope"]:checked')?.value || 'all'
@@ -1826,40 +2243,311 @@ $('pdfGenBtn').onclick = () => {
   const opts = scope === 'range' ? { from: $('pdfFrom').value, to: $('pdfTo').value, history } : { history }
   printStatement(opts).catch((e) => log('FOUT: ' + e.message))
 }
+      // PDF-preview-overlay (in-app print/save-as-PDF — vervanger voor window.open, dat op
+      // de geïnstalleerde PWA opsluit): 'Terug' sluit de overlay, 'PDF' print via het
+      // iframe-venster (frame-gedeeld → alleen de PDF, geen app-chrome), Escape sluit.
+// Stale-overlay reset: voorkom dat de PDF-overlay 'vast' over de app zit na een
+// (her-)start van de iOS PWA-webview of na bfcache-terugkeer (pagehide/pageshow).
+// Zet de overlay bij laden/terugkeer altijd gesloten en maak blob-URL + iframe op. Zodat
+// de app nooit 'opgesloten' achter de PDF-preview begint. (Oude window.open-weg is weg — die
+// opende een nieuw tabblad op de browser en liet op iOS een losse webview over.)
+function _pdfOverlayForceClosed() {
+  const o = $('pdfOverlay')
+  if (o && !o.classList.contains('hidden')) closePdfOverlay()
+  document.body.style.overflow = ''
+  if (_pdfBlobUrl) { URL.revokeObjectURL(_pdfBlobUrl); _pdfBlobUrl = null }
+  const f = $('pdfFrame')
+  if (f) { f.onload = null; f.src = 'about:blank' }
+ }
+_pdfOverlayForceClosed()
+window.addEventListener('pageshow', (e) => { if (e.persisted || !$('pdfOverlay').classList.contains('hidden')) _pdfOverlayForceClosed() })
+window.addEventListener('load', () => _pdfOverlayForceClosed())
+  if ($('pdfBackBtn')) $('pdfBackBtn').onclick = closePdfOverlay
+  if ($('pdfHomeBtn')) $('pdfHomeBtn').onclick = closePdfOverlay
+  if ($('pdfAvatarBtn')) $('pdfAvatarBtn').onclick = closePdfOverlay
+  if ($('pdfPrintBtn')) $('pdfPrintBtn').onclick = () => {
+      const w = $('pdfFrame').contentWindow
+      if (!w || w.document.readyState !== 'complete') { log('Preview wordt nog geladen…'); return }
+      try { w.focus(); w.print() } catch { log('Print niet beschikbaar — open in een browser om te printen.') }
+  }
+  if ($('pdfShareBtn')) $('pdfShareBtn').onclick = () => {
+      const nm = ($('txViewName') && $('txViewName').textContent) || 'overzicht'
+      shareOrSavePdf($('pdfFrame'), nm)
+      }
+  window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('pdfOverlay').classList.contains('hidden')) closePdfOverlay()
+  })
 $('txCsvBtn').onclick = () => exportChain(txUserId ?? me).catch((e) => log('FOUT: ' + e.message))
 $('refreshBtn').onclick = () => { log('Verversen (verse sync)…'); location.reload() }
-$('changePwdBtn').onclick = () => doChangePassword().catch((e) => log('FOUT: ' + e.message))
 $('goDashboard').onclick = () => finishLogin().catch((e) => log('FOUT: ' + e.message))
 window.addEventListener('hashchange', () => route())
-$('profEditBtn').onclick = () => enterProfileEdit()
-$('profRevPrev').onclick = () => { if (revIdx < revVersions.length - 1) { revIdx++; renderProfileVersion() } } // ouder
-$('profRevNext').onclick = () => { if (revIdx > 0) { revIdx--; renderProfileVersion() } } // nieuwer
-$('profCancelBtn').onclick = () => cancelProfileEdit()
-$('profSaveBtn').onclick = () => saveProfile().catch((e) => log('FOUT: ' + e.message))
-$('peImgFile').onchange = async (e) => {
-  const file = e.target.files?.[0]; if (!file) return
-  try { pendingImage = await fileToAvatarDataURL(file); refreshImagePreview() }
-  catch (err) { $('profEditInfo').textContent = 'FOUT: ' + err.message }
-  e.target.value = '' // zelfde bestand opnieuw kiezen blijft mogelijk
-}
-$('peImgClear').onclick = () => { pendingImage = ''; refreshImagePreview() }
-$('peEmailVerifyBtn').onclick = () => changeEmail().catch((e) => log('FOUT: ' + e.message))
+$('profHeaderSave').onclick = () => saveProfile().catch((e) => log('FOUT: ' + e.message))
+// profHeaderBack = <a href="#/"> (dashboard) — geen onclick nodig.
+$('profPhotoBtn').onclick = () => showViewImage('profile')  // 1coinh: photo-button opent editor
 
 // Foto kiezen bij signup (vóór account-aanmaak).
 let signupImage = ''
 function refreshSignupImagePreview() {
-  $('suImgPreview').src = avatarFor({ usersId: 0, usersName: $('suName').value, image: signupImage })
-  $('suImgClear').style.display = (typeof signupImage === 'string' && signupImage.startsWith('data:image')) ? 'inline-block' : 'none'
+  // Punt 04-foto stap 3: avatar (topNav, ipv vlag) updaten met de gekozen foto / naam-placeholder.
+  $('suAvatar').src = avatarFor({ usersName: $('suName').value, image: signupImage })
 }
-$('suImgFile').onchange = async (e) => {
-  const file = e.target.files?.[0]; if (!file) return
-  try { signupImage = await fileToAvatarDataURL(file); refreshSignupImagePreview() }
-  catch (err) { $('signupInfo').textContent = 'FOUT: ' + err.message }
-  e.target.value = ''
-}
-$('suImgClear').onclick = () => { signupImage = ''; refreshSignupImagePreview() }
+$('suPhotoBtn').onclick = () => showViewImage('signup')  // Punt 04-foto: opent V1 image.php-achtige view (was direct file-picker)
 $('suName').addEventListener('input', () => { if (!signupImage) refreshSignupImagePreview() })
 refreshSignupImagePreview()
+
+// Punt 04-24-07: signup-form persistentie bij refresh (wachtwoord NIET opslaan, per Patrick keuze 3).
+const SIGNUP_FORM_KEY = 'abundomy-signup-form'
+const SIGNUP_FIELDS = ['suName','suEmail','suUid','suBirthday','suGender','suHeight','suHair','suLeftEye','suRightEye','suSpecial']
+function saveSignupForm() {
+  try {
+    const data = {}
+    for (const id of SIGNUP_FIELDS) data[id] = $(id).value
+    data.signupImage = signupImage
+    localStorage.setItem(SIGNUP_FORM_KEY, JSON.stringify(data))
+  } catch {}
+}
+function restoreSignupForm() {
+  try {
+    const data = JSON.parse(localStorage.getItem(SIGNUP_FORM_KEY) || '{}')
+    if (!data || typeof data !== 'object') return
+    for (const id of SIGNUP_FIELDS) if (id in data && data[id] != null) $(id).value = data[id]
+    signupImage = data.signupImage || ''
+    refreshSignupImagePreview()
+  } catch {}
+}
+function clearSignupForm() { try { localStorage.removeItem(SIGNUP_FORM_KEY) } catch {} }
+$('signup').addEventListener('input', saveSignupForm)
+$('signup').addEventListener('change', saveSignupForm)
+
+// Punt 04-foto stap 1: #view-image (V1 image.php-layout). Upload → canvas → terug. Webcam/bewerking = stap 2.
+let imageViewReturnTo = 'signup'
+// Punt foto-flow stap 1: paspartout (zwart + rode selector) bij openen — zoals 1coinh image.php.
+// === Image-edit core (V1 image.js-port, stap 2) ===
+const IE = { img: null, imageWidth: 0, imageHeight: 0, imw: 0, imh: 0, rot: 0, focx: 0, focy: 0, ox: 0, oy: 0, scale: 100, co: 100, br: 100, sa: 100, ww: 350, hh: 250, preload: true, zoomVal: 50, contrastVal: 50, brightnessVal: 50, colorVal: 50 }
+const IE_PORT = { x1: (350 - 140) / 2, y1: (250 - 140) / 2, x2: (350 + 140) / 2, y2: (250 + 140) / 2 }
+function drawBack() {
+  const x = $('imgCanvas').getContext('2d'), x2 = $('canvas2').getContext('2d')
+  x.fillStyle = '#000'; x.fillRect(0, 0, 350, 250)
+  x2.fillStyle = '#000'; x2.fillRect(0, 0, 350, 250)
+}
+function drawPaspartout() {
+  const x = $('imgCanvas').getContext('2d'), { x1, y1, x2, y2 } = IE_PORT, L = 40
+  x.fillStyle = 'rgba(2,2,2,0.8)'
+  x.fillRect(0, 0, 350, y1); x.fillRect(0, y1, x1, y2 - y1); x.fillRect(x2, y1, 350 - x2, y2 - y1); x.fillRect(0, y2, 350, 250 - y2)
+  x.beginPath(); x.lineWidth = 2; x.strokeStyle = '#ff0000'
+  x.moveTo(x1 - 1, y1 + L); x.lineTo(x1 - 1, y1 - 1); x.lineTo(x1 + L, y1 - 1)
+  x.moveTo(x2 - L, y1 - 1); x.lineTo(x2 + 1, y1 - 1); x.lineTo(x2 + 1, y1 + L)
+  x.moveTo(x2 + 1, y2 - L); x.lineTo(x2 + 1, y2 + 1); x.lineTo(x2 - L, y2 + 1)
+  x.moveTo(x1 + L, y2 + 1); x.lineTo(x1 - 1, y2 + 1); x.lineTo(x1 - 1, y2 - L)
+  x.stroke()
+}
+function drawImg() {
+  if (IE.preload) return
+  const x = $('imgCanvas').getContext('2d'), x2 = $('canvas2').getContext('2d'), c2 = $('canvas2')
+  const ww = IE.ww, hh = IE.hh
+  x2.filter = `contrast(${IE.co}%) brightness(${IE.br}%) saturate(${IE.sa}%)`
+  let ccx, ccy, cwx, cwy
+  if (IE.rot !== 0) {
+    x2.save()
+    if (IE.rot === 1) x2.translate(Math.round(ww / 2 + hh / 2), Math.round(hh / 2 - ww / 2))
+    else if (IE.rot === 2) x2.translate(ww, hh)
+    else x2.translate(Math.round(ww / 2 - hh / 2), Math.round(ww / 2 + hh / 2))
+    x2.rotate(IE.rot * Math.PI * 0.5)
+    const imw2 = IE.imw
+    IE.imw = Math.round(IE.imageWidth * IE.scale / 100)
+    IE.imh = Math.round(IE.imageHeight * IE.scale / 100)
+    if (imw2) { IE.focx = Math.round(IE.focx * (IE.imw / imw2)); IE.focy = Math.round(IE.focy * (IE.imw / imw2)) }
+    IE.ox = Math.round(ww / 2) - IE.focx; IE.oy = Math.round(hh / 2) - IE.focy
+    x2.drawImage(IE.img, IE.ox, IE.oy, IE.imw, IE.imh)
+    if (IE.rot === 1) { ccx = (Math.round(ww / 2) + Math.round(hh / 2)) - (IE.oy + IE.imh); ccy = (Math.round(hh / 2) - Math.round(ww / 2)) + IE.ox; cwx = IE.imh; cwy = IE.imw }
+    else if (IE.rot === 2) { ccx = ww - (IE.ox + IE.imw); ccy = hh - (IE.oy + IE.imh); cwx = IE.imw; cwy = IE.imh }
+    else { ccx = (Math.round(ww / 2) - Math.round(hh / 2)) + IE.oy; ccy = (Math.round(hh / 2) + Math.round(ww / 2)) - (IE.ox + IE.imw); cwx = IE.imh; cwy = IE.imw }
+    x2.restore()
+  } else {
+    const imw2 = IE.imw
+    IE.imw = Math.round(IE.imageWidth * IE.scale / 100)
+    IE.imh = Math.round(IE.imageHeight * IE.scale / 100)
+    if (imw2) { IE.focx = Math.round(IE.focx * (IE.imw / imw2)); IE.focy = Math.round(IE.focy * (IE.imw / imw2)) }
+    IE.ox = Math.round(ww / 2) - IE.focx; IE.oy = Math.round(hh / 2) - IE.focy
+    x2.drawImage(IE.img, IE.ox, IE.oy, IE.imw, IE.imh)
+    ccx = IE.ox; ccy = IE.oy; cwx = IE.imw; cwy = IE.imh
+  }
+  if (ccx < 0) { cwx += ccx; ccx = 0; if (cwx < 0) cwx = 0; if (cwx > ww) cwx = ww - 1 }
+  if (ccy < 0) { cwy += ccy; ccy = 0; if (cwy < 0) cwy = 0; if (cwy > hh) cwy = hh - 1 }
+  x.drawImage(c2, ccx, ccy, cwx, cwy, ccx, ccy, cwx, cwy)
+}
+function ieRedraw() { drawBack(); drawImg(); drawPaspartout() }
+function initIE(img) {
+  IE.img = img; IE.preload = false
+  IE.imageWidth = img.width; IE.imageHeight = img.height
+  IE.imw = img.width; IE.imh = img.height
+  IE.focx = Math.round(img.width / 2); IE.focy = Math.round(img.height / 2)
+  IE.rot = 0
+  IE.scale = Math.round(Math.min(IE.ww / img.width, IE.hh / img.height) * 100 * 0.80)
+  IE.co = 100; IE.br = 100; IE.sa = 100
+  IE.zoomVal = 50; IE.contrastVal = 50; IE.brightnessVal = 50; IE.colorVal = 50
+}
+function rotateIt() { IE.rot = (IE.rot + 1) % 4; ieRedraw() }
+function ieZoom(delta) { IE.zoomVal = Math.max(0, Math.min(100, IE.zoomVal + delta)); IE.scale = 100 * Math.pow(1.07, 50 - IE.zoomVal); ieRedraw() }
+function ieReset() {
+  IE.zoomVal = 50; IE.contrastVal = 50; IE.brightnessVal = 50; IE.colorVal = 50
+  IE.co = 100; IE.br = 100; IE.sa = 100; IE.rot = 0
+  if (IE.imageWidth) IE.scale = Math.round(Math.min(IE.ww / IE.imageWidth, IE.hh / IE.imageHeight) * 100 * 0.80)
+  IE.focx = Math.round(IE.imageWidth / 2); IE.focy = Math.round(IE.imageHeight / 2)
+  ieRedraw()
+}
+function ieFilter(kind, delta) {
+  if (kind === 'co') IE.contrastVal = Math.max(0, Math.min(100, IE.contrastVal + delta))
+  else if (kind === 'br') IE.brightnessVal = Math.max(0, Math.min(100, IE.brightnessVal + delta))
+  else IE.colorVal = Math.max(0, Math.min(100, IE.colorVal + delta))
+  IE.co = Math.round(100 * Math.pow(1.02, 50 - IE.contrastVal))
+  IE.br = Math.round(100 * Math.pow(1.02, 50 - IE.brightnessVal))
+  IE.sa = Math.round(100 * Math.pow(1.02, 50 - IE.colorVal))
+  ieRedraw()
+}
+let ieDragging = false, ieMx1 = 0, ieMy1 = 0, ieTtx = 0, ieTty = 0
+function ieDragFoc(dx, dy) {
+  if (IE.rot === 0) { IE.focx += dx; IE.focy += dy }
+  else if (IE.rot === 1) { IE.focx += dy; IE.focy -= dx }
+  else if (IE.rot === 2) { IE.focx -= dx; IE.focy -= dy }
+  else { IE.focx -= dy; IE.focy += dx }
+  ieRedraw()
+}
+function ieMouseDown(e) { if (imageViewMode === 'edit') { ieMx1 = e.clientX; ieMy1 = e.clientY; ieDragging = true } }
+function ieMouseMove(e) { if (imageViewMode === 'edit' && ieDragging) { ieDragFoc(ieMx1 - e.clientX, ieMy1 - e.clientY); ieMx1 = e.clientX; ieMy1 = e.clientY } }
+function ieMouseUp() { ieDragging = false }
+function ieTouchStart(e) { if (imageViewMode === 'edit' && e.touches[0]) { ieTtx = e.touches[0].clientX; ieTty = e.touches[0].clientY; e.preventDefault() } }
+function ieTouchMove(e) { if (imageViewMode === 'edit' && e.touches[0]) { ieDragFoc(ieTtx - e.touches[0].clientX, ieTty - e.touches[0].clientY); ieTtx = e.touches[0].clientX; ieTty = e.touches[0].clientY; e.preventDefault() } }
+$('imgResetBtn').onclick = ieReset
+$('imgRotateBtn').onclick = rotateIt
+$('zoomin').onclick = () => ieZoom(-1)
+$('zoomout').onclick = () => ieZoom(1)
+$('brightnessmax').onclick = () => ieFilter('br', -1)
+$('brightnessmin').onclick = () => ieFilter('br', 1)
+$('contrastmax').onclick = () => ieFilter('co', -1)
+$('contrastmin').onclick = () => ieFilter('co', 1)
+$('colormax').onclick = () => ieFilter('sa', -1)
+$('colormin').onclick = () => ieFilter('sa', 1)
+$('imgCanvas').addEventListener('mousedown', ieMouseDown)
+$('imgCanvas').addEventListener('mousemove', ieMouseMove)
+$('imgCanvas').addEventListener('mouseup', ieMouseUp)
+$('imgCanvas').addEventListener('mouseout', ieMouseUp)
+$('imgCanvas').addEventListener('touchstart', ieTouchStart, { passive: false })
+$('imgCanvas').addEventListener('touchmove', ieTouchMove, { passive: false })
+function showPaspartoutEmpty() { IE.preload = true; drawBack(); drawPaspartout() }
+function showViewImage(returnTo) {
+  imageViewReturnTo = returnTo || 'signup'
+  for (const v of VIEWS) $('view-' + v)?.classList.add('hidden')
+  $('signup').classList.add('hidden')
+  $('view-image').classList.remove('hidden')
+  setImageViewMode('choose')  // stap 1: zwart+rood + Foto/Klik (bewerkingstabel verborgen)
+}
+// 2-staps flow zoals 1coinh image.js: 'choose' (stap 1) ↔ 'edit' (stap 2 na foto/snap).
+let imageViewMode = 'choose'
+function setImageViewMode(mode) {
+  imageViewMode = mode
+  const ve = $('view-image')
+  if (mode === 'edit') {
+    ve.classList.add('edit-mode')
+    $('imgUploadLbl').textContent = t('IMG_USE')   // 'Ready' (imgUploadBtn = save in stap 2)
+    $('imgSnapLbl').textContent = t('IMG_ABORT')  // 'Afbreken' (imgSnapBtn = abort in stap 2)
+  } else {
+    ve.classList.remove('edit-mode')
+    $('imgUploadLbl').textContent = t('IMG_GET')   // 'Foto'
+    $('imgSnapLbl').textContent = t('IMG_SNAP')    // 'Klik'
+    IE.preload = true
+    drawBack(); drawPaspartout()  // zwart + rode selector (paspartout) in stap 1
+  }
+}
+function closeViewImage() {
+  webcamOff()  // webcam stoppen bij sluiten (geen live stream laten hangen)
+  $('view-image').classList.remove('edit-mode')
+  $('view-image').classList.add('hidden')
+  if (imageViewReturnTo === 'profile') {
+    $('view-profile').classList.remove('hidden')  // terug naar profiel-bewerken
+  } else {
+    showCard('signup')
+  }
+}
+// Punt 04-foto stap 3: avatar (topNav, ipv vlag) klikbaar → foto wijzigen.
+// imgUploadBtn dubbelrol: choose → file picker; edit (Ready) → save (canvas→signupImage→close).
+$('imgUploadBtn').onclick = () => {
+  if (imageViewMode === 'edit') {
+    if (IE.preload || !IE.img) { $('imgInstr').textContent = 'kies eerst een foto (Upload of Camera)'; return }
+    // Clean redraw (zonder rode paspartout) → crop 140×140 paspartout-venster → opslaan.
+    // De rode selector is een hulplijn bij maken/bewerken, niet in de opgeslagen foto.
+    drawBack(); drawImg()
+    const tmp = document.createElement('canvas'); tmp.width = 140; tmp.height = 140
+    tmp.getContext('2d').drawImage($('imgCanvas'), IE_PORT.x1, IE_PORT.y1, 140, 140, 0, 0, 140, 140)
+    const dataUrl = tmp.toDataURL('image/png')
+    drawPaspartout()  // weergave herstellen (rode selector terug voor gebruiker)
+    if (imageViewReturnTo === 'signup') {
+      signupImage = dataUrl
+      saveSignupForm()
+      closeViewImage()
+      refreshSignupImagePreview()
+    } else if (imageViewReturnTo === 'profile') {
+      pendingImage = dataUrl
+      refreshImagePreview()
+      closeViewImage()
+    }
+  } else {
+    $('loadpicture').click()
+  }
+}
+// loadpicture: foto gekozen → drawImageOnCanvas + stap 2 (edit-mode).
+$('loadpicture').onchange = (e) => {
+  const f = e.target.files?.[0]; if (!f) return
+  const img = new Image()
+  img.onload = () => { initIE(img); ieRedraw(); setImageViewMode('edit') }
+  img.src = URL.createObjectURL(f)
+  e.target.value = ''
+}
+$('imgCancelBtn').onclick = () => closeViewImage()
+// webcam-snap (foto maken) via getUserMedia.
+let webcamStream = null
+function webcamOff() {
+  if (webcamStream) { webcamStream.getTracks().forEach((track) => track.stop()); webcamStream = null }
+  const v = $('webcamVideo'); if (v) { v.style.display = 'none'; v.srcObject = null }
+  // label wordt gezet door setImageViewMode (afhankelijk van mode), niet hier.
+}
+// imgSnapBtn dubbelrol: choose → camera toggle (Klik→Opname→snap→edit); edit (Afbreken) → abort (terug naar choose).
+$('imgSnapBtn').onclick = async () => {
+  if (imageViewMode === 'edit') {
+    // Afbreken: abort bewerking → terug naar stap 1.
+    webcamOff()
+    setImageViewMode('choose')
+    return
+  }
+  if (webcamStream) {
+    // SNAP: neem frame → canvas → stap 2 (edit).
+    const v = $('webcamVideo'), c = $('imgCanvas'), x = c.getContext('2d')
+    if (v.videoWidth) {
+      const r = Math.max(c.width / v.videoWidth, c.height / v.videoHeight)
+      const dw = v.videoWidth * r, dh = v.videoHeight * r
+      x.drawImage(v, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh)
+    } else { x.drawImage(v, 0, 0, c.width, c.height) }
+    try {
+      const px = x.getImageData((c.width / 2) | 0, (c.height / 2) | 0, 1, 1).data
+      if (px[3] === 0 || (px[0] + px[1] + px[2] < 30)) {
+        $('imgInstr').textContent = 'camera nog niet gereed — wacht op beeld en probeer opnieuw'
+        return  // laat stream draaien, geen webcamOff
+      }
+    } catch { /* tainted canvas zeldzaam bij getUserMedia; neem genoegen met draw */ }
+    webcamOff()
+    // Snap levert een frame op canvas; maak een Image van de canvas-data om initIE te voeden (zodat tools werken).
+    const snapImg = new Image()
+    snapImg.onload = () => { initIE(snapImg); ieRedraw(); setImageViewMode('edit') }
+    snapImg.src = c.toDataURL('image/png')
+  } else {
+    // Klik: camera aan → label 'Opname'.
+    try {
+      webcamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      const v = $('webcamVideo'); v.muted = true; v.srcObject = webcamStream; v.style.display = 'block'; await v.play().catch(() => {})
+      $('imgSnapLbl').textContent = t('IMG_CAPTION')  // 'Opname'
+    } catch (e) { $('imgInstr').textContent = 'FOUT: ' + e.message }
+  }
+}
 $('navYear').onchange = (e) => { txYear = Number(e.target.value); txSelectedTid = 0; renderTransactions(currentParams).catch(() => {}) }
 $('navMonth').onchange = (e) => { txMonth = Number(e.target.value); txSelectedTid = 0; renderTransactions(currentParams).catch(() => {}) }
 // ============================ I18N-BOOT + TAALKIEZER ============================
@@ -1902,6 +2590,7 @@ function chooseLang(code) { setLang(code); closeLangOverlay() }
   await loadI18n()
   applyStaticI18n()
   populateSelects()
+  restoreSignupForm()  // Punt 04-24-07: herstel opgeslagen signup-velden (na populateSelects, zodat selects gevuld zijn)
   renderLangFlag()
   $('langFlag').onclick = openLangOverlay
   $('langCancelBtn').onclick = closeLangOverlay
@@ -1913,6 +2602,7 @@ function chooseLang(code) { setLang(code); closeLangOverlay() }
   onLangChange(() => {
     applyStaticI18n()
     renderLangFlag()
+    renderProfLangBtn()
     relabelSelect('suHair', hairLabels())
     relabelSelect('suLeftEye', eyeLabels())
     relabelSelect('suRightEye', eyeLabels())

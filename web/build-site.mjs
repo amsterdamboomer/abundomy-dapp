@@ -52,17 +52,17 @@ const RTL_LANGS = ['ah', 'ar', 'he', 'fa', 'ur', 'pa', 'pe']
 // zonder eigen boek vallen terug op 'en'. In de statische build kwam dit uit de DB → leeg
 // (gebroken cover/link); we vullen 'en' statisch in en laten JS het per taal wisselen.
 const BOOK_LIST = {
-  ar: { img: 'Cover_AR_300x425.jpg', pdf: 'ALWAFRA_(AR_IISDAR_1.3,_2025_uktubar_6).pdf' },
-  ch: { img: 'Cover_CH_300x425.jpg', pdf: 'FENGSHENG_DE_SHENGHUO_(CH_BANBEN_1.3,_2025_Nian_10_yue_6_ri).pdf' },
-  de: { img: 'Cover_DE_300x425.jpg', pdf: 'ABUNDOMIE_(DE_VERSION_1.3,_6._Oktober_2025).pdf' },
-  en: { img: 'Cover_EN_300x425.jpg', pdf: 'ABUNDOMY_(EN_VERSION_1.3,_October_6th,_2025).pdf' },
-  es: { img: 'Cover_ES_300x425.jpg', pdf: 'ABUNDOMIA_(ES_VERSIÓN_1.3,_6_octubre_2025).pdf' },
-  fr: { img: 'Cover_FR_300x425.jpg', pdf: 'ABUNDOMIE_(FR_VERSION_1.3,_6_Octobre_2025).pdf' },
-  ki: { img: 'Cover_KI_300x425.jpg', pdf: 'ABUNDOMY_(KI_KURE_1.3,_Ku ya_6_Ukwakira_2025).pdf' },
-  ne: { img: 'Cover_NE_300x425.jpg', pdf: 'ABUNDOMIE_(NE_VERSIE_1.3,_6_Oktober_2025).pdf' },
-  pt: { img: 'Cover_PT_300x425.jpg', pdf: 'ABUNDOMIA_(PT_VERSAO_1.3,_6_de_outubro_de_2025).pdf' },
-  pu: { img: 'Cover_PU_300x425.jpg', pdf: 'BELORI_(PU_VARAJANA_1.3,_6_Akatubara,_2025).pdf' },
-  ru: { img: 'Cover_RU_300x425.jpg', pdf: 'IZOBILOMICS_(RU_VERSIYA_1.3,_6_oktyabrya_2025).pdf' },
+  ar: { img: 'Cover_ar_300x425.jpg', pdf: 'ar_Wafraqtisad_2.0.pdf' },
+  ch: { img: 'Cover_ch_300x425.jpg', pdf: 'ch_Fengshengjingji_2.0.pdf' },
+  de: { img: 'Cover_de_300x425.jpg', pdf: 'de_Abundomie_2.0.pdf' },
+  en: { img: 'Cover_en_300x425.jpg', pdf: 'en_Abundomy_2.0.pdf' },
+  es: { img: 'Cover_es_300x425.jpg', pdf: 'es_Abundomia_2.0.pdf' },
+  fr: { img: 'Cover_fr_300x425.jpg', pdf: 'fr_Abondomie_2.0.pdf' },
+  ki: { img: 'Cover_ki_300x425.jpg', pdf: 'ki_Abundomy_2.0.pdf' },
+  ne: { img: 'Cover_ne_300x425.jpg', pdf: 'ne_Abundomie_2.0.pdf' },
+  pt: { img: 'Cover_pt_300x425.jpg', pdf: 'pt_Abundomia_2.0.pdf' },
+  pu: { img: 'Cover_pu_300x425.jpg', pdf: 'pu_Prachurta_Arthachara_2.0.pdf' },
+  ru: { img: 'Cover_ru_300x425.jpg', pdf: 'ru_Izobilomika_2.0.pdf' },
 }
 
 /**
@@ -113,7 +113,7 @@ window.__abTrackItem=function(item){
 window.__lang=(function(){try{return localStorage.getItem('abundomy-lang')||'en'}catch(e){return 'en'}})();
 document.documentElement.lang=window.__lang;
 if(window.__ABUNDOMY_RTL.indexOf(window.__lang)>=0)document.documentElement.dir='rtl';
-window.__abFlag=function(code,uid){var s=window.__abFlags[code]||window.__abFlags['en']||'';var id='c_'+(uid||code);return s.replace(/id="c"/g,'id="'+id+'"').replace(/url\\(#c\\)/g,'url(#'+id+')');};
+window.__abFlag=function(code,uid){var s=window.__abFlags[code]||window.__abFlags['en']||'';if(!s)return '';return '<img src="/'+s+'" alt="'+(uid||code||'')+'" class="ab-flag-img">';};
 window.__abRenderFlag=function(){var b=document.getElementById('abLangFlag');if(b)b.innerHTML=window.__abFlag(window.__lang,'hdr');};
 window.__abSetLang=function(code){
   window.__lang=code;
@@ -146,9 +146,9 @@ window.__abCloseLang=function(){var o=document.getElementById('abLangOverlay');i
 window.__abFilter=function(){var q=(document.getElementById('abLangSearch').value||'').toLowerCase();var items=document.querySelectorAll('#abLangList .ab-lang-item');for(var i=0;i<items.length;i++){var n=items[i].getAttribute('data-s');items[i].style.display=(!q||n.indexOf(q)>=0)?'':'none';}};
 </script>
 <style>
-.ab-lang-flag{width:clamp(35px,12.15vw,70px);height:clamp(35px,12.15vw,70px);padding:0;border:2px solid rgba(255,255,255,.7);border-radius:50%;background:transparent;cursor:pointer;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.4);transition:filter .2s,transform .2s;display:block}
+.ab-lang-flag{width:50px;height:50px;padding:0;border:2px solid rgba(255,255,255,.7);border-radius:50%;background:transparent;cursor:pointer;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.4);transition:filter .2s,transform .2s;display:block}
 .ab-lang-flag:hover{filter:brightness(1.25);transform:scale(1.06)}
-.ab-lang-flag svg{width:100%;height:100%;display:block}
+.ab-lang-flag img{width:100%;height:100%;display:block;border-radius:50%;object-fit:cover}
 .ab-lang-overlay{display:none;position:fixed;inset:0;z-index:2147483000;overflow-y:auto;background:#0d1228;padding:clamp(10px,3vw,24px) clamp(8px,3vw,20px) 3rem}
 .ab-lang-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;max-width:576px;margin:0 auto clamp(10px,3vw,18px)}
 .ab-lang-bar h2{font-family:raleway_bold,sans-serif;color:#E8B923;margin:0;font-size:clamp(16px,5vw,28px)}
@@ -158,9 +158,11 @@ window.__abFilter=function(){var q=(document.getElementById('abLangSearch').valu
 .ab-lang-item{display:flex;align-items:center;gap:clamp(8px,2.6vw,15px);padding:clamp(7px,1.8vw,10px) clamp(8px,2.4vw,14px);border-bottom:1px solid rgba(255,255,255,.08);cursor:pointer}
 .ab-lang-item:hover{background:rgba(255,255,255,.06)}
 .ab-lang-item.ab-active{background:rgba(0,191,255,.15);font-weight:bold}
-.ab-flag svg{width:clamp(34px,11vw,44px);height:clamp(34px,11vw,44px);display:block;border-radius:50%}
+.ab-flag img{width:clamp(34px,11vw,44px);height:clamp(34px,11vw,44px);display:block;border-radius:50%;object-fit:cover}
 .ab-lang-name{font-family:raleway_regular,sans-serif;color:#E8B923;font-size:clamp(13px,4.3vw,24px);text-align:left;line-height:1.2}
-</style>`
+
+/* Punt 03 (23 jul 2026): copy-beveiliging weg — content selecteerbaar (header blijft niet-selecteerbaar). */
+html,body{user-select:text !important;-webkit-user-select:text !important;-moz-user-select:text !important;-ms-user-select:text !important}</style>`
 
 /** Eind-injectie: de taalpagina-overlay + flags laden + de vlag tekenen. */
 const BODY_I18N = `<div id="abLangOverlay" class="ab-lang-overlay" role="dialog" aria-label="Language">
@@ -233,6 +235,9 @@ function renderPhp(src, { title = 'Abundomy', desc = 'Abundomy - Realizing Resou
   // $baseHref → absolute root "/" (zoals de bron in productie): werkt op élke diepte,
   // dus ook voor /articles/-pagina's (assets, nav-links, json blijven correct).
   s = s.replace(/<\?php\s+echo\s+\$baseHref\s*;?\s*\?>/g, '/')
+  // CSS-links: absoluut /css/... → relatief ./css/... + voeg content.css + dapp-custom.css toe (3-laags architectuur)
+  s = s.replace(/<link rel="stylesheet" type="text\/css" href="\/css\/reset\.css"\s*\/?>/g, '<link rel="stylesheet" type="text/css" href="./css/reset.css" />')
+  s = s.replace(/<link rel="stylesheet" type="text\/css" href="\/css\/main\.css"\s*\/?>/g, '<link rel="stylesheet" type="text/css" href="./css/main.css" />')
   s = s.replace(/<\?php\s+echo\s+\$currentLang(\s*\?\?\s*'en')?\s*;?\s*\?>/g, 'en')
   s = s.replace(/<\?php\s+echo\s+getFlagSVG\([^)]*\)\s*;?\s*\?>/g, '🌐')
   // non-greedy t/m de eerste ?> (de ternary bevat zelf ook een '?')
@@ -258,6 +263,9 @@ function renderPhp(src, { title = 'Abundomy', desc = 'Abundomy - Realizing Resou
   s = s.replace(/(href=["'][^"']*?)\.php(["'?#])/g, '$1.html$2')
   // money-app-link → onze IPFS-app (op /app/), i.p.v. het oude bron-domein 1coinh.com
   s = s.replace(/https?:\/\/(www\.)?1coinh\.com\/?/g, '/app/')
+  // Punt 02 (23 jul 2026): verwijder de overbodige <br> direct na een title1-span.
+  // title1 is display:block -> de <br> geeft een extra lege regel onder de titel.
+  s = s.replace(/(<span class=['"]title1['"][^>]*>[^<]*<\/span>)\s*<br\s*\/?>/gi, '$1')
   return s
 }
 
@@ -297,6 +305,10 @@ if (existsSync(FLAGS_SRC)) {
 } else {
   console.log('⚠ web/public/json/flags.json ontbreekt — vlag-taalkiezer toont geen vlaggen')
 }
+
+// Vlag-JPG's (punt 01.1, 23 jul 2026: SVG→JPG) → content-bundel, zodat /img/flags/flag_XX.jpg werkt.
+const FLAGS_IMG = fileURLToPath(new URL('./public/img/flags/', import.meta.url))
+if (existsSync(FLAGS_IMG)) { cpSync(FLAGS_IMG, OUT + 'img/flags', { recursive: true }); console.log('• vlag-JPG\'s: img/flags/') }
 
 // Extra bundel-assets die niet in de Abundomy-bron zitten (bv. OneCoinHDemo.xlsx — door
 // youtube01/tiktok01 gelinkt maar nooit meegekomen; opgehaald van abundomy.com). Map-

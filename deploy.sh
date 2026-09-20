@@ -91,6 +91,14 @@ if command -v ipfs-cluster-ctl >/dev/null 2>&1; then
   else
     echo "  ⚠ anker-IPNS-publish overgeslagen (anker onbereikbaar?) — anker republisht z'n laatste record"
   fi
+  # 5c) anker-Kubo herstarten: de in-memory IPNS-resolve-cache (ResolveCacheSize, géén TTL)
+  #     houdt na een publish de vorige CID vast (~48h) → de gateway serveert anders oud.
+  #     Replicator + ipfs-cluster reconnecten binnen enkele seconden.
+  if [ -n "$ANCHOR_SSH" ] && ssh -o BatchMode=yes -o ConnectTimeout=8 "$ANCHOR_SSH" "systemctl restart ipfs" >/dev/null 2>&1; then
+    echo "  anker-Kubo herstart (IPNS-resolve-cache gewist)"
+  else
+    echo "  ⚠ anker-herstart faalde — gateway serveert mogelijk oude CID tot cache-expiry"
+  fi
   if [ -n "${OLD:-}" ] && [ "$OLD" != "$CID" ]; then
     ipfs-cluster-ctl pin rm "$OLD" >/dev/null 2>&1 && echo "  cluster-ontpin: $OLD" || true
   fi

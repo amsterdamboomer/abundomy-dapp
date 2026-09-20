@@ -1,0 +1,95 @@
+{
+  "_comment": "MyChat Abundomy taal-gate — beheerde talen-set. chat-gate.mjs leest dit bestand (fetch) als basis. Patrick bewerkt dit om talen toe te voegen/verwijderen of default-enabled te wijzigen. De toggle-UI in de chat-view kan enabled per taal aan/uit zetten (override naar localStorage, bovenop dit bestand). enabled=true → berichten worden naar de ISO-doeltaal vertaald; enabled=false → EN-fallback. ISO = Google Translate / LibreTranslate taalcode.",
+  "langs": [
+    {
+      "code": "en",
+      "iso": "en",
+      "name": "English",
+      "enabled": true
+    },
+    {
+      "code": "ne",
+      "iso": "nl",
+      "name": "Nederlands",
+      "enabled": true
+    },
+    {
+      "code": "de",
+      "iso": "de",
+      "name": "Deutsch",
+      "enabled": true
+    },
+    {
+      "code": "fr",
+      "iso": "fr",
+      "name": "Français",
+      "enabled": true
+    },
+    {
+      "code": "es",
+      "iso": "es",
+      "name": "Espagnol",
+      "enabled": true
+    },
+    {
+      "code": "it",
+      "iso": "it",
+      "name": "Italiano",
+      "enabled": true
+    },
+    {
+      "code": "hu",
+      "iso": "hu",
+      "name": "Magyar Hungary",
+      "enabled": true
+    },
+    {
+      "code": "ar",
+      "iso": "ar",
+      "name": "العربية Arabic",
+      "enabled": false
+    },
+    {
+      "code": "ru",
+      "iso": "ru",
+      "name": "Русский Russian",
+      "enabled": false
+    },
+    {
+      "code": "po",
+      "iso": "pl",
+      "name": "Polski",
+      "enabled": false
+    },
+    {
+      "code": "pt",
+      "iso": "pt",
+      "name": "Português",
+      "enabled": false
+    },
+    {
+      "code": "tu",
+      "iso": "tr",
+      "name": "Türkçe",
+      "enabled": false
+    },
+    {
+      "code": "ja",
+      "iso": "ja",
+      "name": "日本語 Japanese",
+      "enabled": false
+    },
+    {
+      "code": "ch",
+      "iso": "zh",
+      "name": "简体中文 Chinese",
+      "enabled": false
+    },
+    {
+      "code": "hi",
+      "iso": "hi",
+      "name": "हिंदी Hindi",
+      "enabled": false
+    }
+  ]
+}

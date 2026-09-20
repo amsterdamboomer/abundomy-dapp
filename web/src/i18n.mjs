@@ -43,6 +43,7 @@ const RTL_LANGS = ['ar', 'he', 'pe', 'ur', 'pa']
 const EXTRA = {
   en: {
     APP_PROFILE: 'PROFILE',
+    APP_YOU: 'YOU',
     APP_PRIV_TITLE: 'Privacy & lists',
     APP_PRIV_WL_MODE: 'White-list mode: only people you allow can send you requests.',
     APP_PRIV_BL_MODE: 'Black-list mode: everyone may, except those you block.',
@@ -58,11 +59,15 @@ const EXTRA = {
     APP_NONE_BLOCKED: 'Nobody blocked.',
     APP_EMAIL_PREFS: 'Email preferences',
     APP_EDIT: 'Edit details',
+    REQ_TITLE: 'FIND PERSON', REQ_CANCEL: 'Cancel', REQ_LABEL: 'Enter (part of) Name or Account Number',
+    REQ_PLACEHOLDER: '>2 char: "Abc" or "005"', REQ_SEARCH: 'Search',
+    REQ_START: 'Start', REQ_PREV: 'Previous', REQ_NEXT: 'Next', REQ_END: 'End',
+    REQ_ERR: 'No results found. Try again!',
     APP_REQUEST_PAYMENT: 'Request a payment',
     APP_REQUEST_HINT: 'You are the receiver; the chosen user has to confirm.',
     APP_FROM: 'From',
     APP_SEND_REQUEST: 'Send request',
-    APP_TOOLS: 'Tools, status & log',
+    APP_TOOLS: 'System Information',
     APP_EXPORT_CSV: 'Export my chain (CSV)',
     APP_REFRESH: 'Refresh',
     APP_CHANGE_PWD: 'Change password',
@@ -78,6 +83,8 @@ const EXTRA = {
     APP_CHOOSE_PHOTO: 'Choose photo',
     APP_REMOVE_PHOTO: 'Remove photo',
     APP_SIGNUP_VERIFY: 'Register & verify e-mail',
+    SU_IMG: 'Upload your photo',
+    IMG_TITLE: 'PHOTO', IMG_INSTR: 'Choose and edit an image of your face', IMG_CANCEL: 'Cancel', IMG_RESET: 'Reset', IMG_ROTATE: 'Rotate', IMG_GET: 'Photo', IMG_ABORT: 'Abort', IMG_SNAP: 'Snap', IMG_CAPTION: 'Record', IMG_USE: 'Ready',
     APP_GO_ACCOUNT: 'Go to my account',
     APP_HAVE_ACCOUNT: 'Already have an account? Log in',
     APP_EMAIL: 'E-mail address',
@@ -86,7 +93,7 @@ const EXTRA = {
     APP_NEW_EMAIL: 'New e-mail address',
     APP_SEND_VERIFY: 'Send verification',
     APP_NONE_THIS_MONTH: 'No transactions this month.',
-    APP_FEATURES_PH: 'special features',
+    APP_FEATURES_PH: 'Special features such as tattoos, scars, missing teeth or fingers... to verify you are real',
     APP_DESC_PH: 'description',
     // --- MyChat (Abundomy-spoor) ---
     CHAT_NAV: 'Chat',
@@ -129,6 +136,7 @@ const EXTRA = {
   },
   ne: {
     APP_PROFILE: 'PROFIEL',
+    APP_YOU: 'JIJ',
     APP_PRIV_TITLE: 'Privacy & lijsten',
     APP_PRIV_WL_MODE: 'Witte-lijst-modus: alleen wie je toestaat kan je verzoeken sturen.',
     APP_PRIV_BL_MODE: 'Zwarte-lijst-modus: iedereen mag, behalve wie je blokkeert.',
@@ -144,11 +152,15 @@ const EXTRA = {
     APP_NONE_BLOCKED: 'Niemand geblokkeerd.',
     APP_EMAIL_PREFS: 'E-mailvoorkeuren',
     APP_EDIT: 'Gegevens aanpassen',
+    REQ_TITLE: 'ZOEKEN', REQ_CANCEL: 'Annuleren', REQ_LABEL: 'Voer naam of rekeningnummer in',
+    REQ_PLACEHOLDER: '>2 tekens: "Abc" of "005"', REQ_SEARCH: 'Zoeken',
+    REQ_START: 'Start', REQ_PREV: 'Vorige', REQ_NEXT: 'Volgende', REQ_END: 'Einde',
+    REQ_ERR: 'Geen resultaten gevonden. Probeer het opnieuw!',
     APP_REQUEST_PAYMENT: 'Betaling aanvragen',
     APP_REQUEST_HINT: 'Jij bent de ontvanger; de gekozen gebruiker moet bevestigen.',
     APP_FROM: 'Van',
     APP_SEND_REQUEST: 'Verzoek versturen',
-    APP_TOOLS: 'Hulpmiddelen, status & log',
+    APP_TOOLS: 'Systeem Informatie',
     APP_EXPORT_CSV: 'Exporteer mijn keten (CSV)',
     APP_REFRESH: 'Ververs',
     APP_CHANGE_PWD: 'Wachtwoord wijzigen',
@@ -164,6 +176,8 @@ const EXTRA = {
     APP_CHOOSE_PHOTO: 'Foto kiezen',
     APP_REMOVE_PHOTO: 'Foto verwijderen',
     APP_SIGNUP_VERIFY: 'Registreer & verifieer e-mail',
+    SU_IMG: 'Upload uw pasfoto',
+    IMG_TITLE: 'FOTO', IMG_INSTR: 'Kies en bewerk een afbeelding van je gezicht', IMG_CANCEL: 'Afbreken', IMG_RESET: 'Reset', IMG_ROTATE: 'Draaien', IMG_GET: 'Foto', IMG_ABORT: 'Afbreken', IMG_SNAP: 'Klik', IMG_CAPTION: 'Opname', IMG_USE: 'Ready',
     APP_GO_ACCOUNT: 'Ga naar mijn account',
     APP_HAVE_ACCOUNT: 'Heb je al een account? Inloggen',
     APP_EMAIL: 'E-mailadres',
@@ -172,7 +186,7 @@ const EXTRA = {
     APP_NEW_EMAIL: 'Nieuw e-mailadres',
     APP_SEND_VERIFY: 'Verstuur verificatie',
     APP_NONE_THIS_MONTH: 'Geen transacties in deze maand.',
-    APP_FEATURES_PH: 'bijzondere kenmerken',
+    APP_FEATURES_PH: 'Bijzondere kenmerken zoals tatoeages, littekens, ontbrekende tanden of vingers... om te controleren of u echt bent',
     APP_DESC_PH: 'omschrijving',
     // --- MyChat (Abundomy-spoor) ---
     CHAT_NAV: 'Chat',
@@ -465,15 +479,18 @@ export async function loadI18n() {
 export function hasLang(code) { return !!DICT[code] }
 
 /**
- * Ronde land-vlag als inline-SVG (1-op-1 uit het origineel `getFlagSVG`). De bron
- * gebruikt een vaste clip-id `c`; we maken die uniek per gebruik (`uid`) zodat meerdere
- * vlaggen op één pagina niet botsen.
+ * Ronde land-vlag als JPG-afbeelding (vroeger inline-SVG; 23 jul 2026 overgezet naar
+ * JPG's in img/flags/ — punt 01.1). `flags.json` bevat per taalcode een relatief pad;
+ * we geven het terug als <img> (relatief → /app/img/flags/).
  */
 export function getFlag(code, uid) {
-  const svg = FLAGS[code] || FLAGS.en || ''
-  const id = 'c_' + (uid || code)
-  return svg.replace(/id="c"/g, `id="${id}"`).replace(/url\(#c\)/g, `url(#${id})`)
+  const src = FLAGS[code] || FLAGS.en || ''
+  if (!src) return ''
+  return `<img src="${src}" alt="${uid || code}" class="app-flag-img">`
 }
+
+/** Alleen de vlag-image-URL (geen <img>-wrapper) — voor eigen markup (bv. profiel-vlag). */
+export function flagSrc(code) { return FLAGS[code] || FLAGS.en || '' }
 
 function applyDir() {
   try {
