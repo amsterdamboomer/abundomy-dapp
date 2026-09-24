@@ -295,6 +295,31 @@ if (AUTOTLS) {
 
 console.log('✅ anchor-replicator actief — repliceert stores + spiegelt blocks naar het Kubo-anker.')
 
+
+// --- P11b: chat-module (additief, vlag CHAT_IN_REPLICATOR, default UIT) ------
+if (process.env.CHAT_IN_REPLICATOR === '1') {
+  try {
+    const { startChatRelay } = await import('./chat-relay-module.mjs')
+    await startChatRelay({
+      port: Number(process.env.CHAT_PORT || 4006),
+      host: process.env.CHAT_HOST || '127.0.0.1',
+      room: 'abundomy',
+      orbitdb, // D1: persistente history (additieve events-store)
+      translator: {
+        backend: process.env.TRANSLATOR_BACKEND || 'mock',
+        libreUrl: process.env.LIBRE_URL,
+        libreApiKey: process.env.LIBRE_API_KEY,
+        libreKeyFile: process.env.LIBRE_KEY_FILE,
+        googleKey: process.env.GOOGLE_TRANSLATE_KEY,
+        googleKeyFile: process.env.GOOGLE_KEY_FILE,
+      },
+      maxHistory: 200,
+    })
+  } catch (e) {
+    console.log('WARN chat-module start mislukt - replicator draait verder zonder chat: ' + e.message)
+  }
+}
+
 const shutdown = async () => {
   try { mirror?.stop() } catch {}
   try { await orbitdb.stop() } catch {}
